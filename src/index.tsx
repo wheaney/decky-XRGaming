@@ -1,105 +1,129 @@
 import {
-  ButtonItem,
-  definePlugin,
-  DialogButton,
-  Menu,
-  MenuItem,
-  PanelSection,
-  PanelSectionRow,
-  Router,
-  ServerAPI,
-  showContextMenu,
-  staticClasses,
+    definePlugin,
+    PanelSection,
+    PanelSectionRow,
+    ServerAPI,
+    ServerResponse,
+    SliderField,
+    Spinner,
+    staticClasses,
+    ToggleField,
 } from "decky-frontend-lib";
-import { VFC } from "react";
-import { FaShip } from "react-icons/fa";
+// @ts-ignore
+import React, {Fragment, useEffect, useState, VFC} from "react";
+import {FaGlasses} from "react-icons/fa";
+import {BiMessageError} from "react-icons/bi";
 
-import logo from "../assets/logo.png";
+interface Config {
+    disabled: boolean;
+    use_joystick: boolean;
+    mouse_sensitivity: number;
+}
 
-// interface AddMethodArgs {
-//   left: number;
-//   right: number;
-// }
+type InstallationStatus = "checking" | "inProgress" | "installed";
 
 const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
-  // const [result, setResult] = useState<number | undefined>();
 
-  // const onClick = async () => {
-  //   const result = await serverAPI.callPluginMethod<AddMethodArgs, number>(
-  //     "add",
-  //     {
-  //       left: 2,
-  //       right: 2,
-  //     }
-  //   );
-  //   if (result.success) {
-  //     setResult(result.result);
-  //   }
-  // };
+    const [config, setConfig] = useState<Config>();
+    const [installationStatus, setInstallationStatus] = useState<InstallationStatus>("checking");
+    const [error, setError] = useState<string>();
 
-  return (
-    <PanelSection title="Panel Section">
-      <PanelSectionRow>
-        <ButtonItem
-          layout="below"
-          onClick={(e) =>
-            showContextMenu(
-              <Menu label="Menu" cancelText="CAAAANCEL" onCancel={() => {}}>
-                <MenuItem onSelected={() => {}}>Item #1</MenuItem>
-                <MenuItem onSelected={() => {}}>Item #2</MenuItem>
-                <MenuItem onSelected={() => {}}>Item #3</MenuItem>
-              </Menu>,
-              e.currentTarget ?? window
-            )
-          }
-        >
-          Server says yolo
-        </ButtonItem>
-      </PanelSectionRow>
+    async function retrieveConfig() {
+        const configRes: ServerResponse<Config> = await serverAPI.callPluginMethod<{}, Config>("retrieve_config", {});
+        configRes.success ? setConfig(configRes.result) : setError(configRes.result);
+    }
 
-      <PanelSectionRow>
-        <div style={{ display: "flex", justifyContent: "center" }}>
-          <img src={logo} />
-        </div>
-      </PanelSectionRow>
+    async function checkInstallation() {
+        const installedRes: ServerResponse<boolean> = await serverAPI.callPluginMethod<{}, boolean>("is_driver_installed", {});
+        if (installedRes.success) {
+            if (installedRes.result) {
+                setInstallationStatus("installed")
+            } else {
+                setInstallationStatus("inProgress")
+                const installDriverRes = await serverAPI.callPluginMethod<{}, boolean>("install_driver", {});
+                if (installDriverRes.success && installDriverRes.result)
+                    setInstallationStatus("installed")
+                else
+                    setError("Error installing the driver, check the logs")
+            }
+        } else {
+            setError(installedRes.result);
+        }
+    }
 
-      <PanelSectionRow>
-        <ButtonItem
-          layout="below"
-          onClick={() => {
-            Router.CloseSideMenus();
-            Router.Navigate("/decky-plugin-test");
-          }}
-        >
-          Router
-        </ButtonItem>
-      </PanelSectionRow>
-    </PanelSection>
-  );
-};
+    async function writeConfig(newConfig: Config) {
+        const res = await serverAPI.callPluginMethod<{ config: Config }, void>("write_config", { config: newConfig });
+        if (!res.success) {
+            setError(res.result);
+            await retrieveConfig();
+        }
+    }
 
-const DeckyPluginRouterTest: VFC = () => {
-  return (
-    <div style={{ marginTop: "50px", color: "white" }}>
-      Hello World!
-      <DialogButton onClick={() => Router.NavigateToLibraryTab()}>
-        Go to Library
-      </DialogButton>
-    </div>
-  );
+    useEffect(() => {
+        if (!config) retrieveConfig().catch((err) => setError(err));
+        if (installationStatus == "checking") checkInstallation().catch((err) => setError(err));
+    });
+
+    const isDisabled = config?.disabled ?? false
+    const useJoystick = config?.use_joystick ?? false
+    const mouseSensitivity = config?.mouse_sensitivity ?? 20
+
+    async function updateConfig(newConfig: Config) {
+        await Promise.all([setConfig(newConfig), writeConfig(newConfig)])
+    }
+
+    return (
+        <PanelSection title="Driver Configuration">
+            {error && <PanelSectionRow
+                style={{backgroundColor: "pink", borderColor: "red", color: "red"}}><BiMessageError/>{error}
+            </PanelSectionRow>}
+            {!error && <Fragment>
+                {installationStatus == "installed" && config &&
+                    <Fragment>
+                        <PanelSectionRow>
+                            <ToggleField checked={!isDisabled}
+                                         label={"Enabled"}
+                                         description={isDisabled && "Disabled: no head-tracking, Air glasses are display-only"}
+                                         onChange={(enabled) => updateConfig({...config, disabled: !enabled})}/>
+                        </PanelSectionRow>
+                        {!isDisabled && <PanelSectionRow>
+                            <ToggleField checked={!useJoystick}
+                                         label={"Mouse mode"}
+                                         description={useJoystick && "Joystick-mode enabled: see Settings/Controller when Air glasses are plugged in"}
+                                         onChange={(useMouse) => updateConfig({
+                                             ...config,
+                                             use_joystick: !useMouse
+                                         })}/>
+                        </PanelSectionRow>}
+                        {!isDisabled && !useJoystick && <PanelSectionRow>
+                            <SliderField value={mouseSensitivity}
+                                         min={5} max={100} showValue={true} notchTicksVisible={true} editableValue={true}
+                                         label={"Mouse sensitivity"}
+                                         onChange={(mouse_sensitivity) => updateConfig({
+                                             ...config,
+                                             mouse_sensitivity
+                                         })}/>
+                        </PanelSectionRow>}
+                    </Fragment>
+                }
+                {(["checking", "inProgess"].includes(installationStatus) || !config) &&
+                    <PanelSectionRow>
+                        <Spinner style={{height: '48px'}}/>
+                        {installationStatus == "inProgress" &&
+                            <span>Installing driver...</span>
+                        }
+                    </PanelSectionRow>
+                }
+
+            </Fragment>}
+        </PanelSection>
+    );
 };
 
 export default definePlugin((serverApi: ServerAPI) => {
-  serverApi.routerHook.addRoute("/decky-plugin-test", DeckyPluginRouterTest, {
-    exact: true,
-  });
-
-  return {
-    title: <div className={staticClasses.Title}>Example Plugin</div>,
-    content: <Content serverAPI={serverApi} />,
-    icon: <FaShip />,
-    onDismount() {
-      serverApi.routerHook.removeRoute("/decky-plugin-test");
-    },
-  };
+    return {
+        title: <div className={staticClasses.Title}>XREAL Air Driver</div>,
+        content: <Content serverAPI={serverApi}/>,
+        icon: <FaGlasses/>
+    };
 });

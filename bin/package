@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+
+# exit when any command fails
+set -e
+
+workspaceFolder=$(pwd)
+workspaceFolderBasename="${workspaceFolder%/}"
+pluginname="${workspaceFolderBasename##*/}"
+
+# Set variables
+version="$1"
+
+if [ -z $version ]; then
+  echo "Usage: $0 version [binaryPath1 [binaryPath2 [...]]]"
+fi
+shift
+binaryPaths=("$@")
+
+pnpm run build
+
+# Create temporary directory
+tmpdir=$(mktemp -d)
+
+# Create plugin directory structure
+mkdir -p "$tmpdir/$pluginname"
+cp -r dist "$tmpdir/$pluginname"
+cp package.json plugin.json main.py README.md LICENSE* "$tmpdir/$pluginname/"
+
+# Copy binaries if provided
+if [ ${#binaryPaths[@]} -gt 0 ]; then
+    mkdir -p "$tmpdir/$pluginname/bin"
+    for binaryPath in "${binaryPaths[@]}"; do
+        cp "$binaryPath" "$tmpdir/$pluginname/bin/"
+    done
+fi
+
+# Create zip file
+zip_name="$pluginname-v$version.zip"
+rm "$zip_name" || true
+(cd "$tmpdir/$pluginname" && zip -r "$OLDPWD/$zip_name" .)
+echo "Created zip file as ${zip_name}"
+
+# Remove temporary directory
+rm -rf "$tmpdir"
+
+if [ -z "${DECK_IP}" ]; then
+  # The environment variable is not set, prompt the user for its value
+  read -p "Enter your Steam Deck's IP address: " deckip
+else
+  # The environment variable is set, assign its value to the variable
+  deckip="${DECK_IP}"
+fi
+
+# Prompt the user for the password
+read -s -p "Enter the password for deck@${deckip}: " password
+
+# Use sshpass and scp to copy the file
+output=$(sshpass -p "$password" scp "$zip_name" deck@"$deckip":/home/deck/Downloads)
+echo "$output"
+
+output=$(sshpass -p "$password" ssh deck@${deckip} "set -e; echo '${password}' | sudo -S chmod -R ug+rw /home/deck/homebrew/; mkdir -p /home/deck/homebrew/pluginloader; mkdir -p /home/deck/homebrew/plugins/$pluginname; rm -rf /home/deck/homebrew/plugins/$pluginname/*; unzip /home/deck/Downloads/$zip_name -d /home/deck/homebrew/plugins/$pluginname; echo '${password}' | sudo -S systemctl restart plugin_loader")
+echo "$output"
+
+if [ $? -ne 0 ]; then
+    echo "An error occurred"
+    exit 1
+fi
+
+echo "Copied and installed!"
+
+# Clear the password variable
+unset password
