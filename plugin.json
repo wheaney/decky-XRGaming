@@ -5,6 +5,6 @@
   "publish": {
     "tags": ["xreal", "root"],
     "description": "XREAL Air head-tracking for all (including non-VR) games.",
-    "image": "https://opengraph.githubassets.com/1/SteamDeckHomebrew/PluginLoader"
+    "image": "https://raw.githubusercontent.com/wheaney/decky-xrealAir/main/assets/store_image.png"
   }
 }

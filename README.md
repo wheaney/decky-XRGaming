@@ -3,7 +3,7 @@
 
 Install and configure the [XREAL Air Linux driver](https://github.com/wheaney/xrealAirLinuxDriver) without having to leave Gaming Mode. Once installed, the driver allows for tracking the head movements as mouse or joystick controller movements, which produces VR-like camera movements in some games.
 
-![XREAL Air Driver](./assets/screenshot.jpg)
+![XREAL Air Driver](./assets/store_image.png)
 
 ## How it works
 
