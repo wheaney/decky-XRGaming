@@ -1,5 +1,4 @@
 import {
-    ButtonItem,
     definePlugin,
     PanelSection,
     PanelSectionRow,
@@ -23,27 +22,25 @@ interface Config {
 
 type InstallationStatus = "checking" | "inProgress" | "installed";
 
-const DEFAULT_CONFIG = {disabled: false, use_joystick: false, mouse_sensitivity: 20}
-
 const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
 
-    const [config, setConfig] = useState<Config>(DEFAULT_CONFIG);
+    const [config, setConfig] = useState<Config>();
     const [installationStatus, setInstallationStatus] = useState<InstallationStatus>("checking");
     const [error, setError] = useState<string>();
 
     async function retrieveConfig() {
-        const configRes: ServerResponse<Config> = await serverAPI!.callPluginMethod<null, Config>("retrieve_config", null);
+        const configRes: ServerResponse<Config> = await serverAPI.callPluginMethod<{}, Config>("retrieve_config", {});
         configRes.success ? setConfig(configRes.result) : setError(configRes.result);
     }
 
     async function checkInstallation() {
-        const installedRes: ServerResponse<boolean> = await serverAPI!.callPluginMethod<null, boolean>("is_driver_installed", null);
+        const installedRes: ServerResponse<boolean> = await serverAPI.callPluginMethod<{}, boolean>("is_driver_installed", {});
         if (installedRes.success) {
             if (installedRes.result) {
                 setInstallationStatus("installed")
             } else {
                 setInstallationStatus("inProgress")
-                const installDriverRes = await serverAPI!.callPluginMethod<null, boolean>("install_driver", null);
+                const installDriverRes = await serverAPI.callPluginMethod<{}, boolean>("install_driver", {});
                 if (installDriverRes.success && installDriverRes.result)
                     setInstallationStatus("installed")
                 else
@@ -54,8 +51,8 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
         }
     }
 
-    async function writeConfig() {
-        const res = await serverAPI!.callPluginMethod<Config, void>("write_config", config);
+    async function writeConfig(newConfig: Config) {
+        const res = await serverAPI.callPluginMethod<{ config: Config }, void>("write_config", { config: newConfig });
         if (!res.success) {
             setError(res.result);
             await retrieveConfig();
@@ -63,39 +60,62 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
     }
 
     useEffect(() => {
-        retrieveConfig().catch((err) => setError(err));
-        checkInstallation().catch((err) => setError(err));
+        if (!config) retrieveConfig().catch((err) => setError(err));
+        if (installationStatus == "checking") checkInstallation().catch((err) => setError(err));
     });
 
+    const isDisabled = config?.disabled ?? false
+    const useJoystick = config?.use_joystick ?? false
+    const mouseSensitivity = config?.mouse_sensitivity ?? 20
+
+    async function updateConfig(newConfig: Config) {
+        await Promise.all([setConfig(newConfig), writeConfig(newConfig)])
+    }
+
     return (
-        <PanelSection title="XREAL Air Driver">
+        <PanelSection title="Driver Configuration">
             {error && <PanelSectionRow
                 style={{backgroundColor: "pink", borderColor: "red", color: "red"}}><BiMessageError/>{error}
             </PanelSectionRow>}
-            {!error && <PanelSectionRow>
+            {!error && <Fragment>
                 {installationStatus == "installed" && config &&
                     <Fragment>
-                        <ToggleField checked={config['disabled']}
-                                     label={"Disable"}
-                                     description={"No head-tracking, Air glasses are display-only"}
-                                     onChange={(disabled) => setConfig({...config, disabled})}/>
-                        <ToggleField checked={config['use_joystick']}
-                                     disabled={config['disabled']} label={"Output as joystick"}
-                                     description={"Defaults to mouse movements"}
-                                     onChange={(use_joystick) => setConfig({...config, use_joystick})}/>
-                        <SliderField value={config['mouse_sensitivity']}
-                                     disabled={config['use_joystick'] || config['disabled']} label={"Mouse Sensitivity"}
-                                     onChange={(mouse_sensitivity) => setConfig({...config, mouse_sensitivity})}/>
-                        <ButtonItem label={"Save"} onClick={writeConfig}/>
+                        <PanelSectionRow>
+                            <ToggleField checked={!isDisabled}
+                                         label={"Enabled"}
+                                         description={isDisabled && "Disabled: no head-tracking, Air glasses are display-only"}
+                                         onChange={(enabled) => updateConfig({...config, disabled: !enabled})}/>
+                        </PanelSectionRow>
+                        {!isDisabled && <PanelSectionRow>
+                            <ToggleField checked={!useJoystick}
+                                         label={"Mouse mode"}
+                                         description={useJoystick && "Joystick-mode enabled: see in Settings/Controller"}
+                                         onChange={(useMouse) => updateConfig({
+                                             ...config,
+                                             use_joystick: !useMouse
+                                         })}/>
+                        </PanelSectionRow>}
+                        {!isDisabled && !useJoystick && <PanelSectionRow>
+                            <SliderField value={mouseSensitivity}
+                                         min={5} max={100} showValue={true} notchTicksVisible={true} editableValue={true}
+                                         label={"Mouse Sensitivity"}
+                                         onChange={(mouse_sensitivity) => updateConfig({
+                                             ...config,
+                                             mouse_sensitivity
+                                         })}/>
+                        </PanelSectionRow>}
                     </Fragment>
                 }
                 {(["checking", "inProgess"].includes(installationStatus) || !config) &&
-                    <Spinner style={{height: '48px'}}/>
+                    <PanelSectionRow>
+                        <Spinner style={{height: '48px'}}/>
+                        {installationStatus == "inProgress" &&
+                            <span>Installing driver...</span>
+                        }
+                    </PanelSectionRow>
                 }
-                {installationStatus == "inProgress" &&
-                    <span>Installing driver...</span>
-                }
-            </PanelSectionRow>}
+
+            </Fragment>}
         </PanelSection>
     );
 };
