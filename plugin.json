@@ -1,7 +1,7 @@
 {
   "name": "XREAL Air Driver",
   "author": "Wayne Heaney",
-  "flags": ["debug", "root"],
+  "flags": ["root"],
   "publish": {
     "tags": ["xreal", "root"],
     "description": "XREAL Air head-tracking for all (including non-VR) games.",
