@@ -4,7 +4,7 @@
   "flags": ["debug", "root"],
   "publish": {
     "tags": ["xreal", "root"],
-    "description": "XREAL Air driver installation and configuration helper",
+    "description": "XREAL Air head-tracking for all (including non-VR) games.",
     "image": "https://opengraph.githubassets.com/1/SteamDeckHomebrew/PluginLoader"
   }
 }
