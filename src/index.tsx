@@ -89,7 +89,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                         {!isDisabled && <PanelSectionRow>
                             <ToggleField checked={!useJoystick}
                                          label={"Mouse mode"}
-                                         description={useJoystick && "Joystick-mode enabled: see in Settings/Controller"}
+                                         description={useJoystick && "Joystick-mode enabled: see Settings/Controller when Air glasses are plugged in"}
                                          onChange={(useMouse) => updateConfig({
                                              ...config,
                                              use_joystick: !useMouse
@@ -98,7 +98,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                         {!isDisabled && !useJoystick && <PanelSectionRow>
                             <SliderField value={mouseSensitivity}
                                          min={5} max={100} showValue={true} notchTicksVisible={true} editableValue={true}
-                                         label={"Mouse Sensitivity"}
+                                         label={"Mouse sensitivity"}
                                          onChange={(mouse_sensitivity) => updateConfig({
                                              ...config,
                                              mouse_sensitivity
