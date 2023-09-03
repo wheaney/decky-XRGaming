@@ -1,6 +1,6 @@
 {
   "name": "decky-xrealAir",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A plugin to install and configure the XREAL Air head-tracking driver",
   "scripts": {
     "build": "shx rm -rf dist && rollup -c",
@@ -53,13 +53,13 @@
   "remote_binary" : [
     {
       "name" : "xreal_driver_setup",
-      "url": "https://github.com/wheaney/xrealAirLinuxDriver/releases/download/0.3.1/xreal_driver_setup",
-      "sha256hash" : "592a2ecf166ac8e315fdf77eca2ec329538e18ffce76156913ce9b6da49782de"
+      "url": "https://github.com/wheaney/xrealAirLinuxDriver/releases/download/0.3.2/xreal_driver_setup",
+      "sha256hash" : "6fc5f6c3967d06b913191a4b6bcca1f99d021e46ed1868a69aa2436744e14c4a"
     },
     {
       "name" : "xrealAirLinuxDriver.tar.gz",
-      "url": "https://github.com/wheaney/xrealAirLinuxDriver/releases/download/0.3.1/xrealAirLinuxDriver.tar.gz",
-      "sha256hash" : "9c9b41e75156062240423e47c59cdfc0990332a2d61c7fde8ec3d1fdf01239ad"
+      "url": "https://github.com/wheaney/xrealAirLinuxDriver/releases/download/0.3.2/xrealAirLinuxDriver.tar.gz",
+      "sha256hash" : "02193b33ad5024af83706ccda4c7e6e6d5a31f5a3395713a4b867ac8fb9f025a"
     }
   ]
 }
