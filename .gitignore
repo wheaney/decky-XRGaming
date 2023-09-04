@@ -56,3 +56,5 @@ out/*
 cli/
 cli/*
 cli/decky
+
+deck.json
