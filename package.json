@@ -1,6 +1,6 @@
 {
   "name": "decky-xrealAir",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A plugin to install and configure the XREAL Air head-tracking driver",
   "scripts": {
     "build": "shx rm -rf dist && rollup -c",
