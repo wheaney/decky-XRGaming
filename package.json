@@ -50,7 +50,7 @@
       ]
     }
   },
-  "remote_binary" : [
+  "custom_remote_binary" : [
     {
       "name" : "xreal_driver_setup",
       "url": "https://github.com/wheaney/xrealAirLinuxDriver/releases/download/0.3.2/xreal_driver_setup",
