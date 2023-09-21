@@ -1,5 +1,5 @@
 # XREAL Air Driver
-[![Chat](https://img.shields.io/badge/chat-on%20discord-7289da.svg)](https://deckbrew.xyz/discord)
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/U7U8OVC0L) [![Chat](https://img.shields.io/badge/chat-on%20discord-7289da.svg)](https://deckbrew.xyz/discord)
 
 Install and configure the [XREAL Air Linux driver](https://github.com/wheaney/xrealAirLinuxDriver) without having to leave Gaming Mode. Once installed, the driver allows for tracking the head movements as mouse or joystick controller movements, which produces VR-like camera movements in some games.
 
