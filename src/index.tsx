@@ -1,26 +1,86 @@
 import {
-    definePlugin,
+    definePlugin, NotchLabel,
     PanelSection,
     PanelSectionRow,
     ServerAPI,
     ServerResponse,
     SliderField,
     Spinner,
-    staticClasses,
-    ToggleField,
+    staticClasses
 } from "decky-frontend-lib";
 // @ts-ignore
 import React, {Fragment, useEffect, useState, VFC} from "react";
 import {FaGlasses} from "react-icons/fa";
 import {BiMessageError} from "react-icons/bi";
+import { QRCodeSVG } from 'qrcode.react';
+import {
+    SiKofi
+} from 'react-icons/si';
 
 interface Config {
     disabled: boolean;
-    use_joystick: boolean;
+    output_mode: OutputMode;
     mouse_sensitivity: number;
+    external_zoom: number;
+    look_ahead: number;
 }
 
 type InstallationStatus = "checking" | "inProgress" | "installed";
+type OutputMode = "mouse" | "joystick" | "external_only"
+type ModeValue = "disabled" | OutputMode
+const ModeValues: ModeValue[] = ['external_only', 'mouse', 'joystick', 'disabled'];
+function modeValueIsOutputMode(value: ModeValue): value is OutputMode {
+    return value != "disabled"
+}
+
+const ModeNotchLabels: NotchLabel[] = [
+    {
+        label: "Virtual display",
+        notchIndex: 0
+    },
+    {
+        label: "Mouse",
+        notchIndex: 1
+    },
+    {
+        label: "Joystick",
+        notchIndex: 2
+    },
+    {
+        label: "Disabled",
+        notchIndex: 3
+    },
+];
+
+const ZoomNotchLabels: NotchLabel[] = [
+    {
+        label: "Smallest",
+        notchIndex: 0
+    },
+    {
+        label: "1",
+        notchIndex: 3
+    },
+    {
+        label: "Biggest",
+        notchIndex: 9
+    }
+];
+
+const LookAheadNotchLabels: NotchLabel[] = [
+    {
+        label: "Default",
+        notchIndex: 0
+    },
+    {
+        label: "Min",
+        notchIndex: 1
+    },
+    {
+        label: "Max",
+        notchIndex: 5
+    }
+];
 
 const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
 
@@ -65,15 +125,17 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
     });
 
     const isDisabled = config?.disabled ?? false
-    const useJoystick = config?.use_joystick ?? false
+    const outputMode = config?.output_mode ?? 'mouse'
     const mouseSensitivity = config?.mouse_sensitivity ?? 20
+    const lookAhead = config?.look_ahead ?? 0
+    const externalZoom = config?.external_zoom ?? 1
 
     async function updateConfig(newConfig: Config) {
         await Promise.all([setConfig(newConfig), writeConfig(newConfig)])
     }
 
     return (
-        <PanelSection title="Driver Configuration">
+        <PanelSection>
             {error && <PanelSectionRow
                 style={{backgroundColor: "pink", borderColor: "red", color: "red"}}><BiMessageError/>{error}
             </PanelSectionRow>}
@@ -81,36 +143,85 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                 {installationStatus == "installed" && config &&
                     <Fragment>
                         <PanelSectionRow>
-                            <ToggleField checked={!isDisabled}
-                                         label={"Enabled"}
-                                         description={isDisabled && "Disabled: no head-tracking, Air glasses are display-only"}
-                                         onChange={(enabled) => updateConfig({...config, disabled: !enabled})}/>
+                            <SliderField label={"Headset mode"}
+                                         value={isDisabled ? ModeValues.indexOf('disabled') : ModeValues.indexOf(outputMode)}
+                                         notchTicksVisible={true}
+                                         min={0} max={ModeValues.length-1}
+                                         notchLabels={ModeNotchLabels}
+                                         notchCount={ModeValues.length}
+                                         onChange={(newMode) => {
+                                             const newValue = ModeValues[newMode]
+                                             if (modeValueIsOutputMode(newValue)) {
+                                                 updateConfig({
+                                                     ...config,
+                                                     output_mode: newValue,
+                                                     disabled: false
+                                                 }).catch(e => setError(e))
+                                             } else {
+                                                 updateConfig({
+                                                     ...config,
+                                                     disabled: true
+                                                 }).catch(e => setError(e))
+                                             }
+                                         }}
+                            />
                         </PanelSectionRow>
-                        {!isDisabled && <PanelSectionRow>
-                            <ToggleField checked={!useJoystick}
-                                         label={"Mouse mode"}
-                                         description={useJoystick && "Joystick-mode enabled: see Settings/Controller when Air glasses are plugged in"}
-                                         onChange={(useMouse) => updateConfig({
-                                             ...config,
-                                             use_joystick: !useMouse
-                                         })}/>
-                        </PanelSectionRow>}
-                        {!isDisabled && !useJoystick && <PanelSectionRow>
+                        {!isDisabled && config.output_mode == "mouse" && <PanelSectionRow>
                             <SliderField value={mouseSensitivity}
-                                         min={5} max={100} showValue={true} notchTicksVisible={true} editableValue={true}
+                                         min={5} max={100} showValue={true} notchTicksVisible={true}
                                          label={"Mouse sensitivity"}
                                          onChange={(mouse_sensitivity) => updateConfig({
                                              ...config,
                                              mouse_sensitivity
                                          })}/>
                         </PanelSectionRow>}
+                        {!isDisabled && config.output_mode == "external_only" && <Fragment>
+                            <PanelSectionRow>
+                                <SliderField value={externalZoom}
+                                             min={0.25} max={2.5}
+                                             notchCount={10}
+                                             notchLabels={ZoomNotchLabels}
+                                             label={"Display size"}
+                                             step={0.25}
+                                             editableValue={true}
+                                             onChange={(external_zoom) => updateConfig({
+                                                 ...config,
+                                                 external_zoom
+                                             })}/>
+                            </PanelSectionRow>
+                            <PanelSectionRow>
+                                <SliderField value={lookAhead}
+                                             min={0} max={50} notchTicksVisible={true}
+                                             notchCount={6} notchLabels={LookAheadNotchLabels}
+                                             step={10}
+                                             label={"Movement look-ahead"}
+                                             description={lookAhead > 0 ? "Use Default unless screen is noticeably ahead or behind your movements. May introduce jitter at higher values." : undefined}
+                                             onChange={(look_ahead) => updateConfig({
+                                                 ...config,
+                                                 look_ahead
+                                             })}/>
+                            </PanelSectionRow>
+                        </Fragment>}
+                        <PanelSectionRow style={{display: "flex", justifyContent: "space-around", alignItems: "center"}}>
+                            <p style={{textAlign: "center"}}>
+                                Want more stuff like this?<br/>
+                                Become a <SiKofi style={{position: 'relative', top: '3px'}} color={"red"} /> supporter!
+                            </p>
+                            <p style={{textAlign: "center"}}>
+                                <QRCodeSVG value={"https://ko-fi.com/wheaney"}
+                                           size={110}
+                                           bgColor={"#06111e"}
+                                           fgColor={"#ffffff"}
+                                />
+                            </p>
+                        </PanelSectionRow>
                     </Fragment>
                 }
                 {(["checking", "inProgess"].includes(installationStatus) || !config) &&
                     <PanelSectionRow>
                         <Spinner style={{height: '48px'}}/>
                         {installationStatus == "inProgress" &&
-                            <span>Installing driver...</span>
+                            <span>Installing...</span>
                         }
                     </PanelSectionRow>
                 }
@@ -122,7 +233,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
 
 export default definePlugin((serverApi: ServerAPI) => {
     return {
-        title: <div className={staticClasses.Title}>XREAL Air Driver</div>,
+        title: <div className={staticClasses.Title}>XREAL Air Gaming</div>,
         content: <Content serverAPI={serverApi}/>,
         icon: <FaGlasses/>
     };

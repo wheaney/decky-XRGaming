@@ -1,7 +1,7 @@
 {
   "name": "decky-xrealAir",
   "version": "0.1.2",
-  "description": "A plugin to install and configure the XREAL Air head-tracking driver",
+  "description": "Virtual display and head-tracking modes for the XREAL Air glasses",
   "scripts": {
     "build": "shx rm -rf dist && rollup -c",
     "watch": "rollup -c -w",
@@ -40,6 +40,7 @@
   },
   "dependencies": {
     "decky-frontend-lib": "^3.21.1",
+    "qrcode.react": "^3.1.0",
     "react-icons": "^4.4.0"
   },
   "pnpm": {
@@ -50,16 +51,16 @@
       ]
     }
   },
-  "custom_remote_binary" : [
+  "custom_remote_binary": [
     {
-      "name" : "xreal_driver_setup",
-      "url": "https://github.com/wheaney/xrealAirLinuxDriver/releases/download/0.3.2/xreal_driver_setup",
-      "sha256hash" : "6fc5f6c3967d06b913191a4b6bcca1f99d021e46ed1868a69aa2436744e14c4a"
+      "name": "breezy_vulkan_setup",
+      "url": "https://github.com/wheaney/breezy-desktop/releases/download/v0.0.10-alpha/breezy_vulkan_setup",
+      "sha256hash": "6d4c4d0cf4d88f05e5dab19b1c4a50378c6f712f31f48e50ae542e150892e5e3"
     },
     {
-      "name" : "xrealAirLinuxDriver.tar.gz",
-      "url": "https://github.com/wheaney/xrealAirLinuxDriver/releases/download/0.3.2/xrealAirLinuxDriver.tar.gz",
-      "sha256hash" : "02193b33ad5024af83706ccda4c7e6e6d5a31f5a3395713a4b867ac8fb9f025a"
+      "name": "breezyVulkan.tar.gz",
+      "url": "https://github.com/wheaney/breezy-desktop/releases/download/v0.0.10-alpha/breezyVulkan.tar.gz",
+      "sha256hash": "ced40c712d8d031d82629bcaa9f54d86a11206d20917d84e1ac2fcd95d2d67f8"
     }
   ]
 }
