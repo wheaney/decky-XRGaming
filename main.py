@@ -25,10 +25,16 @@ def parse_boolean(value, default):
 def parse_int(value, default):
     return int(value) if value.isdigit() else default
 
+def parse_float(value, default):
+    try:
+        return float(value)
+    except ValueError:
+        return default
+
+
 
 class Plugin:
     async def retrieve_config(self):
-        decky_plugin.logger.info(f"retrieve_config called")
 
         config = {}
         config['disabled'] = False
@@ -40,20 +46,24 @@ class Plugin:
         try:
             with open(CONFIG_FILE_PATH, 'r') as f:
                 for line in f:
-                    key, value = line.strip().split('=')
-                    if key in ['disabled']:
-                        config[key] = parse_boolean(value, config[key])
-                    elif key in ['mouse_sensitivity', 'external_zoom', 'look_ahead']:
-                        config[key] = parse_int(value, config[key])
-                    else:
-                        config[key] = value
+                    try:
+                        key, value = line.strip().split('=')
+                        if key in ['disabled']:
+                            config[key] = parse_boolean(value, config[key])
+                        elif key in ['mouse_sensitivity', 'look_ahead']:
+                            config[key] = parse_int(value, config[key])
+                        elif key in ['external_zoom']:
+                            config[key] = parse_float(value, config[key])
+                        else:
+                            config[key] = value
+                    except Exception as e:
+                        print(f"Error parsing key-value pair {key}={value}: {e}")
         except FileNotFoundError:
             pass
 
         return config
 
     async def write_config(self, config):
-        decky_plugin.logger.info(f"write_config called with {config}")
         output = ""
         for key, value in config.items():
             if key != "updated":

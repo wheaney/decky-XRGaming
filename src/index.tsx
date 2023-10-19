@@ -205,7 +205,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                         <PanelSectionRow style={{display: "flex", justifyContent: "space-around", alignItems: "center"}}>
                             <p style={{textAlign: "center"}}>
                                 Want more stuff like this?<br/>
-                                Become a <SiKofi style={{position: 'relative', top: '3px'}} color={"red"} /> supporter!
+                                <span style={{fontWeight: "bold"}}>Become a <SiKofi style={{position: 'relative', top: '3px'}} color={"red"} /> supporter!</span>
                             </p>
                             <p style={{textAlign: "center"}}>
                                 <QRCodeSVG value={"https://ko-fi.com/wheaney"}
