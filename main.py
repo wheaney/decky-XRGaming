@@ -28,35 +28,52 @@ def parse_int(value, default):
 
 class Plugin:
     async def retrieve_config(self):
+        decky_plugin.logger.info(f"retrieve_config called")
+
         config = {}
         config['disabled'] = False
-        config['use_joystick'] = False
+        config['output_mode'] = 'mouse'
         config['mouse_sensitivity'] = 20
+        config['external_zoom'] = 1
+        config['look_ahead'] = 0
 
         try:
             with open(CONFIG_FILE_PATH, 'r') as f:
                 for line in f:
                     key, value = line.strip().split('=')
-                    if key in ['disabled', 'use_joystick']:
+                    if key in ['disabled']:
                         config[key] = parse_boolean(value, config[key])
-                    elif key == 'mouse_sensitivity':
+                    elif key in ['mouse_sensitivity', 'external_zoom', 'look_ahead']:
                         config[key] = parse_int(value, config[key])
+                    else:
+                        config[key] = value
         except FileNotFoundError:
             pass
 
         return config
 
     async def write_config(self, config):
-        with open(CONFIG_FILE_PATH, 'w') as f:
-            for key, value in config.items():
+        decky_plugin.logger.info(f"write_config called with {config}")
+        output = ""
+        for key, value in config.items():
+            if key != "updated":
                 if isinstance(value, bool):
-                    f.write(f'{key}={str(value).lower()}\n')
+                    output += f'{key}={str(value).lower()}\n'
                 elif isinstance(value, int):
-                    f.write(f'{key}={value}\n')
+                    output += f'{key}={value}\n'
                 elif isinstance(value, list):
-                    f.write(f'{key}={",".join(value)}\n')
+                    output += f'{key}={",".join(value)}\n'
                 else:
-                    f.write(f'{key}={value}\n')
+                    output += f'{key}={value}\n'
+
+        temp_file = "temp.txt"
+
+        # Write to a temporary file
+        with open(temp_file, 'w') as f:
+            f.write(output)
+
+        # Atomically replace the old config file with the new one
+        os.replace(temp_file, CONFIG_FILE_PATH)
 
     async def is_driver_installed(self):
         try:
@@ -76,8 +93,8 @@ class Plugin:
         env_copy = os.environ.copy()
         env_copy["USER"] = decky_plugin.DECKY_USER
 
-        setup_script_path = os.path.dirname(__file__) + "/bin/xreal_driver_setup"
-        binary_path = os.path.dirname(__file__) + "/bin/xrealAirLinuxDriver.tar.gz"
+        setup_script_path = os.path.dirname(__file__) + "/bin/breezy_vulkan_setup"
+        binary_path = os.path.dirname(__file__) + "/bin/breezyVulkan.tar.gz"
         try:
             subprocess.check_output([setup_script_path, binary_path], stderr=subprocess.STDOUT, env=env_copy)
             settings.setSetting(INSTALLED_VERSION_SETTING_KEY, decky_plugin.DECKY_PLUGIN_VERSION)
