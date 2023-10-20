@@ -12,10 +12,10 @@ import {
 import React, {Fragment, useEffect, useState, VFC} from "react";
 import {FaGlasses} from "react-icons/fa";
 import {BiMessageError} from "react-icons/bi";
-import { QRCodeSVG } from 'qrcode.react';
 import {
     SiKofi
 } from 'react-icons/si';
+import QrButton from "./QrButton";
 
 interface Config {
     disabled: boolean;
@@ -202,19 +202,10 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                                              })}/>
                             </PanelSectionRow>
                         </Fragment>}
-                        <PanelSectionRow style={{display: "flex", justifyContent: "space-around", alignItems: "center"}}>
-                            <p style={{textAlign: "center"}}>
-                                Want more stuff like this?<br/>
-                                <span style={{fontWeight: "bold"}}>Become a <SiKofi style={{position: 'relative', top: '3px'}} color={"red"} /> supporter!</span>
-                            </p>
-                            <p style={{textAlign: "center"}}>
-                                <QRCodeSVG value={"https://ko-fi.com/wheaney"}
-                                           size={110}
-                                           bgColor={"#06111e"}
-                                           fgColor={"#ffffff"}
-                                />
-                            </p>
-                        </PanelSectionRow>
+                        <QrButton icon={<SiKofi />} url={"https://ko-fi.com/wheaney"}>
+                            Want more stuff like this?<br/>
+                            <span style={{fontWeight: "bold"}}>Become a <SiKofi style={{position: 'relative', top: '3px'}} color={"red"} /> supporter!</span>
+                        </QrButton>
                     </Fragment>
                 }
                 {(["checking", "inProgess"].includes(installationStatus) || !config) &&
