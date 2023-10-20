@@ -182,7 +182,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                                              notchCount={10}
                                              notchLabels={ZoomNotchLabels}
                                              label={"Display size"}
-                                             step={0.25}
+                                             step={0.05}
                                              editableValue={true}
                                              onChange={(external_zoom) => updateConfig({
                                                  ...config,

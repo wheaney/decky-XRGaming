@@ -1,6 +1,6 @@
 {
   "name": "decky-xrealAir",
-  "version": "0.1.2",
+  "version": "0.2.2",
   "description": "Virtual display and head-tracking modes for the XREAL Air glasses",
   "scripts": {
     "build": "shx rm -rf dist && rollup -c",
@@ -54,13 +54,13 @@
   "custom_remote_binary": [
     {
       "name": "breezy_vulkan_setup",
-      "url": "https://github.com/wheaney/breezy-desktop/releases/download/v0.0.10-alpha/breezy_vulkan_setup",
+      "url": "https://github.com/wheaney/breezy-desktop/releases/download/v0.0.11-alpha/breezy_vulkan_setup",
       "sha256hash": "6d4c4d0cf4d88f05e5dab19b1c4a50378c6f712f31f48e50ae542e150892e5e3"
     },
     {
       "name": "breezyVulkan.tar.gz",
-      "url": "https://github.com/wheaney/breezy-desktop/releases/download/v0.0.10-alpha/breezyVulkan.tar.gz",
-      "sha256hash": "ced40c712d8d031d82629bcaa9f54d86a11206d20917d84e1ac2fcd95d2d67f8"
+      "url": "https://github.com/wheaney/breezy-desktop/releases/download/v0.0.11-alpha/breezyVulkan.tar.gz",
+      "sha256hash": "e93842593756b99f2bf8a446b738d287fb69a9a2cefbb3cde71ffda597c53fe8"
     }
   ]
 }
