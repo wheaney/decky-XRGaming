@@ -13,10 +13,9 @@ import showQrModal from "./showQrModal";
 const QrButton: FC<{
     icon: ReactNode;
     url: string;
-}> = ({ icon, children, url }) => (
-    <PanelSectionRow>
+}> = ({ icon, children, url }) => {
+    return <PanelSectionRow>
         <Field
-            bottomSeparator="none"
             icon={null}
             label={null}
             childrenLayout={undefined}
@@ -25,12 +24,11 @@ const QrButton: FC<{
             spacingBetweenLabelAndChild="none"
             childrenContainerWidth="max"
         >
-            <Focusable style={{ display: 'flex', justifyContent: 'space-between', }}>
+            <Focusable style={{display: 'flex', justifyContent: 'space-between'}}>
                 <div
                     style={{
-                        display: 'flex',
-                        fontSize: 'small',
-                        alignItems: 'center',
+                        textAlign: 'center',
+                        alignSelf: 'center',
                         marginRight: '.5em',
                         flexGrow: 1
                     }}
@@ -57,6 +55,6 @@ const QrButton: FC<{
             </Focusable>
         </Field>
     </PanelSectionRow>
-);
+};
 
 export default QrButton;
