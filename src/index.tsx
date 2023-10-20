@@ -12,9 +12,8 @@ import {
 import React, {Fragment, useEffect, useState, VFC} from "react";
 import {FaGlasses} from "react-icons/fa";
 import {BiMessageError} from "react-icons/bi";
-import {
-    SiKofi
-} from 'react-icons/si';
+import {SiKofi} from 'react-icons/si';
+import {MdOutlineHelpCenter} from 'react-icons/md';
 import QrButton from "./QrButton";
 
 interface Config {
@@ -202,9 +201,22 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                                              })}/>
                             </PanelSectionRow>
                         </Fragment>}
+                        {!isDisabled && config.output_mode == "external_only" &&
+                            <QrButton icon={<MdOutlineHelpCenter />}
+                                      url={"https://github.com/wheaney/decky-xrealAir/tree/breezy_vulkan#virtual-display-help"}>
+                                <span style={{fontSize: 'large'}}><span style={{
+                                    fontWeight: 'bold',
+                                    background: 'linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet)',
+                                    WebkitBackgroundClip: 'text',
+                                    color: 'transparent'
+                                }}>Virtual display</span> help</span>
+                            </QrButton>
+                        }
                         <QrButton icon={<SiKofi />} url={"https://ko-fi.com/wheaney"}>
-                            Want more stuff like this?<br/>
-                            <span style={{fontWeight: "bold"}}>Become a <SiKofi style={{position: 'relative', top: '3px'}} color={"red"} /> supporter!</span>
+                            <span style={{fontSize: 'small'}}>
+                                Want more great stuff like this?<br/>
+                                <b>Become a <SiKofi style={{position: 'relative', top: '3px'}} color={"red"} /> supporter!</b>
+                            </span>
                         </QrButton>
                     </Fragment>
                 }
