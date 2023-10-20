@@ -1,4 +1,5 @@
 import os
+import stat
 import subprocess
 
 # The decky plugin module is located at decky-loader/plugin
@@ -35,7 +36,6 @@ def parse_float(value, default):
 
 class Plugin:
     async def retrieve_config(self):
-
         config = {}
         config['disabled'] = False
         config['output_mode'] = 'mouse'
@@ -84,6 +84,7 @@ class Plugin:
 
         # Atomically replace the old config file with the new one
         os.replace(temp_file, CONFIG_FILE_PATH)
+        os.chmod(CONFIG_FILE_PATH, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IROTH | stat.S_IWOTH)
 
     async def is_driver_installed(self):
         try:
