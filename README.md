@@ -29,12 +29,14 @@ Virtual display mode is intended to mimic how we play games in real life: we pla
 
 ### Why isn't it working?
 Virtual display mode only works under certain conditions. Double-check the following:
-* Your glasses are plugged into your Steam Deck and displaying content when games aren't running. 
-  * Sometimes the display on the glasses will turn off as the battery level goes down. Try lowering your TDP wattage setting in the Performance panel to get more play time.
-* You've selected the "Virtual display" headset mode in the plugin settings
-* You're playing a Vulkan game
-* You aren't looking away from your screen (due to changing positions or screen drift); try re-centering your screen (see below)
-* The game isn't running through another launcher (e.g. Heroic launcher may need additional configuration)
+* Are your glasses plugged into your Steam Deck? Are they displaying content when games aren't running? 
+  * Sometimes the display on the glasses will turn off as the battery level goes down. You can verify this by hitting the `Steam` or `...` buttons, since the Game Mode menus display no matter where the virtual screen is. If the glasses have powered down, try lowering your TDP wattage setting in the Performance panel to get more play time.
+* Have you selected the "Virtual display" headset mode in the plugin settings? Mouse, joystick, and disabled settings will all disable the virtual display.
+* Are you playing a Vulkan game? Currently only Vulkan is supported.
+* Is your game running locally (not streaming over Moonlight, Steam Link, etc...)? Remote gaming is probably a no-go for now.
+* Is your screen somewhere else in the room (e.g. due to changing positions or screen drift)? Maybe try re-centering your screen (see below).
+* Is the game running directly in Steam and not through another launcher? Heroic launcher, for example, may need additional configuration to work, even with Vulkan games.
+  * Try your games before writing them off, as many launchers still work.
 
 ### I don't like where the screen was placed, or it has drifted from where it was.
 You'll want to use the multi-tap functionality built into this driver. **Note: XREAL did NOT build this feature and has NOT condoned this practice; tap on your glasses at your own risk.**
