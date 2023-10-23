@@ -77,7 +77,7 @@ Upcoming features:
 
 ## Decky Loader
 
-This plugin requires [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader). XREAL Air Driver is available on the store.
+This plugin requires [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader). XREAL Air Gaming is available on the store.
 
 ## Steam Deck Homebrew Discord
 [![Chat](https://img.shields.io/badge/chat-on%20discord-7289da.svg)](https://deckbrew.xyz/discord)
