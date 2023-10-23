@@ -3,17 +3,22 @@ import {
     DialogButton,
     Field,
     Focusable,
+    Navigation,
 } from 'decky-frontend-lib';
 import { FC, ReactNode } from 'react';
 import showQrModal from "./showQrModal";
 
-/**
- * Panel row with a button next to an icon.
- */
+const navLink = (url: string) => {
+    Navigation.CloseSideMenus();
+    Navigation.NavigateToExternalWeb(url);
+};
+
 const QrButton: FC<{
     icon: ReactNode;
     url: string;
-}> = ({ icon, children, url }) => {
+    followLink?: boolean;
+}> = ({ icon, children, url, followLink }) => {
+    const clickAction = followLink ? () => navLink(url) : () => showQrModal(url);
     return <PanelSectionRow>
         <Field
             icon={null}
@@ -36,8 +41,8 @@ const QrButton: FC<{
                     {children}
                 </div>
                 <DialogButton
-                    onOKActionDescription={'Show Link QR'}
-                    onClick={() => showQrModal(url)}
+                    onOKActionDescription={followLink ? 'Follow Link' : 'Show Link QR'}
+                    onClick={clickAction}
                     style={{
                         flexShrink: 0,
                         alignSelf: 'center',

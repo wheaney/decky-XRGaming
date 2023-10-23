@@ -13,7 +13,7 @@ import React, {Fragment, useEffect, useState, VFC} from "react";
 import {FaGlasses} from "react-icons/fa";
 import {BiMessageError} from "react-icons/bi";
 import {SiKofi} from 'react-icons/si';
-import {MdOutlineHelpCenter} from 'react-icons/md';
+import {LuHelpCircle} from 'react-icons/lu';
 import QrButton from "./QrButton";
 
 interface Config {
@@ -202,8 +202,10 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                             </PanelSectionRow>
                         </Fragment>}
                         {!isDisabled && config.output_mode == "external_only" &&
-                            <QrButton icon={<MdOutlineHelpCenter />}
-                                      url={"https://github.com/wheaney/decky-xrealAir#virtual-display-help"}>
+                            <QrButton icon={<LuHelpCircle />}
+                                      url={"https://github.com/wheaney/decky-xrealAir#virtual-display-help"}
+                                      followLink={true}
+                            >
                                 <span style={{fontSize: 'large'}}><span style={{
                                     fontWeight: 'bold',
                                     background: 'linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet)',
