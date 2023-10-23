@@ -203,7 +203,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                         </Fragment>}
                         {!isDisabled && config.output_mode == "external_only" &&
                             <QrButton icon={<MdOutlineHelpCenter />}
-                                      url={"https://github.com/wheaney/decky-xrealAir/tree/breezy_vulkan#virtual-display-help"}>
+                                      url={"https://github.com/wheaney/decky-xrealAir#virtual-display-help"}>
                                 <span style={{fontSize: 'large'}}><span style={{
                                     fontWeight: 'bold',
                                     background: 'linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet)',
