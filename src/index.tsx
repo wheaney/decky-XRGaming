@@ -77,7 +77,7 @@ const LookAheadNotchLabels: NotchLabel[] = [
     },
     {
         label: "Max",
-        notchIndex: 5
+        notchIndex: 6
     }
 ];
 
@@ -190,9 +190,9 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                             </PanelSectionRow>
                             <PanelSectionRow>
                                 <SliderField value={lookAhead}
-                                             min={0} max={50} notchTicksVisible={true}
-                                             notchCount={6} notchLabels={LookAheadNotchLabels}
-                                             step={10}
+                                             min={0} max={30} notchTicksVisible={true}
+                                             notchCount={7} notchLabels={LookAheadNotchLabels}
+                                             step={5}
                                              label={"Movement look-ahead"}
                                              description={lookAhead > 0 ? "Use Default unless screen is noticeably ahead or behind your movements. May introduce jitter at higher values." : undefined}
                                              onChange={(look_ahead) => updateConfig({
@@ -238,7 +238,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
 
 export default definePlugin((serverApi: ServerAPI) => {
     return {
-        title: <div className={staticClasses.Title}>XREAL Air Gaming</div>,
+        title: <div className={staticClasses.Title}>XREAL Air Driver</div>,
         content: <Content serverAPI={serverApi}/>,
         icon: <FaGlasses/>
     };

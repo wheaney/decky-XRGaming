@@ -1,11 +1,11 @@
-# XREAL Air Gaming
+# XREAL Air Driver
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/U7U8OVC0L) [![Chat](https://img.shields.io/badge/chat-on%20discord-7289da.svg)](https://deckbrew.xyz/discord)
 
 This plugin provides virtual display and head-tracking modes for the XREAL Air glasses by installing [Breezy Vulkan](https://github.com/wheaney/breezy-desktop/tree/vulkan). It also provides a UI for easily changing common configurations. All without leaving Game Mode.
 
 For the moment, virtual display support only works for Vulkan games. See what's [in the works](#upcoming-features).
 
-![XREAL Air Gaming plugin](./assets/store_image.png)
+![XREAL Air Driver plugin](./assets/store_image.png)
 
 ## How it works
 
@@ -77,7 +77,7 @@ Upcoming features:
 
 ## Decky Loader
 
-This plugin requires [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader). XREAL Air Gaming is available on the store.
+This plugin requires [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader). XREAL Air Driver is available on the store.
 
 ## Steam Deck Homebrew Discord
 [![Chat](https://img.shields.io/badge/chat-on%20discord-7289da.svg)](https://deckbrew.xyz/discord)
