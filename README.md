@@ -22,7 +22,7 @@ From the plugin settings, you can control the following:
 
 ## Virtual display help
 
-* [What does virtual display mode do?](what-does-virtual-display-mode-do)
+* [What does virtual display mode do?](#what-does-virtual-display-mode-do)
 * [Why isn't it working?](#why-isnt-it-working)
 * [I don't like where the screen was placed, or it has drifted from where it was.](#i-dont-like-where-the-screen-was-placed-or-it-has-drifted-from-where-it-was)
 * [The screen flickers a lot when I move.](#the-screen-flickers-a-lot-when-i-move)
