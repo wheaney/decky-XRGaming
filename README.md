@@ -22,6 +22,14 @@ From the plugin settings, you can control the following:
 
 ## Virtual display help
 
+* [What does virtual display mode do?](what-does-virtual-display-mode-do)
+* [Why isn't it working?](#why-isnt-it-working)
+* [I don't like where the screen was placed, or it has drifted from where it was.](#i-dont-like-where-the-screen-was-placed-or-it-has-drifted-from-where-it-was)
+* [The screen flickers a lot when I move.](#the-screen-flickers-a-lot-when-i-move)
+* [I can see the screen shaking when I'm sitting still.](#i-can-see-the-screen-shaking-when-im-sitting-still)
+* [The screen lags behind my head movements.](#the-screen-lags-behind-my-head-movements)
+* [My screen is small when the display size is set to "1", or is using a lower resolution than my glasses.](#my-screen-is-small-when-the-display-size-is-set-to-1-or-is-using-a-lower-resolution-than-my-glasses)
+
 ### What does virtual display mode do?
 Typically, when you plug your glasses directly into the Steam Deck, you get a screen that stretches to fill your glasses entirely. And since that image is always centered in your lenses, no matter how you move your head, it will always remain centered in your vision. This forces you to look around the screen using only eye movements, which can be tiring on the eyes, and blurring on the edges of the screen means you can't always easily read content that's not near the center.
 
@@ -73,6 +81,7 @@ Upcoming features:
 * 3D SBS content virtual display support: render 3D content in a body-anchor display.
 * Virtual display for all of Game Mode, not just Vulkan games.
 * General Linux virtual display support for productivity.
+* Sideview and smooth follow modes?
 * Other XR hardware (Rokid, etc...)
 
 ## Decky Loader
