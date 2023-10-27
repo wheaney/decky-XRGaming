@@ -37,14 +37,14 @@ Virtual display mode is intended to mimic how we play games in real life: we pla
 
 ### Why isn't it working?
 Virtual display mode only works under certain conditions. Double-check the following:
-* Are you using the original XREAL or NREAL Air glasses? Air 2 and Pro models aren't supported, nor are models from other brands, but hopefully one day this will include a wider range of devices. See the [upcoming features](#upcoming-features) section.
-* Are your glasses plugged into your Steam Deck? Are they displaying content when games aren't running? 
+* Are you **using the original XREAL or NREAL Air glasses**? Air 2 and Pro models aren't supported, nor are models from other brands, but hopefully one day this will include a wider range of devices. See the [upcoming features](#upcoming-features) section.
+* Are your **glasses plugged into your Steam Deck**? Are they **displaying content when games aren't running**? 
   * Sometimes the display on the glasses will turn off as the battery level goes down. You can verify this by hitting the `Steam` or `...` buttons, since the Game Mode menus display no matter where the virtual screen is. If the glasses have powered down, try lowering your TDP wattage setting in the Performance panel to get more play time.
-* Have you selected the "Virtual display" headset mode in the plugin settings? Mouse, joystick, and disabled settings will all disable the virtual display.
-* Are you playing a Vulkan game? Currently only Vulkan is supported.
-* Is your game running locally (not streaming over Moonlight, Steam Link, etc...)? Remote gaming is probably a no-go for now.
-* Is your screen somewhere else in the room (e.g. due to changing positions or screen drift)? Maybe try re-centering your screen (see below).
-* Is the game running directly in Steam and not through another launcher? Heroic launcher, for example, may need additional configuration to work, even with Vulkan games.
+* Have you **selected the "Virtual display" headset mode** in the plugin settings? Mouse, joystick, and disabled settings will all disable the virtual display.
+* Are you **playing a Vulkan game**? Currently only Vulkan is supported.
+* Is your **game running locally** (not streaming over Moonlight, Steam Link, etc...)? Remote gaming is probably a no-go for now.
+* Is your **screen not fixed somewhere else** in the room (e.g. due to changing positions or screen drift)? Maybe try re-centering your screen (see below).
+* Is the game running in Steam and **not through an app installed via Flatpak**? Heroic launcher's Flatpak install, for example, may require extra setup or may not work at all.
   * Try your games before writing them off, as many launchers still work.
 
 ### I don't like where the screen was placed, or it has drifted from where it was.
