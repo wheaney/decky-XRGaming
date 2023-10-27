@@ -84,6 +84,10 @@ Upcoming features:
 * Sideview and smooth follow modes?
 * Other XR hardware (Rokid, etc...)
 
+### Uninstalling
+
+If you wish to completely remove the installation, run the following: `sudo ~/bin/breezy_vulkan_uninstall`. For Steam Deck users, you can uninstall the plugin via the Decky interface, but you'll still need to manually run the terminal command from Desktop Mode to complete the uninstall until [this Decky feature request](https://github.com/SteamDeckHomebrew/decky-loader/issues/536) is addressed.
+
 ## Decky Loader
 
 This plugin requires [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader). XREAL Air Driver is available on the store.
