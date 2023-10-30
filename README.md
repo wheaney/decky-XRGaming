@@ -49,7 +49,6 @@ Virtual display mode only works under certain conditions. Double-check the follo
 * Is your **screen not fixed somewhere else** in the room (e.g. due to changing positions or screen drift)? Maybe try re-centering your screen (see below).
 * Is the game running in Steam and **not through an app installed via Flatpak**? Heroic launcher's Flatpak install, for example, may require extra setup or may not work at all.
   * Try your games before writing them off, as many launchers still work.
-* Are you **running on a Linux PC that is NOT a Steam Deck**? You'll need to set the `ENABLE_VKBASALT` environment variable to `1`. You'll either need to set this globally to enable it for all games, or set it as a launch option for individual games (e.g. in Steam's Launch Options field `ENABLE_VKBASALT=1 %command%`).
 
 ### I don't like where the screen was placed, or it has drifted from where it was.
 You'll want to use the multi-tap functionality built into this driver. **Note: XREAL did NOT build this feature and has NOT condoned this practice; tap on your glasses at your own risk.**
