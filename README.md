@@ -15,7 +15,7 @@ This plugin installs and keeps you up-to-date with the latest version of Breezy.
 
 From the plugin settings, you can control the following:
 * **Enable/disable the driver**. When disabled, your Air glasses will be display-only, no head movements will be tracked.
-* **Change headset modes**. In virtual display mode, a display will be rendered in a fixed space, allowing you to move your head to look at different parts of the screen. In mouse-mode, head movements are translated to mouse movements, while in joystick-mode, they're translated to right-joystick movements on a virtual controller.
+* **Change headset modes**. In [virtual display mode](#virtual-display-help), a display will be rendered in a fixed space, allowing you to move your head to look at different parts of the screen. In [mouse-mode](#mouse-mode), head movements are translated to mouse movements, while in joystick-mode, they're translated to right-joystick movements on a virtual controller (use this as [a fallback option](#enable-joystick-mode) if mouse mode doesn't work).
 * **Mouse sensitivity**. In mouse-mode, this setting controls how much/quickly the mouse will move relative to your head movements.
 * **Display size**. In virtual display mode, this setting controls how big the screen appears. A setting of 1 will render at the game's resolution, while a higher setting zooms in (e.g. 2 for 2x zoom) and lower zooms out (e.g. 0.5 for a 50% smaller screen). 
 * **Movement look-ahead**. In virtual display mode, Breezy automatically attempts to anticipate where the screen will be when the next frame is rendered. If you find that its default look-ahead is producing a screen that drags behind your movements or a screen that is over-eager or jittery, you can tweak this yourself. The max is capped because higher values produce jitter and become unusable.
@@ -72,6 +72,32 @@ If the screen appears very small in your view, you may be playing at the Deck sc
 2. After launching the game, if it's still small, go into the game options, and in the graphics or video settings, change the resolution.
 
 If you *WANT* to keep a low resolution, then you can just use the `Display size` slider to make the screen appear larger.
+
+## Mouse mode
+
+When in mouse mode, the device movements are converted to mouse movements, and should be recognized by any PC game that supports keyboard/mouse input. This will work most naturally for games where mouse movements is used to control "look"/camera movements. For point-and-click style games, you may want to disable the driver so your glasses act as just a simple display.
+
+To adjust the sensitivity of mapping head movements to mouse movements, use the Decky UI on Steam Deck, or `~/bin/xreal_driver_config --mouse-sensitivity 20` via the terminal.
+
+If you're using keyboard and mouse to control your games, then the mouse movements from this driver will simply add to your own mouse movements and they should work naturally together.
+
+If you're using a game controller, Valve pushes pretty heavily for PC games support mouse input *in addition to* controller input, so you should find that most modern games will just work with this driver straight out of the box.
+
+If your game doesn't support blending mouse and controller movement well, the best option may be to convert your controller's input to keyboard and mouse. Read on for how to do this for Steam and non-Steam games.
+
+### Steam
+
+1. Open your game's controller configuration in Steam
+2. Open the Layouts view
+3. Choose a keyboard/mouse template (e.g. "Keyboard (WASD) and Mouse"). Be sure to edit the configuration and set "Gyro Behavior" to "As Mouse" for any games where you want to use gyro.
+
+### Non-Steam
+
+You'll probably want to use a utility that does what Steam's controller layouts are doing behind the scenes: mapping controller buttons, joystick, and gyro inputs to keyboard/mouse inputs. One popular tool is [JoyShockMapper](https://github.com/Electronicks/JoyShockMapper).
+
+### Enable joystick mode
+
+One last alternative if mouse input just won't work is to enable the driver's joystick mode, using the Decky UI on Steam Deck, or `~/bin/xreal_driver_config --use-joystick` via the terminal (you can revert this with `--use-mouse`). This will create a virtual gamepad whose right joystick is driven by movements from the glasses. This is less ideal because joystick movements are technically capped (you can only move a joystick so far...) and because it's a *second* controller on your PC. If the game you're trying to play is okay being driven by two controllers, then this may work, but if your game interprets another controller as a second player then its movements won't get combined with your real controller's movements.
 
 ## Upcoming features
 So much more is already in the works for this plugin! If you're enjoying it and any of the upcoming features sound appealing, or if you have a feature request, or if you want to join the Discord, please consider [becoming a supporter](https://ko-fi.com/wheaney).
