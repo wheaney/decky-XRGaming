@@ -15,7 +15,10 @@ This plugin installs and keeps you up-to-date with the latest version of Breezy.
 
 From the plugin settings, you can control the following:
 * **Enable/disable the driver**. When disabled, your Air glasses will be display-only, no head movements will be tracked.
-* **Change headset modes**. In [virtual display mode](#virtual-display-help), a display will be rendered in a fixed space, allowing you to move your head to look at different parts of the screen. In [mouse-mode](#mouse-mode), head movements are translated to mouse movements, while in joystick-mode, they're translated to right-joystick movements on a virtual controller (use this as [a fallback option](#enable-joystick-mode) if mouse mode doesn't work).
+* **Change headset modes**.
+  * In [virtual display mode](#virtual-display-help), a display will be rendered in a fixed space, allowing you to move your head to look at different parts of the screen.
+  * In [mouse-mode](#mouse-mode), head movements are translated to mouse movements.
+  * In joystick-mode, head movements are translated to right-joystick movements on a virtual controller (use this as [a fallback option](#enable-joystick-mode) if mouse mode doesn't work).
 * **Mouse sensitivity**. In mouse-mode, this setting controls how much/quickly the mouse will move relative to your head movements.
 * **Display size**. In virtual display mode, this setting controls how big the screen appears. A setting of 1 will render at the game's resolution, while a higher setting zooms in (e.g. 2 for 2x zoom) and lower zooms out (e.g. 0.5 for a 50% smaller screen). 
 * **Movement look-ahead**. In virtual display mode, Breezy automatically attempts to anticipate where the screen will be when the next frame is rendered. If you find that its default look-ahead is producing a screen that drags behind your movements or a screen that is over-eager or jittery, you can tweak this yourself. The max is capped because higher values produce jitter and become unusable.
