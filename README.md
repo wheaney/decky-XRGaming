@@ -108,13 +108,12 @@ One last alternative if mouse input just won't work is to enable the driver's jo
 So much more is already in the works for this plugin! If you're enjoying it and any of the upcoming features sound appealing, or if you have a feature request, or if you want to join the Discord, please consider [becoming a supporter](https://ko-fi.com/wheaney).
 
 Upcoming features:
-* Add support for XREAL Air 2/Pro glasses
-* 3D SBS support for virtual display depth to make the display appear closer or farther away for eye comfort.
-* 3D SBS content virtual display support: render 3D content in a body-anchor display.
+* Increased device support (VITURE, Rokid, XREAL Air 2/Pro, etc...).
 * Virtual display for all of Game Mode, not just Vulkan games.
 * General Linux virtual display support for productivity.
-* Sideview and smooth follow modes?
-* Other XR hardware (Rokid, etc...)
+* 3D SBS support for virtual display depth to make the display appear closer or farther away for eye comfort.
+* 3D SBS content virtual display support: render 3D content in a body-anchor display.
+* Sideview and smooth follow modes.
 
 ## Uninstalling
 
