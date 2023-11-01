@@ -55,10 +55,10 @@ fi
 read -s -p "Enter the password for deck@${deckip}: " password
 
 # Use sshpass and scp to copy the file
-output=$(sshpass -p "$password" scp "$zip_name" deck@"$deckip":/home/deck/Downloads)
+output=$(sshpass -p "$password" scp -o PreferredAuthentications="password" "$zip_name" deck@"$deckip":/home/deck/Downloads)
 echo "$output"
 
-output=$(sshpass -p "$password" ssh deck@${deckip} "set -e; echo '${password}' | sudo -S chmod -R ug+rw /home/deck/homebrew/; mkdir -p /home/deck/homebrew/pluginloader; echo '${password}' | sudo -S rm -rf /home/deck/homebrew/plugins/$pluginname; echo '${password}' | sudo -S unzip /home/deck/Downloads/$zip_name -d /home/deck/homebrew/plugins; echo '${password}' | sudo -S systemctl restart plugin_loader")
+output=$(sshpass -p "$password" ssh -o PreferredAuthentications="password" deck@${deckip} "set -e; echo '${password}' | sudo -S chmod -R ug+rw /home/deck/homebrew/; mkdir -p /home/deck/homebrew/pluginloader; echo '${password}' | sudo -S rm -rf /home/deck/homebrew/plugins/$pluginname; echo '${password}' | sudo -S unzip /home/deck/Downloads/$zip_name -d /home/deck/homebrew/plugins; echo '${password}' | sudo -S systemctl restart plugin_loader")
 echo "$output"
 
 if [ $? -ne 0 ]; then

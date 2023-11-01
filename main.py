@@ -98,7 +98,7 @@ class Plugin:
             return False
 
     async def install_driver(self):
-        decky_plugin.logger.info(f"Installing driver for plugin version {decky_plugin.DECKY_PLUGIN_VERSION}")
+        decky_plugin.logger.info(f"Installing breezy for plugin version {decky_plugin.DECKY_PLUGIN_VERSION}")
 
         # Set the USER environment variable for this command
         env_copy = os.environ.copy()
@@ -111,13 +111,12 @@ class Plugin:
             settings.setSetting(INSTALLED_VERSION_SETTING_KEY, decky_plugin.DECKY_PLUGIN_VERSION)
             return True
         except subprocess.CalledProcessError as exc:
-            decky_plugin.logger.error("Error running setup script", exc)
+            decky_plugin.logger.error(f"Error running setup script {exc}")
             return False
 
     # Asyncio-compatible long-running code, executed in a task when the plugin is loaded
     async def _main(self):
-        if not await self.is_driver_installed(self):
-            await self.install_driver(self)
+        pass
 
     # Function called first during the unload process, utilize this to handle your plugin being removed
     async def _unload(self):
@@ -126,3 +125,19 @@ class Plugin:
     # Migrations that should be performed before entering `_main()`.
     async def _migration(self):
         pass
+
+    async def _uninstall(self):
+        decky_plugin.logger.info(f"Uninstalling breezy for plugin version {decky_plugin.DECKY_PLUGIN_VERSION}")
+
+        # Set the USER environment variable for this command
+        env_copy = os.environ.copy()
+        env_copy["USER"] = decky_plugin.DECKY_USER
+
+        try:
+            subprocess.check_output([decky_plugin.DECKY_USER_HOME + "/bin/breezy_vulkan_uninstall"], stderr=subprocess.STDOUT, env=env_copy)
+            subprocess.check_output([decky_plugin.DECKY_USER_HOME + "/bin/xreal_driver_uninstall"], stderr=subprocess.STDOUT, env=env_copy)
+            settings.setSetting(INSTALLED_VERSION_SETTING_KEY, None)
+            return True
+        except subprocess.CalledProcessError as exc:
+            decky_plugin.logger.error(f"Error running uninstall script {exc}")
+            return False

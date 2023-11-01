@@ -118,10 +118,11 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
         }
     }
 
+    // these asynchronous calls should execute ONLY one time, hence the empty array as the second argument
     useEffect(() => {
-        if (!config) retrieveConfig().catch((err) => setError(err));
-        if (installationStatus == "checking") checkInstallation().catch((err) => setError(err));
-    });
+        retrieveConfig().catch((err) => setError(err));
+        checkInstallation().catch((err) => setError(err));
+    }, []);
 
     const isDisabled = config?.disabled ?? false
     const outputMode = config?.output_mode ?? 'mouse'
