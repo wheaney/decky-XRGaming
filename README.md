@@ -63,6 +63,8 @@ Unfortunately, screen drift will probably remain an issue for the foreseeable fu
 Framerate is really important here, because individual frames are static, so moving your head quickly may produce a noticeable flicker as it moves the screen. Higher framerates will produce an overall better experience (less flicker and smoother follow), so consider optimizing your game settings for better performance when using this mode.
 
 ### I can see the screen shaking when I'm sitting still.
+There seems to be a bug caused by the combo of XREAL + SteamDeck that causes the sensor data to be amplified when playing audio over the Steam Deck speakers. To fix this, try switching your audio output to `Air` and make sure audio is actually coming out of the speakers in your glasses. This will stabilize the sensor data, which should get rid of some of the shakiness and also get rid of re-centering and re-calibration false-positives (triggered even when you don't tap the glasses).
+
 The virtual display uses "look-ahead" logic to try to figure out where your head <i>will be</i> when the next frame is rendered. For lower frame-rates, it has to look further ahead, so your movements are amplified more. There are a couple potential fixes for this:
 * Try optimizing your game settings for better performance to achieve a higher FPS.
 * Go into the plugin settings and manually override <b>Movement look-ahead</b>, lower values should produce less shaking.
