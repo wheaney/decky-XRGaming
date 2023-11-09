@@ -3,7 +3,7 @@
 
 [![Chat](https://img.shields.io/badge/chat-on%20discord-7289da.svg)](https://discord.gg/azSBTXNXMt)
 
-This plugin provides virtual display and head-tracking modes for the XREAL Air glasses by installing [Breezy Vulkan](https://github.com/wheaney/breezy-desktop/tree/vulkan). It also provides a UI for easily changing common configurations. All without leaving Game Mode.
+This plugin provides virtual display and head-tracking modes for the XREAL Air glasses by installing [Breezy Desktop's Vulkan implementation](https://github.com/wheaney/breezy-desktop). It also provides a UI for easily changing common configurations. All without leaving Game Mode.
 
 For the moment, virtual display support only works for Vulkan games. See what's [in the works](#upcoming-features).
 
