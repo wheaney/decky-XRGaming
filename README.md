@@ -28,6 +28,7 @@ From the plugin settings, you can control the following:
 ## Virtual display help
 
 * [What does virtual display mode do?](#what-does-virtual-display-mode-do)
+* [Will my game work?](#will-my-game-work)
 * [Why isn't it working?](#why-isnt-it-working)
 * [I don't like where the screen was placed, or it has drifted from where it was.](#i-dont-like-where-the-screen-was-placed-or-it-has-drifted-from-where-it-was)
 * [The screen flickers a lot when I move.](#the-screen-flickers-a-lot-when-i-move)
@@ -39,6 +40,9 @@ From the plugin settings, you can control the following:
 Typically, when you plug your glasses directly into the Steam Deck, you get a screen that stretches to fill your glasses entirely. And since that image is always centered in your lenses, no matter how you move your head, it will always remain centered in your vision. This forces you to look around the screen using only eye movements, which can be tiring on the eyes, and blurring on the edges of the screen means you can't always easily read content that's not near the center.
 
 Virtual display mode is intended to mimic how we play games in real life: we place a TV screen or monitor in front of us, and then we're free to look around naturally with a combination of head and eye movements. When you enable this mode and launch into a Vulkan game, a screen will be placed in front of you like always, but now it will stay where you put it and you're free to look around how you naturally would.
+
+### Will my game work?
+Since this mode only supports Vulkan games, and some libraries like **dxvk** make it possible for non-Vulkan games to go through Vulkan. And it can also be difficult to find a definitive list of all games running on Vulkan. Right now there's no surefire way to tell, but [this issue](https://github.com/wheaney/decky-xrealAir/issues/6) proposes a solution that would allow people to run the plugin without glasses connected and tell if it will work. Add a thumbs-up to the issue if you would find that useful.
 
 ### Why isn't it working?
 Virtual display mode only works under certain conditions. Double-check the following:
