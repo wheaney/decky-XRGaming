@@ -42,7 +42,7 @@ Typically, when you plug your glasses directly into the Steam Deck, you get a sc
 Virtual display mode is intended to mimic how we play games in real life: we place a TV screen or monitor in front of us, and then we're free to look around naturally with a combination of head and eye movements. When you enable this mode and launch into a Vulkan game, a screen will be placed in front of you like always, but now it will stay where you put it and you're free to look around how you naturally would.
 
 ### Will my game work?
-Since this mode only supports Vulkan games, and some libraries like **dxvk** make it possible for non-Vulkan games to go through Vulkan. And it can also be difficult to find a definitive list of all games running on Vulkan. Right now there's no surefire way to tell, but [this issue](https://github.com/wheaney/decky-xrealAir/issues/6) proposes a solution that would allow people to run the plugin without glasses connected and tell if it will work. Add a thumbs-up to the issue if you would find that useful.
+Right now there's no surefire way to tell since this mode only supports Vulkan games, some libraries like **dxvk** make it possible for non-Vulkan games to go through Vulkan, it can be difficult to find a definitive list of all games running on Vulkan, and some apps like Heroic launcher may prevent a game that would otherwise work in theory from working in practice. [This issue](https://github.com/wheaney/decky-xrealAir/issues/6) proposes a solution that would allow people to run the plugin without glasses connected and tell if it will work. Add a thumbs-up to the issue if you would find that useful.
 
 ### Why isn't it working?
 Virtual display mode only works under certain conditions. Double-check the following:
