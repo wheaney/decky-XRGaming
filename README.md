@@ -30,6 +30,7 @@ From the plugin settings, you can control the following:
 * [What does virtual display mode do?](#what-does-virtual-display-mode-do)
 * [Will my game work?](#will-my-game-work)
 * [Why isn't it working?](#why-isnt-it-working)
+* [How can I optimize my setup for the best experience?](#how-can-i-optimize-my-setup-for-the-best-experience)
 * [I don't like where the screen was placed, or it has drifted from where it was.](#i-dont-like-where-the-screen-was-placed-or-it-has-drifted-from-where-it-was)
 * [The screen flickers a lot when I move.](#the-screen-flickers-a-lot-when-i-move)
 * [I can see the screen shaking when I'm sitting still.](#i-can-see-the-screen-shaking-when-im-sitting-still)
@@ -56,6 +57,23 @@ Virtual display mode only works under certain conditions. Double-check the follo
 * Is the game running in Steam and **not through an app installed via Flatpak**? Heroic launcher's Flatpak install, for example, may require extra setup or may not work at all.
   * Try your games before writing them off, as many launchers still work.
 
+### How can I optimize my setup for the best experience?
+Since there will always be a delay between your head movements and rendering of the display, the virtual display mode uses "look-ahead" logic to try to figure out where your head *will be* when the next frame is rendered. The longer it takes to get a frame rendered in your glasses, the bigger the look-ahead will need to be, which means: lower accuracy of predictions (which will cause the screen to briefly shift away from its fixed position) and higher sensitivity to movements (which will produce more shaking). So our goal is to get that latency between collecting movement data and rendering a frame with that data as low as possible. To put it another way: we want to reduce input lag.
+
+In general, these will have the biggest impact on input lag:
+* Avoid upscaling by running at the glasses' native resolution.
+   * I found that upscaling was causing 5-10ms of additional rendering latency. I initially suspected that it was due to FSR, but in changing the Scaling setting to Linear I didn't see a noticeable improvement. For now, it seems most important to remove the upscaling step entirely.
+* Render frames as soon as they're ready by disabling all forms of VSync.
+* Increase framerate by maximizing performance settings of your games.
+
+Here are specific ways you can try to achieve that on the Steam Deck:
+* In **Steam's Settings/Display dialog,** check that the resolution is set to `1920x1080@60`.
+* In **the Game Details view** (where it shows the green "Play" button before launching a game), click the **Settings** (cog) icon, go to the **Properties** view, and set the resolution to `Native`.
+* In **the in-game Video/Graphics settings**, set the resolution to `1920x1080`, disable `VSync`, and set everything to lower-quality, higher-performance settings.
+* In **the Deck's** `...` **Performance menu**, turn the Framerate limit setting to `Off` and enable `Allow Tearing`.
+
+You'll probably find that the virtual display movements become a bit more wild if these changes achieve their goals, because the default look-ahead settings are now too high. Go into the **XREAL Air Driver** plugin settings and change the **Movement look-ahead** setting to `Min`, then slowly dial it up while moving your head until the display seems to most stable.
+
 ### I don't like where the screen was placed, or it has drifted from where it was.
 You'll want to use the multi-tap functionality built into this driver. **Note: XREAL did NOT build this feature and has NOT condoned this practice; tap on your glasses at your own risk.**
 
@@ -64,14 +82,12 @@ To re-center your screen, give two decent taps on the top of the glasses. Each t
 Unfortunately, screen drift will probably remain an issue for the foreseeable future. The only workarounds for this currently are to either (a) keep re-centering it, or (b) try re-calibrating it by doing a triple-tap; this will briefly display a static screen while it resets the device calibration.
 
 ### The screen flickers a lot when I move.
-Framerate is really important here, because individual frames are static, so moving your head quickly may produce a noticeable flicker as it moves the screen. Higher framerates will produce an overall better experience (less flicker and smoother follow), so consider optimizing your game settings for better performance when using this mode.
+Framerate is really important here, because individual frames are static, so moving your head quickly may produce a noticeable flicker as it moves the screen. Higher framerates will produce an overall better experience (less flicker and smoother follow), so consider optimizing your game settings for better performance when using this mode. See "[How can I optimize my setup for the best experience?](#how-can-i-optimize-my-setup-for-the-best-experience)" for other performance-related recommendations.
 
 ### I can see the screen shaking when I'm sitting still.
 There seems to be a bug caused by the combo of XREAL + SteamDeck that causes the sensor data to be amplified/noisier when playing audio over the Steam Deck speakers. To fix this, try switching your audio output to `Air` (in the Steam Deck's **Settings**, go to **Audio**) and make sure audio is actually coming out of the speakers in your glasses. This will stabilize the sensor data, which should get rid of some of the shakiness and also get rid of re-centering and re-calibration false-positives (triggered even when you don't tap the glasses).
 
-The virtual display uses "look-ahead" logic to try to figure out where your head <i>will be</i> when the next frame is rendered. For lower frame-rates, it has to look further ahead, so your movements are amplified more. There are a couple potential fixes for this:
-* Try optimizing your game settings for better performance to achieve a higher FPS.
-* Go into the plugin settings and manually override <b>Movement look-ahead</b>, lower values should produce less shaking.
+If you're still experiencing shaking, see "[How can I optimize my setup for the best experience?](#how-can-i-optimize-my-setup-for-the-best-experience)" for performance-related recommendations that may allow you to reduce the look-ahead setting.
 
 ### The screen lags behind my head movements.
 Since a bigger look-ahead produces more shaking, the max look-ahead is capped pretty conservatively. For games around 30 FPS, screen drag will become more noticeable, below 30 FPS the drag and flicking during head movements will be even worse. Try optimizing your game settings for better performance to achieve a higher FPS.
