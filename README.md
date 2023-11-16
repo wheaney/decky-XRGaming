@@ -61,15 +61,15 @@ Virtual display mode only works under certain conditions. Double-check the follo
 Since there will always be a delay between your head movements and rendering of the display, the virtual display mode uses "look-ahead" logic to try to figure out where your head *will be* when the next frame is rendered. The longer it takes to get a frame rendered in your glasses, the bigger the look-ahead will need to be, which means: lower accuracy of predictions (which will cause the screen to briefly shift away from its fixed position) and higher sensitivity to movements (which will produce more shaking). So our goal is to get that latency between collecting movement data and rendering a frame with that data as low as possible. To put it another way: we want to reduce input lag.
 
 In general, these will have the biggest impact on input lag:
-* Avoid upscaling by running at the glasses' native resolution.
+* Avoid upscaling by running at the glasses' native resolution (or native aspect ratio).
    * I found that upscaling was causing 5-10ms of additional rendering latency. I initially suspected that it was due to FSR, but in changing the Scaling setting to Linear I didn't see a noticeable improvement. For now, it seems most important to remove the upscaling step entirely.
 * Render frames as soon as they're ready by disabling all forms of VSync.
-* Increase framerate by maximizing performance settings of your games.
+* Increase framerate by maximizing performance settings of your games. If you want to choose a lower resolution to achieve this, be sure it's at the glasses' native aspect ratio.
 
 Here are specific ways you can try to achieve that on the Steam Deck:
-* In **Steam's Settings/Display dialog,** check that the resolution is set to `1920x1080@60`.
+* In **Steam's Settings/Display dialog,** check that the resolution is set to `1920x1080@60`. Choosing the automatic option may also be fine.
 * In **the Game Details view** (where it shows the green "Play" button before launching a game), click the **Settings** (cog) icon, go to the **Properties** view, and set the resolution to `Native`.
-* In **the in-game Video/Graphics settings**, set the resolution to `1920x1080`, disable `VSync`, and set everything to lower-quality, higher-performance settings.
+* In **the in-game Video/Graphics settings**, set the resolution to `1920x1080` (or any 16:9 aspect ratio), disable `VSync`, and set everything to lower-quality, higher-performance settings.
 * In **the Deck's** `...` **Performance menu**, turn the Framerate limit setting to `Off` and enable `Allow Tearing`.
 
 You'll probably find that the virtual display movements become a bit more wild if these changes achieve their goals, because the default look-ahead settings are now too high. Go into the **XREAL Air Driver** plugin settings and change the **Movement look-ahead** setting to `Min`, then slowly dial it up while moving your head until the display seems to most stable.
@@ -90,7 +90,7 @@ There seems to be a bug caused by the combo of XREAL + SteamDeck that causes the
 If you're still experiencing shaking, see "[How can I optimize my setup for the best experience?](#how-can-i-optimize-my-setup-for-the-best-experience)" for performance-related recommendations that may allow you to reduce the look-ahead setting.
 
 ### The screen lags behind my head movements.
-Since a bigger look-ahead produces more shaking, the max look-ahead is capped pretty conservatively. For games around 30 FPS, screen drag will become more noticeable, below 30 FPS the drag and flicking during head movements will be even worse. Try optimizing your game settings for better performance to achieve a higher FPS.
+Since a bigger look-ahead produces more shaking, the max look-ahead is capped pretty conservatively. For games around 30 FPS, screen drag will become more noticeable, below 30 FPS the drag and flicking during head movements will be even worse. Try optimizing your game settings for better performance to achieve a higher FPS. See "[How can I optimize my setup for the best experience?](#how-can-i-optimize-my-setup-for-the-best-experience)" for other performance-related recommendations.
 
 ### My screen is small when the display size is set to "1", or is using a lower resolution than my glasses.
 
