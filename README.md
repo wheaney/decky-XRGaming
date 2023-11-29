@@ -70,7 +70,7 @@ Here are specific ways you can try to achieve that on the Steam Deck:
 * In **Steam's Settings/Display dialog,** check that the resolution is set to `1920x1080@60`. Choosing the automatic option may also be fine.
 * In **the Game Details view** (where it shows the green "Play" button before launching a game), click the **Settings** (cog) icon, go to the **Properties** view, and set the resolution to `Native`.
 * In **the in-game Video/Graphics settings**, set the resolution to `1920x1080` (or any 16:9 aspect ratio), disable `VSync`, and set everything to lower-quality, higher-performance settings.
-* In **the Deck's** `...` **Performance menu**, turn the Framerate limit setting to `Off` and enable `Allow Tearing`.
+* In **the Deck's** `...` **Performance menu**, flip on `Disable Frame Limit` (I know it's confusing to "turn on" a feature that "turns off" something, but either way the switch should be flipped to the "on" position) and enable `Allow Tearing`.
 
 You'll probably find that the virtual display movements become a bit more wild if these changes achieve their goals, because the default look-ahead settings are now too high. Go into the **XREAL Air Driver** plugin settings and change the **Movement look-ahead** setting to `Min`, then slowly dial it up while moving your head until the display seems to most stable.
 
