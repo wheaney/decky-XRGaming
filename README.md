@@ -3,7 +3,7 @@
 
 [![Chat](https://img.shields.io/badge/chat-on%20discord-7289da.svg)](https://discord.gg/azSBTXNXMt)
 
-This plugin provides virtual display and head-tracking modes for the XREAL Air 1 and 2 glasses by installing [Breezy Desktop's Vulkan implementation](https://github.com/wheaney/breezy-desktop). It also provides a UI for easily changing common configurations. All without leaving Game Mode.
+This plugin provides virtual display and head-tracking modes for the XREAL Air 1, 2, and 2 Pro glasses by installing [Breezy Desktop's Vulkan implementation](https://github.com/wheaney/breezy-desktop). It also provides a UI for easily changing common configurations. All without leaving Game Mode.
 
 For the moment, virtual display support only works for Vulkan games. See what's [in the works](#upcoming-features).
 
@@ -47,7 +47,7 @@ Right now there's no surefire way to tell since this mode only supports Vulkan g
 
 ### Why isn't it working?
 Virtual display mode only works under certain conditions. Double-check the following:
-* Are you **using the original XREAL or NREAL Air or Air 2 glasses**? Air 2 Pro isn't supported yet, nor are models from other brands, but hopefully one day this will include a wider range of devices. See the [upcoming features](#upcoming-features) section.
+* Are you **using the XREAL or NREAL Air glasses**? Air 1, 2, and 2 Pro models *are* supported, but XREAL Light is *not*, nor are models from other brands, but soon this will include a wider range of devices. See the [upcoming features](#upcoming-features) section.
 * Are your **glasses plugged into your Steam Deck**? Are they **displaying content when games aren't running**? 
   * Sometimes the display on the glasses will turn off as the battery level goes down. You can verify this by hitting the `Steam` or `...` buttons, since the Game Mode menus display no matter where the virtual screen is. If the glasses have powered down, try lowering your TDP wattage setting in the Performance panel to get more play time.
 * Have you **selected the "Virtual display" headset mode** in the plugin settings? Mouse, joystick, and disabled settings will all disable the virtual display.
@@ -130,7 +130,7 @@ One last alternative if mouse input just won't work is to enable the driver's jo
 So much more is already in the works for this plugin! If you're enjoying it and any of the upcoming features sound appealing, or if you have a feature request, or if you want to join the Discord, please consider [becoming a supporter](https://ko-fi.com/wheaney).
 
 Upcoming features:
-* Increased device support (VITURE, Rokid, XREAL Air 2 Pro, etc...).
+* Increased device support (VITURE, Rokid, etc...).
 * Virtual display for all of Game Mode, not just Vulkan games.
 * General Linux virtual display support for productivity.
 * 3D SBS support for virtual display depth to make the display appear closer or farther away for eye comfort.
