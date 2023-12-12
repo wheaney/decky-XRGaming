@@ -34,13 +34,13 @@ interface DriverState {
     calibration_setup: CalibrationSetup;
     calibration_state: CalibrationState;
     sbs_mode_enabled: boolean;
+    sbs_mode_supported: boolean;
 }
 
 interface ControlFlags {
     recenter_screen: boolean;
     recalibrate: boolean;
-    enable_sbs_mode: boolean;
-    disable_sbs_mode: boolean;
+    sbs_mode: SbsModeControl;
 }
 
 type DirtyControlFlags = {
@@ -53,6 +53,7 @@ type ModeValue = "disabled" | OutputMode
 const ModeValues: ModeValue[] = ['external_only', 'mouse', 'joystick', 'disabled'];
 type CalibrationSetup = "AUTOMATIC" | "INTERACTIVE"
 type CalibrationState = "NOT_CALIBRATED" | "CALIBRATING" | "CALIBRATED" | "WAITING_ON_USER"
+type SbsModeControl = "unset" | "enable" | "disable"
 const DirtyControlFlagsExpireMilliseconds = 5000
 
 function modeValueIsOutputMode(value: ModeValue): value is OutputMode {
@@ -127,9 +128,9 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
 
         // clear the dirty control flags if they're reflected in the state, or stale
         if (driverStateRes.success && (
-            dirtyControlFlags.enable_sbs_mode && driverStateRes.result.sbs_mode_enabled ||
-            dirtyControlFlags.disable_sbs_mode && !driverStateRes.result.sbs_mode_enabled ||
-            dirtyControlFlags.last_updated && Date.now() - dirtyControlFlags.last_updated > DirtyControlFlagsExpireMilliseconds
+            dirtyControlFlags.sbs_mode == 'enable' && driverStateRes.result.sbs_mode_enabled ||
+            dirtyControlFlags.sbs_mode == 'disable' && !driverStateRes.result.sbs_mode_enabled ||
+            dirtyControlFlags.last_updated && (Date.now() - dirtyControlFlags.last_updated > DirtyControlFlagsExpireMilliseconds)
         )) {
             setDirtyControlFlags({})
         }
@@ -162,7 +163,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
     }
 
     async function writeControlFlags(flags: Partial<ControlFlags>) {
-        const res = await serverAPI.callPluginMethod<Partial<ControlFlags>, void>("write_control_flags", flags);
+        const res = await serverAPI.callPluginMethod<{ control_flags: Partial<ControlFlags>}, void>("write_control_flags", { control_flags: flags });
         res.success ? setDirtyControlFlags({...flags, last_updated: Date.now()}) : setError(res.result);
     }
 
@@ -182,6 +183,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
     const mouseSensitivity = config?.mouse_sensitivity ?? 20
     const lookAhead = config?.look_ahead ?? 0
     const externalZoom = config?.external_zoom ?? 1
+    const sbsModeEnabled = dirtyControlFlags?.sbs_mode !== 'unset' ? dirtyControlFlags.sbs_mode === 'enable' : driverState?.sbs_mode_enabled ?? false
 
     async function updateConfig(newConfig: Config) {
         await Promise.all([setConfig(newConfig), writeConfig(newConfig)])
@@ -195,17 +197,20 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
             {!error && <Fragment>
                 {installationStatus == "installed" && config &&
                     <Fragment>
-                        <PanelSectionRow>
+                        <PanelSectionRow style={{justifyContent: 'center'}}>
                             <span style={{fontSize: 'medium'}}>
-                                <span style={{color: deviceConnected ? 'green' : 'red'}}>
+                                <span style={{color: deviceConnected ? 'white' : 'gray', position: 'relative', top: '3px'}}>
                                     {deviceConnected ? <BsUsbCFill/> : <BsUsbC/>}
                                 </span>
-                                <span style={{color: deviceConnected ? 'black' : 'gray'}}>
-                                    {deviceConnected ? driverState?.connected_device_name : "Device not connected"}
+                                <span style={{marginLeft: 5, color: deviceConnected ? 'white' : 'gray'}}>
+                                    {deviceConnected ? driverState?.connected_device_name : "No device connected"}
                                 </span>
+                                {deviceConnected && <span style={{marginLeft: 5, color: 'green'}}>
+                                    connected
+                                </span>}
                             </span>
                         </PanelSectionRow>
-                        <PanelSectionRow>
+                        {deviceConnected && <PanelSectionRow>
                             <SliderField label={"Headset mode"}
                                          value={isDisabled ? ModeValues.indexOf('disabled') : ModeValues.indexOf(outputMode)}
                                          notchTicksVisible={true}
@@ -213,30 +218,37 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                                          notchLabels={ModeNotchLabels}
                                          notchCount={ModeValues.length}
                                          onChange={(newMode) => {
-                                             const newValue = ModeValues[newMode]
-                                             if (modeValueIsOutputMode(newValue)) {
-                                                 updateConfig({
-                                                     ...config,
-                                                     output_mode: newValue,
-                                                     disabled: false
-                                                 }).catch(e => setError(e))
-                                             } else {
-                                                 updateConfig({
-                                                     ...config,
-                                                     disabled: true
-                                                 }).catch(e => setError(e))
+                                             if (config) {
+                                                 const newValue = ModeValues[newMode]
+                                                 if (modeValueIsOutputMode(newValue)) {
+                                                     updateConfig({
+                                                         ...config,
+                                                         output_mode: newValue,
+                                                         disabled: false
+                                                     }).catch(e => setError(e))
+                                                 } else {
+                                                     updateConfig({
+                                                         ...config,
+                                                         disabled: true
+                                                     }).catch(e => setError(e))
+                                                 }
                                              }
                                          }}
                             />
-                        </PanelSectionRow>
+                        </PanelSectionRow>}
                         {!isDisabled && config.output_mode == "mouse" && <PanelSectionRow>
                             <SliderField value={mouseSensitivity}
                                          min={5} max={100} showValue={true} notchTicksVisible={true}
                                          label={"Mouse sensitivity"}
-                                         onChange={(mouse_sensitivity) => updateConfig({
-                                             ...config,
-                                             mouse_sensitivity
-                                         })}/>
+                                         onChange={(mouse_sensitivity) => {
+                                             if (config) {
+                                                 updateConfig({
+                                                     ...config,
+                                                     mouse_sensitivity
+                                                 }).catch(e => setError(e))
+                                             }
+                                         }}
+                            />
                         </PanelSectionRow>}
                         {!isDisabled && config.output_mode == "external_only" && <Fragment>
                             <PanelSectionRow>
@@ -247,10 +259,15 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                                              label={"Display size"}
                                              step={0.05}
                                              editableValue={true}
-                                             onChange={(external_zoom) => updateConfig({
-                                                 ...config,
-                                                 external_zoom
-                                             })}/>
+                                             onChange={(external_zoom) => {
+                                                 if (config) {
+                                                     updateConfig({
+                                                         ...config,
+                                                         external_zoom
+                                                     }).catch(e => setError(e))
+                                                 }
+                                             }}
+                                />
                             </PanelSectionRow>
                             <PanelSectionRow>
                                 <SliderField value={lookAhead}
@@ -259,30 +276,39 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                                              step={5}
                                              label={"Movement look-ahead"}
                                              description={lookAhead > 0 ? "Use Default unless screen is noticeably ahead or behind your movements. May introduce jitter at higher values." : undefined}
-                                             onChange={(look_ahead) => updateConfig({
-                                                 ...config,
-                                                 look_ahead
-                                             })}/>
-                            </PanelSectionRow>
-                            <PanelSectionRow>
-                                <ToggleField checked={(driverState?.sbs_mode_enabled || dirtyControlFlags.enable_sbs_mode || !dirtyControlFlags.disable_sbs_mode)  ?? false}
-                                                label={"Enable SBS mode"}
-                                             onChange={(sbs_mode_enabled) => writeControlFlags(
-                                                 {
-                                                     enable_sbs_mode: sbs_mode_enabled,
-                                                     disable_sbs_mode: !sbs_mode_enabled
+                                             onChange={(look_ahead) => {
+                                                 if (config) {
+                                                     updateConfig({
+                                                         ...config,
+                                                         look_ahead
+                                                     }).catch(e => setError(e))
                                                  }
-                                             )}/>
+                                             }}
+                                />
                             </PanelSectionRow>
-                            <PanelSectionRow>
-                                <ButtonItem label={"Recenter screen"}
-                                            disabled={dirtyControlFlags.recenter_screen}
-                                            onClick={() => writeControlFlags({recenter_screen: true})}/>
-                            </PanelSectionRow>
-                            <PanelSectionRow>
-                                <ButtonItem label={"Recalibrate"}
-                                            disabled={dirtyControlFlags.recalibrate || driverState?.calibration_state == "CALIBRATING"}
-                                            onClick={() => writeControlFlags({recalibrate: true})}/>
+                            {driverState?.sbs_mode_supported && <PanelSectionRow>
+                                <ToggleField
+                                    checked={sbsModeEnabled}
+                                    label={"Enable SBS mode"}
+                                    onChange={(sbs_mode_enabled) => writeControlFlags(
+                                        {
+                                            sbs_mode: sbs_mode_enabled ? 'enable' : 'disable'
+                                        }
+                                    )}/>
+                            </PanelSectionRow>}
+                            <PanelSectionRow style={{justifyContent: 'space-between', flexWrap: 'wrap'}}>
+                                <ButtonItem disabled={dirtyControlFlags.recenter_screen}
+                                        onClick={() => writeControlFlags({recenter_screen: true})}
+                                        style={{flexGrow: 1}}
+                                >
+                                    Recenter
+                                </ButtonItem>
+                                <ButtonItem disabled={dirtyControlFlags.recalibrate || driverState?.calibration_state == "CALIBRATING"}
+                                        onClick={() => writeControlFlags({recalibrate: true})}
+                                        style={{flexGrow: 1}}
+                                >
+                                    Recalibrate
+                                </ButtonItem>
                             </PanelSectionRow>
                         </Fragment>}
                         {!isDisabled && config.output_mode == "external_only" &&
@@ -298,12 +324,12 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                                 }}>Virtual display</span> help</span>
                             </QrButton>
                         }
-                        <QrButton icon={<SiKofi />} url={"https://ko-fi.com/wheaney"}>
+                        {deviceConnected && <QrButton icon={<SiKofi />} url={"https://ko-fi.com/wheaney"}>
                             <span style={{fontSize: 'small'}}>
                                 Want more great stuff like this?<br/>
                                 <b>Become a <SiKofi style={{position: 'relative', top: '3px'}} color={"red"} /> supporter!</b>
                             </span>
-                        </QrButton>
+                        </QrButton>}
                     </Fragment>
                 }
                 {(["checking", "inProgess"].includes(installationStatus) || !config) &&

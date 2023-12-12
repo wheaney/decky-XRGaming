@@ -18,11 +18,9 @@ CONTROL_FLAGS_FILE_PATH = '/dev/shm/xr_driver_control'
 # read-only file that the driver writes (but never reads) to with its current state
 DRIVER_STATE_FILE_PATH = '/dev/shm/xr_driver_state'
 
-CalibrationSetup = Enum('CalibrationSetup', ['AUTOMATIC', 'INTERACTIVE'])
-CalibrationState = Enum('CalibrationState', ['NOT_CALIBRATED', 'CALIBRATING', 'CALIBRATED', 'WAITING_ON_USER'])
-
 INSTALLED_VERSION_SETTING_KEY = "installed_from_plugin_version"
-CONTROL_FLAGS = ['recenter_screen', 'recalibrate', 'enable_sbs_mode', 'disable_sbs_mode']
+CONTROL_FLAGS = ['recenter_screen', 'recalibrate', 'sbs_mode']
+SBS_MODE_VALUES = ['unset', 'enable', 'disable']
 
 settings = SettingsManager(name="settings", settings_directory=decky_plugin.DECKY_PLUGIN_SETTINGS_DIR)
 settings.read()
@@ -48,6 +46,7 @@ def parse_float(value, default):
 
 class Plugin:
     async def retrieve_config(self):
+        decky_plugin.logger.info(f"Calling retrieve_config")
         config = {}
         config['disabled'] = False
         config['output_mode'] = 'mouse'
@@ -69,76 +68,90 @@ class Plugin:
                         else:
                             config[key] = value
                     except Exception as e:
-                        print(f"Error parsing key-value pair {key}={value}: {e}")
+                        decky_plugin.logger.error(f"Error parsing key-value pair {key}={value}: {e}")
         except FileNotFoundError:
             pass
 
         return config
 
     async def write_config(self, config):
-        output = ""
-        for key, value in config.items():
-            if key != "updated":
-                if isinstance(value, bool):
-                    output += f'{key}={str(value).lower()}\n'
-                elif isinstance(value, int):
-                    output += f'{key}={value}\n'
-                elif isinstance(value, list):
-                    output += f'{key}={",".join(value)}\n'
-                else:
-                    output += f'{key}={value}\n'
+        decky_plugin.logger.info(f"Calling write_config")
+        try:
+            output = ""
+            for key, value in config.items():
+                if key != "updated":
+                    if isinstance(value, bool):
+                        output += f'{key}={str(value).lower()}\n'
+                    elif isinstance(value, int):
+                        output += f'{key}={value}\n'
+                    elif isinstance(value, list):
+                        output += f'{key}={",".join(value)}\n'
+                    else:
+                        output += f'{key}={value}\n'
 
-        temp_file = "temp.txt"
+            temp_file = "temp.txt"
 
-        # Write to a temporary file
-        with open(temp_file, 'w') as f:
-            f.write(output)
+            # Write to a temporary file
+            with open(temp_file, 'w') as f:
+                f.write(output)
 
-        # Atomically replace the old config file with the new one
-        os.replace(temp_file, CONFIG_FILE_PATH)
-        os.chmod(CONFIG_FILE_PATH, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IROTH | stat.S_IWOTH)
+            # Atomically replace the old config file with the new one
+            os.replace(temp_file, CONFIG_FILE_PATH)
+            os.chmod(CONFIG_FILE_PATH, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IROTH | stat.S_IWOTH)
+        except Exception as e:
+            decky_plugin.logger.error(f"Error writing config {e}")
 
     async def write_control_flags(self, control_flags):
-        output = ""
-        for key, value in control_flags.items():
-            if isinstance(value, bool) and key in CONTROL_FLAGS:
-                output += f'{key}={str(value).lower()}\n'
+        decky_plugin.logger.info(f"Calling write_control_flags")
+        try:
+            output = ""
+            for key, value in control_flags.items():
+                if isinstance(value, bool) and key in CONTROL_FLAGS:
+                    if key == 'sbs_mode':
+                        if value not in SBS_MODE_VALUES:
+                            decky_plugin.logger.error(f"Invalid value {value} for sbs_mode flag")
+                            continue
+                    output += f'{key}={str(value).lower()}\n'
 
-        with open(CONTROL_FLAGS_FILE_PATH, 'w') as f:
-            f.write(output)
+            with open(CONTROL_FLAGS_FILE_PATH, 'w') as f:
+                f.write(output)
+        except Exception as e:
+            decky_plugin.logger.error(f"Error writing control flags {e}")
 
     async def retrieve_driver_state(self):
+        decky_plugin.logger.info(f"Calling retrieve_driver_state")
         state = {}
         state['heartbeat'] = 0
         state['connected_device_name'] = None
-        state['calibration_setup'] = CalibrationSetup.AUTOMATIC
-        state['calibration_state'] = CalibrationState.NOT_CALIBRATED
+        state['calibration_setup'] = "AUTOMATIC"
+        state['calibration_state'] = "NOT_CALIBRATED"
         state['sbs_mode_enabled'] = False
         state['sbs_mode_supported'] = False
 
         try:
             with open(DRIVER_STATE_FILE_PATH, 'r') as f:
-                for line in f:
+                output = f.read()
+                for line in output.splitlines():
+                    decky_plugin.logger.info(f"Reading line {line}")
                     try:
                         key, value = line.strip().split('=')
-                        if key in ['heartbeat']:
-                            state[key] = parse_int(value, state[key])
-                        elif key in ['calibration_setup']:
-                            state[key] = CalibrationSetup[value]
-                        elif key in ['calibration_state']:
-                            state[key] = CalibrationState[value]
+                        if key == 'heartbeat':
+                            state[key] = parse_int(value, 0)
+                        elif key in ['calibration_setup', 'calibration_state', 'connected_device_name']:
+                            state[key] = value
                         elif key in ['sbs_mode_enabled', 'sbs_mode_supported']:
-                            state[key] = parse_boolean(value, state[key])
+                            state[key] = parse_boolean(value, False)
                         else:
-                            print(f"Unknown key {key} in driver state file")
+                            decky_plugin.logger.error(f"Unknown key {key} in driver state file")
                     except Exception as e:
-                        print(f"Error parsing key-value pair {key}={value}: {e}")
+                        decky_plugin.logger.error(f"Error parsing key-value pair {key}={value}: {e}")
         except FileNotFoundError:
-            // this should just fall through to return the state with default values
+            pass
 
         return state
 
     async def is_driver_installed(self):
+        decky_plugin.logger.info(f"Checking driver installation")
         try:
             output = subprocess.check_output(['systemctl', 'is-active', 'xreal-air-driver'], stderr=subprocess.STDOUT)
             if output.strip() != b'active':
@@ -146,7 +159,8 @@ class Plugin:
 
             installed_from_plugin_version = settings.getSetting(INSTALLED_VERSION_SETTING_KEY)
             return installed_from_plugin_version == decky_plugin.DECKY_PLUGIN_VERSION
-        except subprocess.CalledProcessError:
+        except subprocess.CalledProcessError as exc:
+            decky_plugin.logger.error(f"Error checking driver installation {exc}")
             return False
 
     async def install_driver(self):
@@ -168,6 +182,7 @@ class Plugin:
 
     # Asyncio-compatible long-running code, executed in a task when the plugin is loaded
     async def _main(self):
+        decky_plugin.logger.info(f"Checking driver installation")
         pass
 
     # Function called first during the unload process, utilize this to handle your plugin being removed
