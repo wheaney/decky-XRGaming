@@ -7,10 +7,22 @@ import subprocess
 # or add the `decky-loader/plugin` path to `python.analysis.extraPaths` in `.vscode/settings.json`
 import decky_plugin
 from settings import SettingsManager
+from enum import Enum
 
 
 CONFIG_FILE_PATH = os.path.join(decky_plugin.DECKY_USER_HOME, ".xreal_driver_config")
+
+# write-only file that the driver reads (but never writes) to get user-specified control flags
+CONTROL_FLAGS_FILE_PATH = '/dev/shm/xr_driver_control'
+
+# read-only file that the driver writes (but never reads) to with its current state
+DRIVER_STATE_FILE_PATH = '/dev/shm/xr_driver_state'
+
+CalibrationSetup = Enum('CalibrationSetup', ['AUTOMATIC', 'INTERACTIVE'])
+CalibrationState = Enum('CalibrationState', ['NOT_CALIBRATED', 'CALIBRATING', 'CALIBRATED', 'WAITING_ON_USER'])
+
 INSTALLED_VERSION_SETTING_KEY = "installed_from_plugin_version"
+CONTROL_FLAGS = ['recenter_screen', 'recalibrate', 'enable_sbs_mode', 'disable_sbs_mode']
 
 settings = SettingsManager(name="settings", settings_directory=decky_plugin.DECKY_PLUGIN_SETTINGS_DIR)
 settings.read()
@@ -85,6 +97,46 @@ class Plugin:
         # Atomically replace the old config file with the new one
         os.replace(temp_file, CONFIG_FILE_PATH)
         os.chmod(CONFIG_FILE_PATH, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IROTH | stat.S_IWOTH)
+
+    async def write_control_flags(self, control_flags):
+        output = ""
+        for key, value in control_flags.items():
+            if isinstance(value, bool) and key in CONTROL_FLAGS:
+                output += f'{key}={str(value).lower()}\n'
+
+        with open(CONTROL_FLAGS_FILE_PATH, 'w') as f:
+            f.write(output)
+
+    async def retrieve_driver_state(self):
+        state = {}
+        state['heartbeat'] = 0
+        state['connected_device_name'] = None
+        state['calibration_setup'] = CalibrationSetup.AUTOMATIC
+        state['calibration_state'] = CalibrationState.NOT_CALIBRATED
+        state['sbs_mode_enabled'] = False
+        state['sbs_mode_supported'] = False
+
+        try:
+            with open(DRIVER_STATE_FILE_PATH, 'r') as f:
+                for line in f:
+                    try:
+                        key, value = line.strip().split('=')
+                        if key in ['heartbeat']:
+                            state[key] = parse_int(value, state[key])
+                        elif key in ['calibration_setup']:
+                            state[key] = CalibrationSetup[value]
+                        elif key in ['calibration_state']:
+                            state[key] = CalibrationState[value]
+                        elif key in ['sbs_mode_enabled', 'sbs_mode_supported']:
+                            state[key] = parse_boolean(value, state[key])
+                        else:
+                            print(f"Unknown key {key} in driver state file")
+                    except Exception as e:
+                        print(f"Error parsing key-value pair {key}={value}: {e}")
+        except FileNotFoundError:
+            // this should just fall through to return the state with default values
+
+        return state
 
     async def is_driver_installed(self):
         try:
