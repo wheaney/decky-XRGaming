@@ -225,7 +225,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                         </PanelSectionRow>
                         {deviceConnected && <PanelSectionRow>
                             <SliderField label={"Headset mode"}
-                                         description={isVirtualDisplayMode ? "Virtual display is only available in-game. See below for more help." : undefined}
+                                         description={isVirtualDisplayMode ? "Virtual display is only available in-game." : undefined}
                                          value={isDisabled ? ModeValues.indexOf('disabled') : ModeValues.indexOf(outputMode)}
                                          notchTicksVisible={true}
                                          min={0} max={ModeValues.length-1}
@@ -285,6 +285,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                             </PanelSectionRow>
                             <PanelSectionRow>
                                 <ButtonItem disabled={calibrating || dirtyControlFlags.recenter_screen}
+                                            description={!calibrating && !dirtyControlFlags.recenter_screen ? "Or double-tap your headset." : undefined}
                                             layout="below"
                                             onClick={() => writeControlFlags({recenter_screen: true})} >
                                     {calibrating ?
@@ -328,6 +329,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                                 </PanelSectionRow>
                                 <PanelSectionRow>
                                     <ButtonItem disabled={calibrating}
+                                                description={!calibrating ? "Or triple-tap your headset." : undefined}
                                                 layout="below"
                                                 onClick={() => writeControlFlags({recalibrate: true})} >
                                         {calibrating ?

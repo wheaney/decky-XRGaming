@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+
+# exit when any command fails
+set -e
+
+# check if jp exists
+if ! command -v jq &> /dev/null
+then
+    echo "jq could not be found"
+    exit 1
+fi
+
+# check that a version is provided as the first parameter
+if [ -z "$1" ]
+then
+  echo "Usage: $0 <breezyVersion>"
+  exit 1
+fi
+
+tmpdir=$(mktemp -d)
+
+# create a url like https://github.com/wheaney/breezy-desktop/releases/download/someVersion/breezyVulkan.tar.gz replacing someVersion
+version=$1
+echo "Using breezy version: ${version}"
+
+binaryUrl="https://github.com/wheaney/breezy-desktop/releases/download/${version}/breezyVulkan.tar.gz"
+setupUrl="https://github.com/wheaney/breezy-desktop/releases/download/${version}/breezy_vulkan_setup"
+echo "Using binary url: ${binaryUrl}"
+echo "Using setup url: ${setupUrl}"
+
+# download the two files using the urls above into the temp directory
+curl -L -o "${tmpdir}/breezyVulkan.tar.gz" "${binaryUrl}"
+curl -L -o "${tmpdir}/breezy_vulkan_setup" "${setupUrl}"
+
+## verify the downloaded file sizes are at least 1kb
+if [ $(wc -c < "${tmpdir}/breezyVulkan.tar.gz") -lt 1000 ] || [ $(wc -c < "${tmpdir}/breezy_vulkan_setup") -lt 1000 ]
+then
+  echo "Download failed, check the version"
+  exit 1
+fi
+
+# get the sha256sum of the two downloaded files
+binarySha256=$(sha256sum "${tmpdir}/breezyVulkan.tar.gz" | cut -d ' ' -f 1)
+setupSha256=$(sha256sum "${tmpdir}/breezy_vulkan_setup" | cut -d ' ' -f 1)
+echo "Using binary sha256sum: ${binarySha256}"
+echo "Using setup sha256sum: ${setupSha256}"
+
+# insert the urls and sha256sums into the package.json at the paths like custom_remote_binary[0].url and custom_remote_binary[0].sha256hash
+jq --arg binaryUrl "${binaryUrl}" \
+   --arg binarySha256 "${binarySha256}" \
+   --arg setupUrl "${setupUrl}" \
+   --arg setupSha256 "${setupSha256}" \
+   '.custom_remote_binary[0].url = $setupUrl |
+      .custom_remote_binary[0].sha256hash = $setupSha256 |
+      .custom_remote_binary[1].url = $binaryUrl |
+    .custom_remote_binary[1].sha256hash = $binarySha256' \
+    package.json > "${tmpdir}/package.json"
+
+cp "${tmpdir}/package.json" package.json
+echo "Copied updated package.json to root of repo"
+
+rm -rf "${tmpdir}"
