@@ -1,13 +1,13 @@
 import os
 import stat
 import subprocess
+import time
 
 # The decky plugin module is located at decky-loader/plugin
 # For easy intellisense checkout the decky-loader code one directory up
 # or add the `decky-loader/plugin` path to `python.analysis.extraPaths` in `.vscode/settings.json`
 import decky_plugin
 from settings import SettingsManager
-from enum import Enum
 
 
 CONFIG_FILE_PATH = os.path.join(decky_plugin.DECKY_USER_HOME, ".xreal_driver_config")
@@ -46,7 +46,6 @@ def parse_float(value, default):
 
 class Plugin:
     async def retrieve_config(self):
-        decky_plugin.logger.info(f"Calling retrieve_config")
         config = {}
         config['disabled'] = False
         config['output_mode'] = 'mouse'
@@ -75,7 +74,6 @@ class Plugin:
         return config
 
     async def write_config(self, config):
-        decky_plugin.logger.info(f"Calling write_config")
         try:
             output = ""
             for key, value in config.items():
@@ -102,7 +100,6 @@ class Plugin:
             decky_plugin.logger.error(f"Error writing config {e}")
 
     async def write_control_flags(self, control_flags):
-        decky_plugin.logger.info(f"Calling write_control_flags")
         try:
             output = ""
             for key, value in control_flags.items():
@@ -119,7 +116,6 @@ class Plugin:
             decky_plugin.logger.error(f"Error writing control flags {e}")
 
     async def retrieve_driver_state(self):
-        decky_plugin.logger.info(f"Calling retrieve_driver_state")
         state = {}
         state['heartbeat'] = 0
         state['connected_device_name'] = None
@@ -148,10 +144,13 @@ class Plugin:
         except FileNotFoundError:
             pass
 
+        # state is stale, ignore it
+        if state['heartbeat'] == 0 or (time.time() - state['heartbeat']) > 5:
+            return {}
+
         return state
 
     async def is_driver_installed(self):
-        decky_plugin.logger.info(f"Checking driver installation")
         try:
             output = subprocess.check_output(['systemctl', 'is-active', 'xreal-air-driver'], stderr=subprocess.STDOUT)
             if output.strip() != b'active':
@@ -182,7 +181,6 @@ class Plugin:
 
     # Asyncio-compatible long-running code, executed in a task when the plugin is loaded
     async def _main(self):
-        decky_plugin.logger.info(f"Checking driver installation")
         pass
 
     # Function called first during the unload process, utilize this to handle your plugin being removed
