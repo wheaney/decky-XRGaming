@@ -1,6 +1,7 @@
 import {
     ButtonItem,
     definePlugin,
+    Field,
     NotchLabel,
     PanelSection,
     PanelSectionRow,
@@ -17,7 +18,7 @@ import {FaGlasses} from "react-icons/fa";
 import {BiMessageError} from "react-icons/bi";
 import { PiPlugsConnected } from "react-icons/pi";
 import { TbPlugConnectedX } from "react-icons/tb";
-import {SiKofi} from 'react-icons/si';
+import {SiDiscord, SiKofi} from 'react-icons/si';
 import {LuHelpCircle} from 'react-icons/lu';
 import QrButton from "./QrButton";
 
@@ -55,7 +56,7 @@ const ModeValues: ModeValue[] = ['external_only', 'mouse', 'joystick', 'disabled
 type CalibrationSetup = "AUTOMATIC" | "INTERACTIVE"
 type CalibrationState = "NOT_CALIBRATED" | "CALIBRATING" | "CALIBRATED" | "WAITING_ON_USER"
 type SbsModeControl = "unset" | "enable" | "disable"
-const DirtyControlFlagsExpireMilliseconds = 2000
+const DirtyControlFlagsExpireMilliseconds = 3000
 
 function modeValueIsOutputMode(value: ModeValue): value is OutputMode {
     return value != "disabled"
@@ -116,6 +117,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
     const [driverState, setDriverState] = useState<DriverState>();
     const [dirtyControlFlags, setDirtyControlFlags] = useState<DirtyControlFlags>({});
     const [installationStatus, setInstallationStatus] = useState<InstallationStatus>("checking");
+    const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
     const [error, setError] = useState<string>();
 
     async function retrieveConfig() {
@@ -144,7 +146,8 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                 if (installDriverRes.success && installDriverRes.result)
                     setInstallationStatus("installed")
                 else
-                    setError("Error installing the driver, check the logs")
+                    setError("There was an error during setup. Try restarting your Steam Deck. " +
+                        "If the error persists, please file an issue in the decky-xrealAir GitHub repository.")
             }
         } else {
             setError(installedRes.result);
@@ -207,17 +210,17 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                 {installationStatus == "installed" && driverState && config &&
                     <Fragment>
                         <PanelSectionRow style={{fontSize: 'medium', textAlign: 'center'}}>
-                            <div style={{padding: 0}}>
+                            <Field padding={'none'} childrenContainerWidth={'max'}>
                                 <span style={{color: deviceConnected ? 'white' : 'gray'}}>
                                     {deviceConnected ? driverState?.connected_device_name : "No device connected"}
                                 </span>
                                 {deviceConnected && <span style={{marginLeft: 5, color: 'green'}}>
                                     connected
                                 </span>}
-                                <span style={{marginLeft: 10, color: deviceConnected ? 'green' : 'red', position: 'relative', top: '3px'}}>
+                                <span style={{marginLeft: 7, color: deviceConnected ? 'green' : 'red', position: 'relative', top: '3px'}}>
                                     {deviceConnected ? <PiPlugsConnected /> : <TbPlugConnectedX />}
                                 </span>
-                            </div>
+                            </Field>
                         </PanelSectionRow>
                         {deviceConnected && <PanelSectionRow>
                             <SliderField label={"Headset mode"}
@@ -278,52 +281,62 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                                              }}
                                 />
                             </PanelSectionRow>
-                            <PanelSectionRow>
-                                <SliderField value={lookAhead}
-                                             min={0} max={30} notchTicksVisible={true}
-                                             notchCount={7} notchLabels={LookAheadNotchLabels}
-                                             step={5}
-                                             label={"Movement look-ahead"}
-                                             description={lookAhead > 0 ? "Use Default unless screen is noticeably ahead or behind your movements. May introduce jitter at higher values." : undefined}
-                                             onChange={(look_ahead) => {
-                                                 if (config) {
-                                                     updateConfig({
-                                                         ...config,
-                                                         look_ahead
-                                                     }).catch(e => setError(e))
-                                                 }
-                                             }}
-                                />
-                            </PanelSectionRow>
-                            {driverState?.sbs_mode_supported && <PanelSectionRow>
-                                <ToggleField
-                                    checked={sbsModeEnabled}
-                                    label={"Enable SBS mode"}
-                                    onChange={(sbs_mode_enabled) => writeControlFlags(
-                                        {
-                                            sbs_mode: sbs_mode_enabled ? 'enable' : 'disable'
-                                        }
-                                    )}/>
+                            {!showAdvanced && <PanelSectionRow>
+                                <ButtonItem layout="below" onClick={() => setShowAdvanced(true)} >
+                                    Show advanced settings
+                                </ButtonItem>
                             </PanelSectionRow>}
-                            <PanelSectionRow>
-                                <ButtonItem disabled={calibrating || dirtyControlFlags.recenter_screen}
-                                            bottomSeparator="none"
-                                            layout="below"
-                                            onClick={() => writeControlFlags({recenter_screen: true})} >
-                                    Recenter display
+                            {showAdvanced && <Fragment>
+                                    <PanelSectionRow>
+                                    <ButtonItem disabled={calibrating || dirtyControlFlags.recenter_screen}
+                                                layout="below"
+                                                onClick={() => writeControlFlags({recenter_screen: true})} >
+                                        Recenter display
+                                    </ButtonItem>
+                                </PanelSectionRow>
+                                {driverState?.sbs_mode_supported && <PanelSectionRow>
+                                    <ToggleField
+                                        checked={sbsModeEnabled}
+                                        label={"Enable SBS mode"}
+                                        onChange={(sbs_mode_enabled) => writeControlFlags(
+                                            {
+                                                sbs_mode: sbs_mode_enabled ? 'enable' : 'disable'
+                                            }
+                                        )}/>
+                                </PanelSectionRow>}
+                                <PanelSectionRow>
+                                    <SliderField value={lookAhead}
+                                                 min={0} max={30} notchTicksVisible={true}
+                                                 notchCount={7} notchLabels={LookAheadNotchLabels}
+                                                 step={5}
+                                                 label={"Movement look-ahead"}
+                                                 description={lookAhead > 0 ? "Use Default unless screen is noticeably ahead or behind your movements. May introduce jitter at higher values." : undefined}
+                                                 onChange={(look_ahead) => {
+                                                     if (config) {
+                                                         updateConfig({
+                                                             ...config,
+                                                             look_ahead
+                                                         }).catch(e => setError(e))
+                                                     }
+                                                 }}
+                                    />
+                                </PanelSectionRow>
+                                <PanelSectionRow>
+                                    <ButtonItem disabled={calibrating}
+                                                layout="below"
+                                                onClick={() => writeControlFlags({recalibrate: true})} >
+                                        {calibrating ?
+                                            <span><Spinner style={{height: '16px', marginRight: 10}} />Calibrating headset</span> :
+                                            "Recalibrate headset"
+                                        }
+                                    </ButtonItem>
+                                </PanelSectionRow>
+                            </Fragment>}
+                            {showAdvanced && <PanelSectionRow>
+                                <ButtonItem layout="below" onClick={() => setShowAdvanced(false)} >
+                                    Hide advanced settings
                                 </ButtonItem>
-                            </PanelSectionRow>
-                            <PanelSectionRow>
-                                <ButtonItem disabled={calibrating}
-                                            bottomSeparator="none"
-                                            layout="below"
-                                            onClick={() => writeControlFlags({recalibrate: true})} >
-                                    {calibrating ?
-                                        <span><Spinner style={{height: '16px', marginRight: 10}} />Calibrating</span> :
-                                        "Recalibrate"
-                                    }
-                                </ButtonItem>
-                            </PanelSectionRow>
+                            </PanelSectionRow>}
                         </Fragment>}
                         {!isDisabled && config.output_mode == "external_only" &&
                             <QrButton icon={<LuHelpCircle />}
@@ -341,9 +354,15 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                         {deviceConnected && <QrButton icon={<SiKofi />} url={"https://ko-fi.com/wheaney"}>
                             <span style={{fontSize: 'small'}}>
                                 Want more great stuff like this?<br/>
-                                <b>Become a <SiKofi style={{position: 'relative', top: '3px'}} color={"red"} /> supporter!</b>
+                                <span style={{color:'white', fontWeight: 'bold'}}>Become a <SiKofi style={{position: 'relative', top: '3px'}} color={"red"} /> supporter!</span>
                             </span>
                         </QrButton>}
+                        <QrButton icon={<SiDiscord />} url={"https://discord.gg/GRQcfR5h9c"}>
+                            <span style={{fontSize: 'small'}}>
+                                News. Discussions. Help.<br/>
+                                <span style={{color:'white', fontWeight: 'bold'}}>Join the chat!</span>
+                            </span>
+                        </QrButton>
                     </Fragment> ||
                     <PanelSectionRow>
                         <Spinner style={{height: '48px'}} />

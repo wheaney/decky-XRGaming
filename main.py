@@ -128,7 +128,6 @@ class Plugin:
             with open(DRIVER_STATE_FILE_PATH, 'r') as f:
                 output = f.read()
                 for line in output.splitlines():
-                    decky_plugin.logger.info(f"Reading line {line}")
                     try:
                         key, value = line.strip().split('=')
                         if key == 'heartbeat':
@@ -150,10 +149,17 @@ class Plugin:
 
         return state
 
-    async def is_driver_installed(self):
+    async def is_driver_running(self):
         try:
             output = subprocess.check_output(['systemctl', 'is-active', 'xreal-air-driver'], stderr=subprocess.STDOUT)
-            if output.strip() != b'active':
+            return output.strip() == b'active'
+        except subprocess.CalledProcessError as exc:
+            decky_plugin.logger.error(f"Error checking driver status {exc}")
+            return False
+
+    async def is_driver_installed(self):
+        try:
+            if not await self.is_driver_running(self):
                 return False
 
             installed_from_plugin_version = settings.getSetting(INSTALLED_VERSION_SETTING_KEY)
@@ -171,10 +177,18 @@ class Plugin:
 
         setup_script_path = os.path.dirname(__file__) + "/bin/breezy_vulkan_setup"
         binary_path = os.path.dirname(__file__) + "/bin/breezyVulkan.tar.gz"
+        attempt = 0
         try:
-            subprocess.check_output([setup_script_path, binary_path], stderr=subprocess.STDOUT, env=env_copy)
-            settings.setSetting(INSTALLED_VERSION_SETTING_KEY, decky_plugin.DECKY_PLUGIN_VERSION)
-            return True
+            while attempt < 3:
+                subprocess.check_output([setup_script_path, binary_path], stderr=subprocess.STDOUT, env=env_copy)
+                if await self.is_driver_running(self):
+                    settings.setSetting(INSTALLED_VERSION_SETTING_KEY, decky_plugin.DECKY_PLUGIN_VERSION)
+                    return True
+
+                attempt += 1
+                time.sleep(1)
+
+            return False
         except subprocess.CalledProcessError as exc:
             decky_plugin.logger.error(f"Error running setup script {exc}")
             return False
