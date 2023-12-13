@@ -190,6 +190,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
     const deviceConnected = !!driverState?.connected_device_name
     const isDisabled = !deviceConnected || (config?.disabled ?? false)
     const outputMode = config?.output_mode ?? 'mouse'
+    const isVirtualDisplayMode = !isDisabled && config?.output_mode == "external_only"
     const mouseSensitivity = config?.mouse_sensitivity ?? 20
     const lookAhead = config?.look_ahead ?? 0
     const externalZoom = config?.external_zoom ?? 1
@@ -224,6 +225,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                         </PanelSectionRow>
                         {deviceConnected && <PanelSectionRow>
                             <SliderField label={"Headset mode"}
+                                         description={isVirtualDisplayMode ? "Virtual display is only available in-game. See below for more help." : undefined}
                                          value={isDisabled ? ModeValues.indexOf('disabled') : ModeValues.indexOf(outputMode)}
                                          notchTicksVisible={true}
                                          min={0} max={ModeValues.length-1}
@@ -262,7 +264,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                                          }}
                             />
                         </PanelSectionRow>}
-                        {!isDisabled && config.output_mode == "external_only" && <Fragment>
+                        {isVirtualDisplayMode && <Fragment>
                             <PanelSectionRow>
                                 <SliderField value={externalZoom}
                                              min={0.25} max={2.5}
@@ -281,19 +283,22 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                                              }}
                                 />
                             </PanelSectionRow>
+                            <PanelSectionRow>
+                                <ButtonItem disabled={calibrating || dirtyControlFlags.recenter_screen}
+                                            layout="below"
+                                            onClick={() => writeControlFlags({recenter_screen: true})} >
+                                    {calibrating ?
+                                        <span><Spinner style={{height: '16px', marginRight: 10}} />Calibrating headset</span> :
+                                        "Recenter display"
+                                    }
+                                </ButtonItem>
+                            </PanelSectionRow>
                             {!showAdvanced && <PanelSectionRow>
                                 <ButtonItem layout="below" onClick={() => setShowAdvanced(true)} >
                                     Show advanced settings
                                 </ButtonItem>
                             </PanelSectionRow>}
                             {showAdvanced && <Fragment>
-                                    <PanelSectionRow>
-                                    <ButtonItem disabled={calibrating || dirtyControlFlags.recenter_screen}
-                                                layout="below"
-                                                onClick={() => writeControlFlags({recenter_screen: true})} >
-                                        Recenter display
-                                    </ButtonItem>
-                                </PanelSectionRow>
                                 {driverState?.sbs_mode_supported && <PanelSectionRow>
                                     <ToggleField
                                         checked={sbsModeEnabled}
@@ -338,7 +343,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                                 </ButtonItem>
                             </PanelSectionRow>}
                         </Fragment>}
-                        {!isDisabled && config.output_mode == "external_only" &&
+                        {isVirtualDisplayMode &&
                             <QrButton icon={<LuHelpCircle />}
                                       url={"https://github.com/wheaney/decky-xrealAir#virtual-display-help"}
                                       followLink={true}
@@ -349,6 +354,12 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                                     WebkitBackgroundClip: 'text',
                                     color: 'transparent'
                                 }}>Virtual display</span> help</span>
+                            </QrButton> ||
+                            <QrButton icon={<LuHelpCircle />}
+                                      url={"https://github.com/wheaney/decky-xrealAir#xreal-air-driver"}
+                                      followLink={true}
+                            >
+                                Need help?
                             </QrButton>
                         }
                         {deviceConnected && <QrButton icon={<SiKofi />} url={"https://ko-fi.com/wheaney"}>
