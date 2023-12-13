@@ -13,17 +13,21 @@ For the moment, virtual display support only works for Vulkan games. See what's 
 
 This plugin installs and keeps you up-to-date with the latest version of Breezy. Going into the plugin settings allows you to disable Breezy or configure its behavior.
 
-## Configuration Options
+## Decky Controls
 
-From the plugin settings, you can control the following:
-* **Enable/disable the driver**. When disabled, your Air glasses will be display-only, no head movements will be tracked.
+From the plugin sidebar, you can control the following:
 * **Change headset modes**.
   * In [virtual display mode](#virtual-display-help), a display will be rendered in a fixed space, allowing you to move your head to look at different parts of the screen.
   * In [mouse-mode](#mouse-mode), head movements are translated to mouse movements.
   * In joystick-mode, head movements are translated to right-joystick movements on a virtual controller (use this as [a fallback option](#enable-joystick-mode) if mouse mode doesn't work).
+  * When disabled, your Air glasses will be display-only, no head movements will be tracked.
 * **Mouse sensitivity**. In mouse-mode, this setting controls how much/quickly the mouse will move relative to your head movements.
-* **Display size**. In virtual display mode, this setting controls how big the screen appears. A setting of 1 will render at the game's resolution, while a higher setting zooms in (e.g. 2 for 2x zoom) and lower zooms out (e.g. 0.5 for a 50% smaller screen). 
-* **Movement look-ahead**. In virtual display mode, Breezy automatically attempts to anticipate where the screen will be when the next frame is rendered. If you find that its default look-ahead is producing a screen that drags behind your movements or a screen that is over-eager or jittery, you can tweak this yourself. The max is capped because higher values produce jitter and become unusable.
+* **Display size**. In virtual display mode, this setting controls how big the screen appears. A setting of 1 will render at the game's resolution, while a higher setting zooms in (e.g. 2 for 2x zoom) and lower zooms out (e.g. 0.5 for a 50% smaller screen).
+* **Recenter display** button. In virtual display mode, if you don't like where your virtual display has been placed, you can use this button or multi-tap to re-center it. See ["I don't like where the screen was placed, or it has drifted from where it was."](#i-dont-like-where-the-screen-was-placed-or-it-has-drifted-from-where-it-was) for more details.
+* **Advanced settings** (virtual display mode only):
+  * **Recalibrate headset** button. If you're experiencing drift, noisiness, or a twisting/swaying of the screen when you move, you can use this button or multi-tap to try re-calibrating your headset. See ["I don't like where the screen was placed, or it has drifted from where it was."](#i-dont-like-where-the-screen-was-placed-or-it-has-drifted-from-where-it-was) for more details.
+  * **Movement look-ahead**. In virtual display mode, Breezy automatically attempts to anticipate where the screen will be when the next frame is rendered. If you find that its default look-ahead is producing a screen that drags behind your movements or a screen that is over-eager or jittery, you can tweak this yourself. The max is capped because higher values produce jitter and become unusable.
+  * **Enable SBS mode** (only shows up for some devices). This toggle switch will put your glasses in or out of SBS mode. When in SBS mode, your display resolution will double in width (to 3840x1080), and each eye will show only half of the screen. Don't switch into SBS mode unless your screen is already displaying SBS content, or you know what you're doing.
 
 ## Virtual display help
 
@@ -72,14 +76,16 @@ Here are specific ways you can try to achieve that on the Steam Deck:
 * In **the in-game Video/Graphics settings**, set the resolution to `1920x1080` (or any 16:9 aspect ratio), disable `VSync`, and set everything to lower-quality, higher-performance settings.
 * In **the Deck's** `...` **Performance menu**, flip on `Disable Frame Limit` (I know it's confusing to "turn on" a feature that "turns off" something, but either way the switch should be flipped to the "on" position) and enable `Allow Tearing`.
 
-You'll probably find that the virtual display movements become a bit more wild if these changes achieve their goals, because the default look-ahead settings are now too high. Go into the **XREAL Air Driver** plugin settings and change the **Movement look-ahead** setting to `Min`, then slowly dial it up while moving your head until the display seems to most stable.
+After you make these changes, if the display is still either lagging behind or jumping ahead of your movements or exhibiting a lot of shakiness, go into the **XREAL Air Driver** plugin settings and change the **Movement look-ahead** setting to `Min`, then slowly dial it up while moving your head until the display seems to most stable.
 
 ### I don't like where the screen was placed, or it has drifted from where it was.
-You'll want to use the multi-tap functionality built into this driver. **Note: XREAL did NOT build this feature and has NOT condoned this practice; tap on your glasses at your own risk.**
+Unfortunately, screen drift will probably remain an issue for the foreseeable future. The only workarounds for this currently are to either (a) keep re-centering it, or (b) try re-calibrating it.
 
-To re-center your screen, give two decent taps on the top of the glasses. Each tap should firm and sharp, with a split-second wait before the next, as it needs to detect a slight pause in between. The cadence should be more like knocking on a door than double-clicking a mouse.
+This section will suggest you either use buttons in the plugin sidebar or use the multi-tap functionality built into this driver. For multi-tap, use one finger to tap down on the top of your glasses by your template. Each tap should firm and sharp, with a split-second wait before the next, as it needs to detect a slight pause in between. The cadence should be more like knocking on a door than double-clicking a mouse. If multi-tap isn't working or you would prefer not to use it, use the suggested buttons instead. **Note: XREAL did NOT build multi-tap support and has NOT condoned this practice; tap on your glasses at your own risk.**
 
-Unfortunately, screen drift will probably remain an issue for the foreseeable future. The only workarounds for this currently are to either (a) keep re-centering it, or (b) try re-calibrating it by doing a triple-tap; this will briefly display a static screen while it resets the device calibration.
+To re-center your screen, either use the **Recenter display** button in the plugin sidebar, or perform a double-tap on your glasses.
+
+To re-calibrate your screen,  either use the **Recalibrate headset** button in the **Advanced settings** of the plugin sidebar, or perform a triple-tap on your glasses. This will briefly display a static screen while it resets the device calibration
 
 ### The screen flickers a lot when I move.
 Framerate is really important here, because individual frames are static, so moving your head quickly may produce a noticeable flicker as it moves the screen. Higher framerates will produce an overall better experience (less flicker and smoother follow), so consider optimizing your game settings for better performance when using this mode. See "[How can I optimize my setup for the best experience?](#how-can-i-optimize-my-setup-for-the-best-experience)" for other performance-related recommendations.
