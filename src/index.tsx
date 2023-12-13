@@ -12,10 +12,11 @@ import {
     ToggleField
 } from "decky-frontend-lib";
 // @ts-ignore
-import React, {CSSProperties, Fragment, useEffect, useState, VFC} from "react";
+import React, {Fragment, useEffect, useState, VFC} from "react";
 import {FaGlasses} from "react-icons/fa";
 import {BiMessageError} from "react-icons/bi";
-import {BsUsbC, BsUsbCFill} from "react-icons/bs";
+import { PiPlugsConnected } from "react-icons/pi";
+import { TbPlugConnectedX } from "react-icons/tb";
 import {SiKofi} from 'react-icons/si';
 import {LuHelpCircle} from 'react-icons/lu';
 import QrButton from "./QrButton";
@@ -207,15 +208,15 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                     <Fragment>
                         <PanelSectionRow style={{fontSize: 'medium', textAlign: 'center'}}>
                             <div style={{padding: 0}}>
-                                <span style={{color: deviceConnected ? 'white' : 'gray', position: 'relative', top: '3px'}}>
-                                    {deviceConnected ? <BsUsbCFill/> : <BsUsbC/>}
-                                </span>
-                                <span style={{marginLeft: 10, color: deviceConnected ? 'white' : 'gray'}}>
+                                <span style={{color: deviceConnected ? 'white' : 'gray'}}>
                                     {deviceConnected ? driverState?.connected_device_name : "No device connected"}
                                 </span>
                                 {deviceConnected && <span style={{marginLeft: 5, color: 'green'}}>
                                     connected
                                 </span>}
+                                <span style={{marginLeft: 10, color: deviceConnected ? 'green' : 'red', position: 'relative', top: '3px'}}>
+                                    {deviceConnected ? <PiPlugsConnected /> : <TbPlugConnectedX />}
+                                </span>
                             </div>
                         </PanelSectionRow>
                         {deviceConnected && <PanelSectionRow>
