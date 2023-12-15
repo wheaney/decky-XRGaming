@@ -50,20 +50,23 @@ class Plugin:
         config['disabled'] = False
         config['output_mode'] = 'mouse'
         config['mouse_sensitivity'] = 20
-        config['external_zoom'] = 1
+        config['display_zoom'] = 1
+        config['display_distance'] = 1
         config['look_ahead'] = 0
+        config['sbs_content'] = False
+        config['sbs_mode_stretched'] = False
 
         try:
             with open(CONFIG_FILE_PATH, 'r') as f:
                 for line in f:
                     try:
                         key, value = line.strip().split('=')
-                        if key in ['disabled']:
+                        if key in ['disabled', 'sbs_mode_stretched', 'sbs_content']:
                             config[key] = parse_boolean(value, config[key])
                         elif key in ['mouse_sensitivity', 'look_ahead']:
                             config[key] = parse_int(value, config[key])
-                        elif key in ['external_zoom']:
-                            config[key] = parse_float(value, config[key])
+                        elif key in ['external_zoom', 'display_zoom', 'display_distance']:
+                            config['display_zoom' if key in ['external_zoom', 'display_zoom'] else key] = parse_float(value, config[key])
                         else:
                             config[key] = value
                     except Exception as e:
@@ -103,11 +106,14 @@ class Plugin:
         try:
             output = ""
             for key, value in control_flags.items():
-                if isinstance(value, bool) and key in CONTROL_FLAGS:
+                if key in CONTROL_FLAGS:
                     if key == 'sbs_mode':
                         if value not in SBS_MODE_VALUES:
                             decky_plugin.logger.error(f"Invalid value {value} for sbs_mode flag")
                             continue
+                    elif not isinstance(value, bool):
+                        decky_plugin.logger.error(f"Invalid value {value} for {key} flag")
+                        continue
                     output += f'{key}={str(value).lower()}\n'
 
             with open(CONTROL_FLAGS_FILE_PATH, 'w') as f:
