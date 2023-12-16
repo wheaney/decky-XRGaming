@@ -154,7 +154,7 @@ class Plugin:
             output = subprocess.check_output(['systemctl', 'is-active', 'xreal-air-driver'], stderr=subprocess.STDOUT)
             return output.strip() == b'active'
         except subprocess.CalledProcessError as exc:
-            decky_plugin.logger.error(f"Error checking driver status {exc}")
+            decky_plugin.logger.error(f"Error checking driver status {exc.output}")
             return False
 
     async def is_driver_installed(self):
@@ -165,7 +165,7 @@ class Plugin:
             installed_from_plugin_version = settings.getSetting(INSTALLED_VERSION_SETTING_KEY)
             return installed_from_plugin_version == decky_plugin.DECKY_PLUGIN_VERSION
         except subprocess.CalledProcessError as exc:
-            decky_plugin.logger.error(f"Error checking driver installation {exc}")
+            decky_plugin.logger.error(f"Error checking driver installation {exc.output}")
             return False
 
     async def install_driver(self):
@@ -190,7 +190,7 @@ class Plugin:
 
             return False
         except subprocess.CalledProcessError as exc:
-            decky_plugin.logger.error(f"Error running setup script {exc}")
+            decky_plugin.logger.error(f"Error running setup script: {exc.output}")
             return False
 
     # Asyncio-compatible long-running code, executed in a task when the plugin is loaded
@@ -218,5 +218,5 @@ class Plugin:
             settings.setSetting(INSTALLED_VERSION_SETTING_KEY, None)
             return True
         except subprocess.CalledProcessError as exc:
-            decky_plugin.logger.error(f"Error running uninstall script {exc}")
+            decky_plugin.logger.error(f"Error running uninstall script {exc.output}")
             return False
