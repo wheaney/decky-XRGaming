@@ -178,20 +178,19 @@ class Plugin:
         setup_script_path = os.path.dirname(__file__) + "/bin/breezy_vulkan_setup"
         binary_path = os.path.dirname(__file__) + "/bin/breezyVulkan.tar.gz"
         attempt = 0
-        try:
-            while attempt < 3:
+        while attempt < 3:
+            try:
                 subprocess.check_output([setup_script_path, binary_path], stderr=subprocess.STDOUT, env=env_copy)
                 if await self.is_driver_running(self):
                     settings.setSetting(INSTALLED_VERSION_SETTING_KEY, decky_plugin.DECKY_PLUGIN_VERSION)
                     return True
+            except subprocess.CalledProcessError as exc:
+                decky_plugin.logger.error(f"Error running setup script: {exc.output}")
 
-                attempt += 1
-                time.sleep(1)
+            attempt += 1
+            time.sleep(1)
 
-            return False
-        except subprocess.CalledProcessError as exc:
-            decky_plugin.logger.error(f"Error running setup script: {exc.output}")
-            return False
+        return False
 
     # Asyncio-compatible long-running code, executed in a task when the plugin is loaded
     async def _main(self):
