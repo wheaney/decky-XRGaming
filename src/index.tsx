@@ -21,6 +21,7 @@ import { TbPlugConnectedX } from "react-icons/tb";
 import {SiDiscord, SiKofi} from 'react-icons/si';
 import {LuHelpCircle} from 'react-icons/lu';
 import QrButton from "./QrButton";
+import beam from "../assets/beam.png";
 
 interface Config {
     disabled: boolean;
@@ -61,7 +62,13 @@ type CalibrationState = "NOT_CALIBRATED" | "CALIBRATING" | "CALIBRATED" | "WAITI
 type SbsModeControl = "unset" | "enable" | "disable"
 const DirtyControlFlagsExpireMilliseconds = 3000
 
-const HeadsetModeOptions: HeadsetModeOption[] =  ["virtual_display", "vr_lite", "disabled"]
+const HeadsetModeOptions: HeadsetModeOption[] =  ["virtual_display", "vr_lite", "disabled"];
+const HeadsetModeDescriptions: {[key in HeadsetModeOption]: string} = {
+    "virtual_display": "Virtual display is only available in-game.",
+    "vr_lite": "Use Head movements to look around in-game.",
+    "disabled": "Static display with no head-tracking."
+};
+
 function headsetModeToConfig(headsetMode: HeadsetModeOption, joystickMode: boolean): Partial<Config> {
     switch (headsetMode) {
         case "virtual_display":
@@ -85,16 +92,12 @@ const ModeNotchLabels: NotchLabel[] = [
         notchIndex: 0
     },
     {
-        label: "Mouse",
+        label: "VR\u2011Lite",
         notchIndex: 1
     },
     {
-        label: "Joystick",
-        notchIndex: 2
-    },
-    {
         label: "Disabled",
-        notchIndex: 3
+        notchIndex: 2
     },
 ];
 
@@ -228,16 +231,18 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
     const deviceConnected = !!driverState?.connected_device_brand && !!driverState?.connected_device_model
     const deviceName = deviceConnected ? `${driverState?.connected_device_brand} ${driverState?.connected_device_model}` : "No device connected"
     const isDisabled = !deviceConnected || (config?.disabled ?? false)
+    const headsetMode: HeadsetModeOption = config ? configToHeadsetMode(config) : "disabled"
     const isVirtualDisplayMode = !isDisabled && config?.output_mode == "external_only"
     const isVrLiteMode = !isDisabled && config?.output_mode != "external_only";
     let sbsModeEnabled = driverState?.sbs_mode_enabled ?? false
     if (dirtyControlFlags?.sbs_mode && dirtyControlFlags?.sbs_mode !== 'unset') sbsModeEnabled = dirtyControlFlags.sbs_mode === 'enable'
     const calibrating = dirtyControlFlags.recalibrate || driverState?.calibration_state == "CALIBRATING";
+
     const enableSbsButton = <PanelSectionRow>
         <ToggleField
             checked={sbsModeEnabled}
             label={"Enable side-by-side mode"}
-            description={"For adjusting screen depth, or viewing 3D content"}
+            description={!driverState?.sbs_mode_enabled && "Adjust virtual display depth. View 3D content."}
             onChange={(sbs_mode_enabled) => writeControlFlags(
                 {
                     sbs_mode: sbs_mode_enabled ? 'enable' : 'disable'
@@ -245,23 +250,25 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
             )}/>
     </PanelSectionRow>;
 
+    const joystickModeButton = <PanelSectionRow>
+        <ToggleField
+            checked={isJoystickMode}
+            label={"Joystick mode"}
+            description={"Try as a last resort if your game doesn't support mouse-look."}
+            onChange={(joystickMode) => {
+                if (config) {
+                    updateConfig({
+                        ...config,
+                        ...headsetModeToConfig(headsetMode, joystickMode)
+                    }).catch(e => setError(e))
+                }
+                setJoystickMode(joystickMode)
+            }}/>
+    </PanelSectionRow>;
+
     const advancedSettings = [
-        isVrLiteMode && <PanelSectionRow>
-            <ToggleField
-                checked={isJoystickMode}
-                label={"VR-lite joystick mode"}
-                description={"Last resort if your game doesn't support mouse-look"}
-                onChange={(joystickMode) => {
-                    if (config) {
-                        updateConfig({
-                            ...config,
-                            ...headsetModeToConfig(configToHeadsetMode(config), joystickMode)
-                        }).catch(e => setError(e))
-                    }
-                    setJoystickMode(joystickMode)
-                }}/>
-        </PanelSectionRow>,
-        isVirtualDisplayMode && driverState?.sbs_mode_supported && !sbsModeEnabled && enableSbsButton,
+        isVrLiteMode && !isJoystickMode && joystickModeButton,
+        isVirtualDisplayMode && driverState?.sbs_mode_supported && !driverState?.sbs_mode_enabled && enableSbsButton,
         config && isVirtualDisplayMode && <PanelSectionRow>
             <SliderField value={config.look_ahead}
                          min={0} max={30} notchTicksVisible={true}
@@ -308,86 +315,84 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
             </PanelSection>}
             {!error && <Fragment>
                 {installationStatus == "installed" && driverState && config &&
-                    <Fragment>
-                        <PanelSection>
-                            <PanelSectionRow style={{fontSize: 'medium', textAlign: 'center'}}>
-                                <Field padding={'none'} childrenContainerWidth={'max'}>
-                                    <span style={{color: deviceConnected ? 'white' : 'gray'}}>
-                                        {deviceName}
-                                    </span>
-                                    {deviceConnected && <span style={{marginLeft: 5, color: 'green'}}>
-                                        connected
-                                    </span>}
-                                    <span style={{marginLeft: 7, color: deviceConnected ? 'green' : 'red', position: 'relative', top: '3px'}}>
-                                        {deviceConnected ? <PiPlugsConnected /> : <TbPlugConnectedX />}
-                                    </span>
-                                </Field>
+                    <PanelSection>
+                        <PanelSectionRow style={{fontSize: 'medium', textAlign: 'center'}}>
+                            <Field padding={'none'} childrenContainerWidth={'max'}>
+                                <span style={{color: deviceConnected ? 'white' : 'gray'}}>
+                                    {deviceName}
+                                </span>
+                                {deviceConnected && <span style={{marginLeft: 5, color: 'green'}}>
+                                    connected
+                                </span>}
+                                <span style={{marginLeft: 7, color: deviceConnected ? 'green' : 'red', position: 'relative', top: '3px'}}>
+                                    {deviceConnected ? <PiPlugsConnected /> : <TbPlugConnectedX />}
+                                </span>
+                            </Field>
+                        </PanelSectionRow>
+                        {deviceConnected && <PanelSectionRow>
+                            <SliderField description={HeadsetModeDescriptions[headsetMode]}
+                                         value={HeadsetModeOptions.indexOf(headsetMode)}
+                                         notchTicksVisible={true}
+                                         min={0} max={HeadsetModeOptions.length-1}
+                                         notchLabels={ModeNotchLabels}
+                                         notchCount={HeadsetModeOptions.length}
+                                         onChange={(newMode) => {
+                                             if (config) {
+                                                 updateConfig({
+                                                     ...config,
+                                                     ...headsetModeToConfig(HeadsetModeOptions[newMode], isJoystickMode)
+                                                 }).catch(e => setError(e))
+                                             }
+                                         }}
+                            />
+                        </PanelSectionRow>}
+                        {!isDisabled && isVrLiteMode && isJoystickMode && joystickModeButton}
+                        {!isDisabled && config.output_mode == "mouse" && <PanelSectionRow>
+                            <SliderField value={config.mouse_sensitivity}
+                                         min={5} max={100} showValue={true} notchTicksVisible={true}
+                                         label={"Mouse sensitivity"}
+                                         onChange={(mouse_sensitivity) => {
+                                             if (config) {
+                                                 updateConfig({
+                                                     ...config,
+                                                     mouse_sensitivity
+                                                 }).catch(e => setError(e))
+                                             }
+                                         }}
+                            />
+                        </PanelSectionRow>}
+                        {isVirtualDisplayMode && <Fragment>
+                            <PanelSectionRow>
+                                <SliderField value={config.display_zoom}
+                                             min={0.25} max={2.5}
+                                             notchCount={10}
+                                             notchLabels={DisplayZoomNotchLabels}
+                                             label={"Display size"}
+                                             step={0.05}
+                                             editableValue={true}
+                                             onChange={(display_zoom) => {
+                                                 if (config) {
+                                                     updateConfig({
+                                                         ...config,
+                                                         display_zoom
+                                                     }).catch(e => setError(e))
+                                                 }
+                                             }}
+                                />
                             </PanelSectionRow>
-                            {deviceConnected && <PanelSectionRow>
-                                <SliderField label={"Headset mode"}
-                                             description={isVirtualDisplayMode ? "Virtual display is only available in-game." : undefined}
-                                             value={HeadsetModeOptions.indexOf(configToHeadsetMode(config))}
-                                             notchTicksVisible={true}
-                                             min={0} max={HeadsetModeOptions.length-1}
-                                             notchLabels={ModeNotchLabels}
-                                             notchCount={HeadsetModeOptions.length}
-                                             onChange={(newMode) => {
-                                                 if (config) {
-                                                     updateConfig({
-                                                         ...config,
-                                                         ...headsetModeToConfig(HeadsetModeOptions[newMode], isJoystickMode)
-                                                     }).catch(e => setError(e))
-                                                 }
-                                             }}
-                                />
-                            </PanelSectionRow>}
-                            {!isDisabled && config.output_mode == "mouse" && <PanelSectionRow>
-                                <SliderField value={config.mouse_sensitivity}
-                                             min={5} max={100} showValue={true} notchTicksVisible={true}
-                                             label={"Mouse sensitivity"}
-                                             onChange={(mouse_sensitivity) => {
-                                                 if (config) {
-                                                     updateConfig({
-                                                         ...config,
-                                                         mouse_sensitivity
-                                                     }).catch(e => setError(e))
-                                                 }
-                                             }}
-                                />
-                            </PanelSectionRow>}
-                            {isVirtualDisplayMode && <Fragment>
-                                <PanelSectionRow>
-                                    <SliderField value={config.display_zoom}
-                                                 min={0.25} max={2.5}
-                                                 notchCount={10}
-                                                 notchLabels={DisplayZoomNotchLabels}
-                                                 label={"Display size"}
-                                                 step={0.05}
-                                                 editableValue={true}
-                                                 onChange={(display_zoom) => {
-                                                     if (config) {
-                                                         updateConfig({
-                                                             ...config,
-                                                             display_zoom
-                                                         }).catch(e => setError(e))
-                                                     }
-                                                 }}
-                                    />
-                                </PanelSectionRow>
-                                <PanelSectionRow>
-                                    <ButtonItem disabled={calibrating || dirtyControlFlags.recenter_screen}
-                                                description={!calibrating && !dirtyControlFlags.recenter_screen ? "Or double-tap your headset." : undefined}
-                                                layout="below"
-                                                onClick={() => writeControlFlags({recenter_screen: true})} >
-                                        {calibrating ?
-                                            <span><Spinner style={{height: '16px', marginRight: 10}} />Calibrating headset</span> :
-                                            "Recenter display"
-                                        }
-                                    </ButtonItem>
-                                </PanelSectionRow>
-                            </Fragment>}
-                        </PanelSection>
-                        {isVirtualDisplayMode && driverState?.sbs_mode_enabled && <PanelSection title={"Side-by-side mode"}>
+                            <PanelSectionRow>
+                                <ButtonItem disabled={calibrating || dirtyControlFlags.recenter_screen}
+                                            description={!calibrating && !dirtyControlFlags.recenter_screen ? "Or double-tap your headset." : undefined}
+                                            layout="below"
+                                            onClick={() => writeControlFlags({recenter_screen: true})} >
+                                    {calibrating ?
+                                        <span><Spinner style={{height: '16px', marginRight: 10}} />Calibrating headset</span> :
+                                        "Recenter display"
+                                    }
+                                </ButtonItem>
+                            </PanelSectionRow>
+                        </Fragment>}
+                        {isVirtualDisplayMode && driverState?.sbs_mode_enabled && <Fragment>
                             {enableSbsButton}
                             <PanelSectionRow>
                                 <SliderField value={config.display_distance}
@@ -395,6 +400,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                                              notchCount={10}
                                              notchLabels={DisplayDisanceNotchLabels}
                                              label={"Display distance"}
+                                             description={"Adjust perceived display depth for eye comfort."}
                                              step={0.05}
                                              editableValue={true}
                                              onChange={(display_distance) => {
@@ -438,8 +444,8 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                                         }
                                     }}/>
                             </PanelSectionRow>
-                        </PanelSection>}
-                        {!isDisabled && <PanelSection title={"Advanced"}>
+                        </Fragment>}
+                        {!isDisabled && <Fragment>
                             {!showAdvanced && advancedButtonVisible && <PanelSectionRow>
                                 <ButtonItem layout="below" onClick={() => setShowAdvanced(true)} >
                                     Show advanced settings
@@ -451,47 +457,68 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                                     Hide advanced settings
                                 </ButtonItem>
                             </PanelSectionRow>}
-                        </PanelSection>}
-                        <PanelSection>
-                            {isVirtualDisplayMode &&
-                                <QrButton icon={<LuHelpCircle />}
-                                          url={"https://github.com/wheaney/decky-xrealAir#virtual-display-help"}
-                                          followLink={true}
-                                >
-                                    <span style={{fontSize: 'large'}}><span style={{
-                                        fontWeight: 'bold',
-                                        background: 'linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet)',
-                                        WebkitBackgroundClip: 'text',
-                                        color: 'transparent'
-                                    }}>Virtual display</span> help</span>
-                                </QrButton> ||
-                                <QrButton icon={<LuHelpCircle />}
-                                          url={"https://github.com/wheaney/decky-xrealAir#xreal-air-driver"}
-                                          followLink={true}
-                                >
-                                    Need help?
-                                </QrButton>
-                            }
-                            {deviceConnected && <QrButton icon={<SiKofi />} url={"https://ko-fi.com/wheaney"}>
-                                <span style={{fontSize: 'small'}}>
-                                    Want more great stuff like this?<br/>
-                                    <span style={{color:'white', fontWeight: 'bold'}}>Become a <SiKofi style={{position: 'relative', top: '3px'}} color={"red"} /> supporter!</span>
-                                </span>
-                            </QrButton>}
-                            <QrButton icon={<SiDiscord />} url={"https://discord.gg/GRQcfR5h9c"}>
-                                <span style={{fontSize: 'small'}}>
-                                    News. Discussions. Help.<br/>
-                                    <span style={{color:'white', fontWeight: 'bold'}}>Join the chat!</span>
-                                </span>
+                        </Fragment>}
+                        {isVirtualDisplayMode &&
+                            <QrButton icon={<LuHelpCircle />}
+                                      url={"https://github.com/wheaney/decky-xrealAir#virtual-display-help"}
+                                      followLink={true}
+                            >
+                                <span style={{fontSize: 'large'}}><span style={{
+                                    fontWeight: 'bold',
+                                    background: 'linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet)',
+                                    WebkitBackgroundClip: 'text',
+                                    color: 'transparent'
+                                }}>Virtual display</span> help</span>
+                            </QrButton> ||
+                            <QrButton icon={<LuHelpCircle />}
+                                      url={"https://github.com/wheaney/decky-xrealAir#xreal-air-driver"}
+                                      followLink={true}
+                            >
+                                Need help?
                             </QrButton>
-                        </PanelSection>
-                    </Fragment> ||
-                    <PanelSectionRow>
-                        <Spinner style={{height: '48px'}} />
-                        {installationStatus == "inProgress" &&
-                            <span>Installing...</span>
                         }
-                    </PanelSectionRow>
+                        {deviceConnected && <QrButton icon={<SiKofi />} url={"https://ko-fi.com/wheaney"}>
+                            <span style={{fontSize: 'small'}}>
+                                {driverState.connected_device_brand === 'XREAL' && <Fragment>
+                                    Didn't need to buy a Beam?
+                                    <img
+                                        src={beam}
+                                        style={{
+                                            position: 'relative',
+                                            top: '6px',
+                                            left: '4px',
+                                            width: '15px',
+                                            height: 'auto',
+                                            alignSelf: 'center',
+                                        }}
+                                    />
+                                    <br/>
+                                    <span style={{color:'white', fontWeight: 'bold'}}>
+                                        Give $20 in support. Keep $99.
+                                    </span>
+                                </Fragment> || <Fragment>
+                                    Want more great stuff like this?<br/>
+                                    <span style={{color:'white', fontWeight: 'bold'}}>
+                                        Become a <SiKofi style={{position: 'relative', top: '2px'}} color={"red"} /> supporter!
+                                    </span>
+                                </Fragment>}
+                            </span>
+                        </QrButton>}
+                        <QrButton icon={<SiDiscord />} url={"https://discord.gg/GRQcfR5h9c"}>
+                            <span style={{fontSize: 'small'}}>
+                                News. Discussions. Help.<br/>
+                                <span style={{color:'white', fontWeight: 'bold'}}>Join the chat!</span>
+                            </span>
+                        </QrButton>
+                    </PanelSection> ||
+                    <PanelSection>
+                        <PanelSectionRow>
+                            <Spinner style={{height: '48px'}} />
+                            {installationStatus == "inProgress" &&
+                                <span>Installing...</span>
+                            }
+                        </PanelSectionRow>
+                    </PanelSection>
                 }
             </Fragment>}
         </Fragment>
