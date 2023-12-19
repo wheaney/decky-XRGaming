@@ -21,18 +21,23 @@ import { TbPlugConnectedX } from "react-icons/tb";
 import {SiDiscord, SiKofi} from 'react-icons/si';
 import {LuHelpCircle} from 'react-icons/lu';
 import QrButton from "./QrButton";
+import beam from "../assets/beam.png";
 
 interface Config {
     disabled: boolean;
     output_mode: OutputMode;
     mouse_sensitivity: number;
-    external_zoom: number;
+    display_zoom: number;
+    display_distance: number;
     look_ahead: number;
+    sbs_content: boolean;
+    sbs_mode_stretched: boolean;
 }
 
 interface DriverState {
     heartbeat: number;
-    connected_device_name: string;
+    connected_device_brand: string;
+    connected_device_model: string;
     calibration_setup: CalibrationSetup;
     calibration_state: CalibrationState;
     sbs_mode_enabled: boolean;
@@ -51,15 +56,34 @@ type DirtyControlFlags = {
 
 type InstallationStatus = "checking" | "inProgress" | "installed";
 type OutputMode = "mouse" | "joystick" | "external_only"
-type ModeValue = "disabled" | OutputMode
-const ModeValues: ModeValue[] = ['external_only', 'mouse', 'joystick', 'disabled'];
+type HeadsetModeOption = "virtual_display" | "vr_lite" | "disabled"
 type CalibrationSetup = "AUTOMATIC" | "INTERACTIVE"
 type CalibrationState = "NOT_CALIBRATED" | "CALIBRATING" | "CALIBRATED" | "WAITING_ON_USER"
 type SbsModeControl = "unset" | "enable" | "disable"
 const DirtyControlFlagsExpireMilliseconds = 3000
 
-function modeValueIsOutputMode(value: ModeValue): value is OutputMode {
-    return value != "disabled"
+const HeadsetModeOptions: HeadsetModeOption[] =  ["virtual_display", "vr_lite", "disabled"];
+const HeadsetModeDescriptions: {[key in HeadsetModeOption]: string} = {
+    "virtual_display": "Virtual display is only available in-game.",
+    "vr_lite": "Use Head movements to look around in-game.",
+    "disabled": "Static display with no head-tracking."
+};
+
+function headsetModeToConfig(headsetMode: HeadsetModeOption, joystickMode: boolean): Partial<Config> {
+    switch (headsetMode) {
+        case "virtual_display":
+            return { disabled: false, output_mode: "external_only" }
+        case "vr_lite":
+            return { disabled: false, output_mode: joystickMode ? "joystick" : "mouse" }
+        case "disabled":
+            return { disabled: true }
+    }
+}
+
+function configToHeadsetMode(config: Config): HeadsetModeOption {
+    if (config.disabled) return "disabled"
+    if (config.output_mode == "external_only") return "virtual_display"
+    return "vr_lite"
 }
 
 const ModeNotchLabels: NotchLabel[] = [
@@ -68,30 +92,41 @@ const ModeNotchLabels: NotchLabel[] = [
         notchIndex: 0
     },
     {
-        label: "Mouse",
+        label: "VR\u2011Lite",
         notchIndex: 1
     },
     {
-        label: "Joystick",
-        notchIndex: 2
-    },
-    {
         label: "Disabled",
-        notchIndex: 3
+        notchIndex: 2
     },
 ];
 
-const ZoomNotchLabels: NotchLabel[] = [
+const DisplayZoomNotchLabels: NotchLabel[] = [
     {
         label: "Smallest",
         notchIndex: 0
     },
     {
-        label: "1",
+        label: "Default",
         notchIndex: 3
     },
     {
         label: "Biggest",
+        notchIndex: 9
+    }
+];
+
+const DisplayDisanceNotchLabels: NotchLabel[] = [
+    {
+        label: "Closest",
+        notchIndex: 0
+    },
+    {
+        label: "Default",
+        notchIndex: 3
+    },
+    {
+        label: "Farthest",
         notchIndex: 9
     }
 ];
@@ -102,18 +137,19 @@ const LookAheadNotchLabels: NotchLabel[] = [
         notchIndex: 0
     },
     {
-        label: "Min",
+        label: "Lower",
         notchIndex: 1
     },
     {
-        label: "Max",
-        notchIndex: 6
+        label: "Higher",
+        notchIndex: 5
     }
 ];
 
 const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
 
     const [config, setConfig] = useState<Config>();
+    const [isJoystickMode, setJoystickMode] = useState<boolean>(false);
     const [driverState, setDriverState] = useState<DriverState>();
     const [dirtyControlFlags, setDirtyControlFlags] = useState<DirtyControlFlags>({});
     const [installationStatus, setInstallationStatus] = useState<InstallationStatus>("checking");
@@ -122,7 +158,12 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
 
     async function retrieveConfig() {
         const configRes: ServerResponse<Config> = await serverAPI.callPluginMethod<{}, Config>("retrieve_config", {});
-        configRes.success ? setConfig(configRes.result) : setError(configRes.result);
+        if (configRes.success) {
+            setConfig(configRes.result);
+            if (configRes.result.output_mode == "joystick") setJoystickMode(true);
+        } else {
+            setError(configRes.result);
+        }
     }
 
     // have this function call itself every second to keep the UI up to date
@@ -187,33 +228,98 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
         }
     }, [driverState])
 
-    const deviceConnected = !!driverState?.connected_device_name
+    const deviceConnected = !!driverState?.connected_device_brand && !!driverState?.connected_device_model
+    const deviceName = deviceConnected ? `${driverState?.connected_device_brand} ${driverState?.connected_device_model}` : "No device connected"
     const isDisabled = !deviceConnected || (config?.disabled ?? false)
-    const outputMode = config?.output_mode ?? 'mouse'
+    const headsetMode: HeadsetModeOption = config ? configToHeadsetMode(config) : "disabled"
     const isVirtualDisplayMode = !isDisabled && config?.output_mode == "external_only"
-    const mouseSensitivity = config?.mouse_sensitivity ?? 20
-    const lookAhead = config?.look_ahead ?? 0
-    const externalZoom = config?.external_zoom ?? 1
+    const isVrLiteMode = !isDisabled && config?.output_mode != "external_only";
     let sbsModeEnabled = driverState?.sbs_mode_enabled ?? false
     if (dirtyControlFlags?.sbs_mode && dirtyControlFlags?.sbs_mode !== 'unset') sbsModeEnabled = dirtyControlFlags.sbs_mode === 'enable'
     const calibrating = dirtyControlFlags.recalibrate || driverState?.calibration_state == "CALIBRATING";
+
+    const enableSbsButton = <PanelSectionRow>
+        <ToggleField
+            checked={sbsModeEnabled}
+            label={"Enable side-by-side mode"}
+            description={!driverState?.sbs_mode_enabled && "Adjust virtual display depth. View 3D content."}
+            onChange={(sbs_mode_enabled) => writeControlFlags(
+                {
+                    sbs_mode: sbs_mode_enabled ? 'enable' : 'disable'
+                }
+            )}/>
+    </PanelSectionRow>;
+
+    const joystickModeButton = <PanelSectionRow>
+        <ToggleField
+            checked={isJoystickMode}
+            label={"Joystick mode"}
+            description={"Try as a last resort if your game doesn't support mouse-look."}
+            onChange={(joystickMode) => {
+                if (config) {
+                    updateConfig({
+                        ...config,
+                        ...headsetModeToConfig(headsetMode, joystickMode)
+                    }).catch(e => setError(e))
+                }
+                setJoystickMode(joystickMode)
+            }}/>
+    </PanelSectionRow>;
+
+    const advancedSettings = [
+        isVrLiteMode && !isJoystickMode && joystickModeButton,
+        isVirtualDisplayMode && driverState?.sbs_mode_supported && !driverState?.sbs_mode_enabled && enableSbsButton,
+        config && isVirtualDisplayMode && <PanelSectionRow>
+            <SliderField value={config.look_ahead}
+                         min={0} max={30} notchTicksVisible={true}
+                         notchCount={6} notchLabels={LookAheadNotchLabels}
+                         step={3}
+                         label={"Movement look-ahead"}
+                         description={config.look_ahead > 0 ? "Use Default unless screen is noticeably ahead or behind your movements. May introduce jitter at higher values." : undefined}
+                         onChange={(look_ahead) => {
+                             if (config) {
+                                 updateConfig({
+                                     ...config,
+                                     look_ahead
+                                 }).catch(e => setError(e))
+                             }
+                         }}
+            />
+        </PanelSectionRow>,
+        <PanelSectionRow>
+            <ButtonItem disabled={calibrating}
+                        description={!calibrating ? "Or triple-tap your headset." : undefined}
+                        layout="below"
+                        onClick={() => writeControlFlags({recalibrate: true})} >
+                {calibrating ?
+                    <span><Spinner style={{height: '16px', marginRight: 10}} />Calibrating headset</span> :
+                    "Recalibrate headset"
+                }
+            </ButtonItem>
+        </PanelSectionRow>
+    ].filter(Boolean);
+
+    // if advanced settings contains more than 1 element, filter out falsey values
+    const advancedButtonVisible = advancedSettings.length > 1;
 
     async function updateConfig(newConfig: Config) {
         await Promise.all([setConfig(newConfig), writeConfig(newConfig)])
     }
 
     return (
-        <PanelSection>
-            {error && <PanelSectionRow
-                style={{backgroundColor: "pink", borderColor: "red", color: "red"}}><BiMessageError/>{error}
-            </PanelSectionRow>}
+        <Fragment>
+            {error && <PanelSection>
+                <PanelSectionRow style={{backgroundColor: "pink", borderColor: "red", color: "red"}}>
+                    <BiMessageError/>{error}
+                </PanelSectionRow>
+            </PanelSection>}
             {!error && <Fragment>
                 {installationStatus == "installed" && driverState && config &&
-                    <Fragment>
+                    <PanelSection>
                         <PanelSectionRow style={{fontSize: 'medium', textAlign: 'center'}}>
                             <Field padding={'none'} childrenContainerWidth={'max'}>
                                 <span style={{color: deviceConnected ? 'white' : 'gray'}}>
-                                    {deviceConnected ? driverState?.connected_device_name : "No device connected"}
+                                    {deviceName}
                                 </span>
                                 {deviceConnected && <span style={{marginLeft: 5, color: 'green'}}>
                                     connected
@@ -224,34 +330,25 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                             </Field>
                         </PanelSectionRow>
                         {deviceConnected && <PanelSectionRow>
-                            <SliderField label={"Headset mode"}
-                                         description={isVirtualDisplayMode ? "Virtual display is only available in-game." : undefined}
-                                         value={isDisabled ? ModeValues.indexOf('disabled') : ModeValues.indexOf(outputMode)}
+                            <SliderField description={HeadsetModeDescriptions[headsetMode]}
+                                         value={HeadsetModeOptions.indexOf(headsetMode)}
                                          notchTicksVisible={true}
-                                         min={0} max={ModeValues.length-1}
+                                         min={0} max={HeadsetModeOptions.length-1}
                                          notchLabels={ModeNotchLabels}
-                                         notchCount={ModeValues.length}
+                                         notchCount={HeadsetModeOptions.length}
                                          onChange={(newMode) => {
                                              if (config) {
-                                                 const newValue = ModeValues[newMode]
-                                                 if (modeValueIsOutputMode(newValue)) {
-                                                     updateConfig({
-                                                         ...config,
-                                                         output_mode: newValue,
-                                                         disabled: false
-                                                     }).catch(e => setError(e))
-                                                 } else {
-                                                     updateConfig({
-                                                         ...config,
-                                                         disabled: true
-                                                     }).catch(e => setError(e))
-                                                 }
+                                                 updateConfig({
+                                                     ...config,
+                                                     ...headsetModeToConfig(HeadsetModeOptions[newMode], isJoystickMode)
+                                                 }).catch(e => setError(e))
                                              }
                                          }}
                             />
                         </PanelSectionRow>}
+                        {!isDisabled && isVrLiteMode && isJoystickMode && joystickModeButton}
                         {!isDisabled && config.output_mode == "mouse" && <PanelSectionRow>
-                            <SliderField value={mouseSensitivity}
+                            <SliderField value={config.mouse_sensitivity}
                                          min={5} max={100} showValue={true} notchTicksVisible={true}
                                          label={"Mouse sensitivity"}
                                          onChange={(mouse_sensitivity) => {
@@ -266,18 +363,18 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                         </PanelSectionRow>}
                         {isVirtualDisplayMode && <Fragment>
                             <PanelSectionRow>
-                                <SliderField value={externalZoom}
+                                <SliderField value={config.display_zoom}
                                              min={0.25} max={2.5}
                                              notchCount={10}
-                                             notchLabels={ZoomNotchLabels}
+                                             notchLabels={DisplayZoomNotchLabels}
                                              label={"Display size"}
                                              step={0.05}
                                              editableValue={true}
-                                             onChange={(external_zoom) => {
+                                             onChange={(display_zoom) => {
                                                  if (config) {
                                                      updateConfig({
                                                          ...config,
-                                                         external_zoom
+                                                         display_zoom
                                                      }).catch(e => setError(e))
                                                  }
                                              }}
@@ -294,52 +391,68 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                                     }
                                 </ButtonItem>
                             </PanelSectionRow>
-                            {!showAdvanced && <PanelSectionRow>
+                        </Fragment>}
+                        {isVirtualDisplayMode && driverState?.sbs_mode_enabled && <Fragment>
+                            {enableSbsButton}
+                            <PanelSectionRow>
+                                <SliderField value={config.display_distance}
+                                             min={0.25} max={2.5}
+                                             notchCount={10}
+                                             notchLabels={DisplayDisanceNotchLabels}
+                                             label={"Display distance"}
+                                             description={"Adjust perceived display depth for eye comfort."}
+                                             step={0.05}
+                                             editableValue={true}
+                                             onChange={(display_distance) => {
+                                                 if (config) {
+                                                     updateConfig({
+                                                         ...config,
+                                                         display_distance
+                                                     }).catch(e => setError(e))
+                                                 }
+                                             }}
+                                />
+                            </PanelSectionRow>
+                            <PanelSectionRow>
+                                <ToggleField
+                                    checked={config.sbs_mode_stretched}
+                                    label={"Content is stretched"}
+                                    description={"Enable if your content goes from the left edge to the right edge of the screen"}
+                                    onChange={(sbs_mode_stretched) => {
+                                        if (config) {
+                                            updateConfig({
+                                                ...config,
+                                                sbs_mode_stretched
+                                            }).catch(e => setError(e))
+                                        }
+                                    }}/>
+                            </PanelSectionRow>
+                            <PanelSectionRow>
+                                <ToggleField
+                                    checked={config.sbs_content}
+                                    label={"Content is 3D"}
+                                    description={"For when the source content is 3D SBS"}
+                                    onChange={(sbs_content) => {
+                                        if (config) {
+                                            updateConfig({
+                                                ...config,
+                                                sbs_content,
+
+                                                // assume 3d content is stretched to fill the screen
+                                                sbs_mode_stretched: sbs_content ? true : config.sbs_mode_stretched
+                                            }).catch(e => setError(e))
+                                        }
+                                    }}/>
+                            </PanelSectionRow>
+                        </Fragment>}
+                        {!isDisabled && <Fragment>
+                            {!showAdvanced && advancedButtonVisible && <PanelSectionRow>
                                 <ButtonItem layout="below" onClick={() => setShowAdvanced(true)} >
                                     Show advanced settings
                                 </ButtonItem>
                             </PanelSectionRow>}
-                            {showAdvanced && <Fragment>
-                                {driverState?.sbs_mode_supported && <PanelSectionRow>
-                                    <ToggleField
-                                        checked={sbsModeEnabled}
-                                        label={"Enable SBS mode"}
-                                        onChange={(sbs_mode_enabled) => writeControlFlags(
-                                            {
-                                                sbs_mode: sbs_mode_enabled ? 'enable' : 'disable'
-                                            }
-                                        )}/>
-                                </PanelSectionRow>}
-                                <PanelSectionRow>
-                                    <SliderField value={lookAhead}
-                                                 min={0} max={30} notchTicksVisible={true}
-                                                 notchCount={7} notchLabels={LookAheadNotchLabels}
-                                                 step={5}
-                                                 label={"Movement look-ahead"}
-                                                 description={lookAhead > 0 ? "Use Default unless screen is noticeably ahead or behind your movements. May introduce jitter at higher values." : undefined}
-                                                 onChange={(look_ahead) => {
-                                                     if (config) {
-                                                         updateConfig({
-                                                             ...config,
-                                                             look_ahead
-                                                         }).catch(e => setError(e))
-                                                     }
-                                                 }}
-                                    />
-                                </PanelSectionRow>
-                                <PanelSectionRow>
-                                    <ButtonItem disabled={calibrating}
-                                                description={!calibrating ? "Or triple-tap your headset." : undefined}
-                                                layout="below"
-                                                onClick={() => writeControlFlags({recalibrate: true})} >
-                                        {calibrating ?
-                                            <span><Spinner style={{height: '16px', marginRight: 10}} />Calibrating headset</span> :
-                                            "Recalibrate headset"
-                                        }
-                                    </ButtonItem>
-                                </PanelSectionRow>
-                            </Fragment>}
-                            {showAdvanced && <PanelSectionRow>
+                            {showAdvanced && advancedSettings}
+                            {showAdvanced && advancedButtonVisible && <PanelSectionRow>
                                 <ButtonItem layout="below" onClick={() => setShowAdvanced(false)} >
                                     Hide advanced settings
                                 </ButtonItem>
@@ -366,8 +479,29 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                         }
                         {deviceConnected && <QrButton icon={<SiKofi />} url={"https://ko-fi.com/wheaney"}>
                             <span style={{fontSize: 'small'}}>
-                                Want more great stuff like this?<br/>
-                                <span style={{color:'white', fontWeight: 'bold'}}>Become a <SiKofi style={{position: 'relative', top: '3px'}} color={"red"} /> supporter!</span>
+                                {driverState.connected_device_brand === 'XREAL' && <Fragment>
+                                    Didn't need to buy a Beam?
+                                    <img
+                                        src={beam}
+                                        style={{
+                                            position: 'relative',
+                                            top: '6px',
+                                            left: '4px',
+                                            width: '15px',
+                                            height: 'auto',
+                                            alignSelf: 'center',
+                                        }}
+                                    />
+                                    <br/>
+                                    <span style={{color:'white', fontWeight: 'bold'}}>
+                                        Give $20 in support. Keep $99.
+                                    </span>
+                                </Fragment> || <Fragment>
+                                    Want more great stuff like this?<br/>
+                                    <span style={{color:'white', fontWeight: 'bold'}}>
+                                        Become a <SiKofi style={{position: 'relative', top: '2px'}} color={"red"} /> supporter!
+                                    </span>
+                                </Fragment>}
                             </span>
                         </QrButton>}
                         <QrButton icon={<SiDiscord />} url={"https://discord.gg/GRQcfR5h9c"}>
@@ -376,17 +510,18 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                                 <span style={{color:'white', fontWeight: 'bold'}}>Join the chat!</span>
                             </span>
                         </QrButton>
-                    </Fragment> ||
-                    <PanelSectionRow>
-                        <Spinner style={{height: '48px'}} />
-                        {installationStatus == "inProgress" &&
-                            <span>Installing...</span>
-                        }
-                    </PanelSectionRow>
+                    </PanelSection> ||
+                    <PanelSection>
+                        <PanelSectionRow>
+                            <Spinner style={{height: '48px'}} />
+                            {installationStatus == "inProgress" &&
+                                <span>Installing...</span>
+                            }
+                        </PanelSectionRow>
+                    </PanelSection>
                 }
-
             </Fragment>}
-        </PanelSection>
+        </Fragment>
     );
 };
 

@@ -50,20 +50,23 @@ class Plugin:
         config['disabled'] = False
         config['output_mode'] = 'mouse'
         config['mouse_sensitivity'] = 20
-        config['external_zoom'] = 1
+        config['display_zoom'] = 1
+        config['display_distance'] = 1
         config['look_ahead'] = 0
+        config['sbs_content'] = False
+        config['sbs_mode_stretched'] = False
 
         try:
             with open(CONFIG_FILE_PATH, 'r') as f:
                 for line in f:
                     try:
                         key, value = line.strip().split('=')
-                        if key in ['disabled']:
+                        if key in ['disabled', 'sbs_mode_stretched', 'sbs_content']:
                             config[key] = parse_boolean(value, config[key])
                         elif key in ['mouse_sensitivity', 'look_ahead']:
                             config[key] = parse_int(value, config[key])
-                        elif key in ['external_zoom']:
-                            config[key] = parse_float(value, config[key])
+                        elif key in ['external_zoom', 'display_zoom', 'display_distance']:
+                            config['display_zoom' if key in ['external_zoom', 'display_zoom'] else key] = parse_float(value, config[key])
                         else:
                             config[key] = value
                     except Exception as e:
@@ -103,11 +106,14 @@ class Plugin:
         try:
             output = ""
             for key, value in control_flags.items():
-                if isinstance(value, bool) and key in CONTROL_FLAGS:
+                if key in CONTROL_FLAGS:
                     if key == 'sbs_mode':
                         if value not in SBS_MODE_VALUES:
                             decky_plugin.logger.error(f"Invalid value {value} for sbs_mode flag")
                             continue
+                    elif not isinstance(value, bool):
+                        decky_plugin.logger.error(f"Invalid value {value} for {key} flag")
+                        continue
                     output += f'{key}={str(value).lower()}\n'
 
             with open(CONTROL_FLAGS_FILE_PATH, 'w') as f:
@@ -118,7 +124,8 @@ class Plugin:
     async def retrieve_driver_state(self):
         state = {}
         state['heartbeat'] = 0
-        state['connected_device_name'] = None
+        state['connected_device_brand'] = None
+        state['connected_device_model'] = None
         state['calibration_setup'] = "AUTOMATIC"
         state['calibration_state'] = "NOT_CALIBRATED"
         state['sbs_mode_enabled'] = False
@@ -132,7 +139,7 @@ class Plugin:
                         key, value = line.strip().split('=')
                         if key == 'heartbeat':
                             state[key] = parse_int(value, 0)
-                        elif key in ['calibration_setup', 'calibration_state', 'connected_device_name']:
+                        elif key in ['calibration_setup', 'calibration_state', 'connected_device_brand', 'connected_device_model']:
                             state[key] = value
                         elif key in ['sbs_mode_enabled', 'sbs_mode_supported']:
                             state[key] = parse_boolean(value, False)
