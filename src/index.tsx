@@ -35,7 +35,8 @@ interface Config {
 
 interface DriverState {
     heartbeat: number;
-    connected_device_name: string;
+    connected_device_brand: string;
+    connected_device_model: string;
     calibration_setup: CalibrationSetup;
     calibration_state: CalibrationState;
     sbs_mode_enabled: boolean;
@@ -54,15 +55,28 @@ type DirtyControlFlags = {
 
 type InstallationStatus = "checking" | "inProgress" | "installed";
 type OutputMode = "mouse" | "joystick" | "external_only"
-type ModeValue = "disabled" | OutputMode
-const ModeValues: ModeValue[] = ['external_only', 'mouse', 'joystick', 'disabled'];
+type HeadsetModeOption = "virtual_display" | "vr_lite" | "disabled"
 type CalibrationSetup = "AUTOMATIC" | "INTERACTIVE"
 type CalibrationState = "NOT_CALIBRATED" | "CALIBRATING" | "CALIBRATED" | "WAITING_ON_USER"
 type SbsModeControl = "unset" | "enable" | "disable"
 const DirtyControlFlagsExpireMilliseconds = 3000
 
-function modeValueIsOutputMode(value: ModeValue): value is OutputMode {
-    return value != "disabled"
+const HeadsetModeOptions: HeadsetModeOption[] =  ["virtual_display", "vr_lite", "disabled"]
+function headsetModeToConfig(headsetMode: HeadsetModeOption, joystickMode: boolean): Partial<Config> {
+    switch (headsetMode) {
+        case "virtual_display":
+            return { disabled: false, output_mode: "external_only" }
+        case "vr_lite":
+            return { disabled: false, output_mode: joystickMode ? "joystick" : "mouse" }
+        case "disabled":
+            return { disabled: true }
+    }
+}
+
+function configToHeadsetMode(config: Config): HeadsetModeOption {
+    if (config.disabled) return "disabled"
+    if (config.output_mode == "external_only") return "virtual_display"
+    return "vr_lite"
 }
 
 const ModeNotchLabels: NotchLabel[] = [
@@ -132,6 +146,7 @@ const LookAheadNotchLabels: NotchLabel[] = [
 const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
 
     const [config, setConfig] = useState<Config>();
+    const [isJoystickMode, setJoystickMode] = useState<boolean>(false);
     const [driverState, setDriverState] = useState<DriverState>();
     const [dirtyControlFlags, setDirtyControlFlags] = useState<DirtyControlFlags>({});
     const [installationStatus, setInstallationStatus] = useState<InstallationStatus>("checking");
@@ -140,7 +155,12 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
 
     async function retrieveConfig() {
         const configRes: ServerResponse<Config> = await serverAPI.callPluginMethod<{}, Config>("retrieve_config", {});
-        configRes.success ? setConfig(configRes.result) : setError(configRes.result);
+        if (configRes.success) {
+            setConfig(configRes.result);
+            if (configRes.result.output_mode == "joystick") setJoystickMode(true);
+        } else {
+            setError(configRes.result);
+        }
     }
 
     // have this function call itself every second to keep the UI up to date
@@ -205,9 +225,11 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
         }
     }, [driverState])
 
-    const deviceConnected = !!driverState?.connected_device_name
+    const deviceConnected = !!driverState?.connected_device_brand && !!driverState?.connected_device_model
+    const deviceName = deviceConnected ? `${driverState?.connected_device_brand} ${driverState?.connected_device_model}` : "No device connected"
     const isDisabled = !deviceConnected || (config?.disabled ?? false)
     const isVirtualDisplayMode = !isDisabled && config?.output_mode == "external_only"
+    const isVrLiteMode = !isDisabled && config?.output_mode != "external_only";
     let sbsModeEnabled = driverState?.sbs_mode_enabled ?? false
     if (dirtyControlFlags?.sbs_mode && dirtyControlFlags?.sbs_mode !== 'unset') sbsModeEnabled = dirtyControlFlags.sbs_mode === 'enable'
     const calibrating = dirtyControlFlags.recalibrate || driverState?.calibration_state == "CALIBRATING";
@@ -224,6 +246,21 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
     </PanelSectionRow>;
 
     const advancedSettings = [
+        isVrLiteMode && <PanelSectionRow>
+            <ToggleField
+                checked={isJoystickMode}
+                label={"VR-lite joystick mode"}
+                description={"Last resort if your game doesn't support mouse-look"}
+                onChange={(joystickMode) => {
+                    if (config) {
+                        updateConfig({
+                            ...config,
+                            ...headsetModeToConfig(configToHeadsetMode(config), joystickMode)
+                        }).catch(e => setError(e))
+                    }
+                    setJoystickMode(joystickMode)
+                }}/>
+        </PanelSectionRow>,
         isVirtualDisplayMode && driverState?.sbs_mode_supported && !sbsModeEnabled && enableSbsButton,
         config && isVirtualDisplayMode && <PanelSectionRow>
             <SliderField value={config.look_ahead}
@@ -276,7 +313,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                             <PanelSectionRow style={{fontSize: 'medium', textAlign: 'center'}}>
                                 <Field padding={'none'} childrenContainerWidth={'max'}>
                                     <span style={{color: deviceConnected ? 'white' : 'gray'}}>
-                                        {deviceConnected ? driverState?.connected_device_name : "No device connected"}
+                                        {deviceName}
                                     </span>
                                     {deviceConnected && <span style={{marginLeft: 5, color: 'green'}}>
                                         connected
@@ -289,26 +326,17 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                             {deviceConnected && <PanelSectionRow>
                                 <SliderField label={"Headset mode"}
                                              description={isVirtualDisplayMode ? "Virtual display is only available in-game." : undefined}
-                                             value={isDisabled ? ModeValues.indexOf('disabled') : ModeValues.indexOf(config.output_mode)}
+                                             value={HeadsetModeOptions.indexOf(configToHeadsetMode(config))}
                                              notchTicksVisible={true}
-                                             min={0} max={ModeValues.length-1}
+                                             min={0} max={HeadsetModeOptions.length-1}
                                              notchLabels={ModeNotchLabels}
-                                             notchCount={ModeValues.length}
+                                             notchCount={HeadsetModeOptions.length}
                                              onChange={(newMode) => {
                                                  if (config) {
-                                                     const newValue = ModeValues[newMode]
-                                                     if (modeValueIsOutputMode(newValue)) {
-                                                         updateConfig({
-                                                             ...config,
-                                                             output_mode: newValue,
-                                                             disabled: false
-                                                         }).catch(e => setError(e))
-                                                     } else {
-                                                         updateConfig({
-                                                             ...config,
-                                                             disabled: true
-                                                         }).catch(e => setError(e))
-                                                     }
+                                                     updateConfig({
+                                                         ...config,
+                                                         ...headsetModeToConfig(HeadsetModeOptions[newMode], isJoystickMode)
+                                                     }).catch(e => setError(e))
                                                  }
                                              }}
                                 />

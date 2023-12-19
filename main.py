@@ -124,7 +124,8 @@ class Plugin:
     async def retrieve_driver_state(self):
         state = {}
         state['heartbeat'] = 0
-        state['connected_device_name'] = None
+        state['connected_device_brand'] = None
+        state['connected_device_model'] = None
         state['calibration_setup'] = "AUTOMATIC"
         state['calibration_state'] = "NOT_CALIBRATED"
         state['sbs_mode_enabled'] = False
@@ -138,7 +139,7 @@ class Plugin:
                         key, value = line.strip().split('=')
                         if key == 'heartbeat':
                             state[key] = parse_int(value, 0)
-                        elif key in ['calibration_setup', 'calibration_state', 'connected_device_name']:
+                        elif key in ['calibration_setup', 'calibration_state', 'connected_device_brand', 'connected_device_model']:
                             state[key] = value
                         elif key in ['sbs_mode_enabled', 'sbs_mode_supported']:
                             state[key] = parse_boolean(value, False)
