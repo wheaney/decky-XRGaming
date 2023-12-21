@@ -2,11 +2,14 @@ import {
     ButtonItem,
     definePlugin,
     Field,
+    Menu,
+    MenuItem,
     NotchLabel,
     PanelSection,
     PanelSectionRow,
     ServerAPI,
     ServerResponse,
+    showContextMenu,
     SliderField,
     Spinner,
     staticClasses,
@@ -22,16 +25,21 @@ import {SiDiscord, SiKofi} from 'react-icons/si';
 import {LuHelpCircle} from 'react-icons/lu';
 import QrButton from "./QrButton";
 import beam from "../assets/beam.png";
+import ButtonFieldSmall from "./ButtonFieldSmall";
 
 interface Config {
     disabled: boolean;
     output_mode: OutputMode;
+    external_mode: ExternalMode;
     mouse_sensitivity: number;
     display_zoom: number;
-    display_distance: number;
     look_ahead: number;
+    sbs_display_size: number;
+    sbs_display_distance: number;
     sbs_content: boolean;
     sbs_mode_stretched: boolean;
+    sideview_position: SideviewPosition;
+    sideview_display_size: number;
 }
 
 interface DriverState {
@@ -56,33 +64,46 @@ type DirtyControlFlags = {
 
 type InstallationStatus = "checking" | "inProgress" | "installed";
 type OutputMode = "mouse" | "joystick" | "external_only"
-type HeadsetModeOption = "virtual_display" | "vr_lite" | "disabled"
+type ExternalMode = 'virtual_display' | 'sideview' | 'none'
+type HeadsetModeOption = "virtual_display" | "vr_lite" | "sideview" | "disabled"
 type CalibrationSetup = "AUTOMATIC" | "INTERACTIVE"
 type CalibrationState = "NOT_CALIBRATED" | "CALIBRATING" | "CALIBRATED" | "WAITING_ON_USER"
 type SbsModeControl = "unset" | "enable" | "disable"
+type SideviewPosition = "top_left" | "top_right" | "bottom_left" | "bottom_right"
+const SideviewPositions: SideviewPosition[] = ["top_left", "top_right", "bottom_left", "bottom_right"]
 const DirtyControlFlagsExpireMilliseconds = 3000
 
-const HeadsetModeOptions: HeadsetModeOption[] =  ["virtual_display", "vr_lite", "disabled"];
 const HeadsetModeDescriptions: {[key in HeadsetModeOption]: string} = {
     "virtual_display": "Virtual display is only available in-game.",
     "vr_lite": "Use Head movements to look around in-game.",
+    "sideview": "Move the screen to your peripheral.",
     "disabled": "Static display with no head-tracking."
+};
+const HeadsetModeOptions: HeadsetModeOption[] =  Object.keys(HeadsetModeDescriptions) as HeadsetModeOption[];
+
+const SideviewPositionDescriptions: {[key in SideviewPosition]: string} = {
+    "top_left": "Top\u00a0left",
+    "top_right": "Top\u00a0right",
+    "bottom_left": "Bottom\u00a0left",
+    "bottom_right": "Bottom\u00a0right",
 };
 
 function headsetModeToConfig(headsetMode: HeadsetModeOption, joystickMode: boolean): Partial<Config> {
     switch (headsetMode) {
         case "virtual_display":
-            return { disabled: false, output_mode: "external_only" }
+            return { disabled: false, output_mode: "external_only", external_mode: "virtual_display" }
         case "vr_lite":
             return { disabled: false, output_mode: joystickMode ? "joystick" : "mouse" }
+        case "sideview":
+            return { disabled: false, output_mode: "external_only", external_mode: "sideview" }
         case "disabled":
-            return { disabled: true }
+            return { disabled: true, external_mode: "none" }
     }
 }
 
-function configToHeadsetMode(config: Config): HeadsetModeOption {
-    if (config.disabled) return "disabled"
-    if (config.output_mode == "external_only") return "virtual_display"
+function configToHeadsetMode(config?: Config): HeadsetModeOption {
+    if (!config || config.disabled || config.output_mode == "external_only" && config.external_mode == 'none') return "disabled"
+    if (config.output_mode == "external_only" && config.external_mode != 'none') return config.external_mode
     return "vr_lite"
 }
 
@@ -96,8 +117,12 @@ const ModeNotchLabels: NotchLabel[] = [
         notchIndex: 1
     },
     {
-        label: "Disabled",
+        label: "Sideview",
         notchIndex: 2
+    },
+    {
+        label: "Disabled",
+        notchIndex: 3
     },
 ];
 
@@ -230,10 +255,11 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
 
     const deviceConnected = !!driverState?.connected_device_brand && !!driverState?.connected_device_model
     const deviceName = deviceConnected ? `${driverState?.connected_device_brand} ${driverState?.connected_device_model}` : "No device connected"
-    const isDisabled = !deviceConnected || (config?.disabled ?? false)
-    const headsetMode: HeadsetModeOption = config ? configToHeadsetMode(config) : "disabled"
-    const isVirtualDisplayMode = !isDisabled && config?.output_mode == "external_only"
-    const isVrLiteMode = !isDisabled && config?.output_mode != "external_only";
+    const headsetMode: HeadsetModeOption = configToHeadsetMode(config)
+    const isDisabled = !deviceConnected || headsetMode == "disabled"
+    const isVirtualDisplayMode = !isDisabled && headsetMode == "virtual_display"
+    const isSideviewMode = !isDisabled && headsetMode == "sideview"
+    const isVrLiteMode = !isDisabled && headsetMode == "vr_lite"
     let sbsModeEnabled = driverState?.sbs_mode_enabled ?? false
     if (dirtyControlFlags?.sbs_mode && dirtyControlFlags?.sbs_mode !== 'unset') sbsModeEnabled = dirtyControlFlags.sbs_mode === 'enable'
     const calibrating = dirtyControlFlags.recalibrate || driverState?.calibration_state == "CALIBRATING";
@@ -306,6 +332,29 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
         await Promise.all([setConfig(newConfig), writeConfig(newConfig)])
     }
 
+    function showMenu() {
+        showContextMenu(
+            <Menu label={"Sideview display position"}>
+                {SideviewPositions.map((position) => (
+                    <MenuItem
+                        key={position}
+                        onClick={() => {
+                            if (config) {
+                                updateConfig({
+                                    ...config,
+                                    sideview_position: position
+                                }).catch(e => setError(e))
+                            }
+                        }}
+                        selected={config?.sideview_position == position}
+                    >
+                        {SideviewPositionDescriptions[position]}
+                    </MenuItem>
+                ))}
+            </Menu>
+        );
+    }
+
     return (
         <Fragment>
             {error && <PanelSection>
@@ -346,8 +395,8 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                                          }}
                             />
                         </PanelSectionRow>}
-                        {!isDisabled && isVrLiteMode && isJoystickMode && joystickModeButton}
-                        {!isDisabled && config.output_mode == "mouse" && <PanelSectionRow>
+                        {isVrLiteMode && isJoystickMode && joystickModeButton}
+                        {isVrLiteMode && !isJoystickMode && <PanelSectionRow>
                             <SliderField value={config.mouse_sensitivity}
                                          min={5} max={100} showValue={true} notchTicksVisible={true}
                                          label={"Mouse sensitivity"}
@@ -361,25 +410,72 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                                          }}
                             />
                         </PanelSectionRow>}
-                        {isVirtualDisplayMode && <Fragment>
+                        {isSideviewMode && <Fragment>
+                            <ButtonFieldSmall label={"Display position"} onClick={showMenu} buttonText={SideviewPositionDescriptions[config.sideview_position]} />
                             <PanelSectionRow>
-                                <SliderField value={config.display_zoom}
-                                             min={0.25} max={2.5}
-                                             notchCount={10}
-                                             notchLabels={DisplayZoomNotchLabels}
+                                <SliderField value={config.sideview_display_size}
+                                             min={0.2} max={1.0}
+                                             notchCount={2}
+                                             notchTicksVisible={false}
                                              label={"Display size"}
+                                             notchLabels={[
+                                                 {label: "Smallest", notchIndex: 0},
+                                                 {label: "Biggest", notchIndex: 1},
+                                             ]}
                                              step={0.05}
-                                             editableValue={true}
-                                             onChange={(display_zoom) => {
+                                             onChange={(sideview_display_size) => {
                                                  if (config) {
                                                      updateConfig({
                                                          ...config,
-                                                         display_zoom
+                                                         sideview_display_size
                                                      }).catch(e => setError(e))
                                                  }
                                              }}
                                 />
                             </PanelSectionRow>
+                        </Fragment>}
+                        {isVirtualDisplayMode && <Fragment>
+                            <PanelSectionRow>
+                                <SliderField value={sbsModeEnabled ? config.sbs_display_size : config.display_zoom}
+                                             min={0.25} max={2.5}
+                                             notchCount={10}
+                                             notchLabels={DisplayZoomNotchLabels}
+                                             label={"Display size"}
+                                             description={sbsModeEnabled && "Display distance setting also affects perceived display size."}
+                                             step={0.05}
+                                             editableValue={true}
+                                             onChange={(zoom) => {
+                                                 if (config) {
+                                                     // Change different underlying properties depending on whether SBS is enabled.
+                                                     // This makes it "remember" the last value used for each mode.
+                                                     updateConfig({
+                                                         ...config,
+                                                         display_zoom: sbsModeEnabled ? config.display_zoom : zoom,
+                                                         sbs_display_size: sbsModeEnabled ? zoom : config.sbs_display_size
+                                                     }).catch(e => setError(e))
+                                                 }
+                                             }}
+                                />
+                            </PanelSectionRow>
+                            {driverState?.sbs_mode_enabled && <PanelSectionRow>
+                                <SliderField value={config.sbs_display_distance}
+                                             min={0.25} max={2.5}
+                                             notchCount={10}
+                                             notchLabels={DisplayDisanceNotchLabels}
+                                             label={"Display distance"}
+                                             description={"Adjust perceived display depth for eye comfort."}
+                                             step={0.05}
+                                             editableValue={true}
+                                             onChange={(sbs_display_distance) => {
+                                                 if (config) {
+                                                     updateConfig({
+                                                         ...config,
+                                                         sbs_display_distance
+                                                     }).catch(e => setError(e))
+                                                 }
+                                             }}
+                                />
+                            </PanelSectionRow>}
                             <PanelSectionRow>
                                 <ButtonItem disabled={calibrating || dirtyControlFlags.recenter_screen}
                                             description={!calibrating && !dirtyControlFlags.recenter_screen ? "Or double-tap your headset." : undefined}
@@ -392,27 +488,12 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                                 </ButtonItem>
                             </PanelSectionRow>
                         </Fragment>}
+                        {
+                            // Always show this button if SBS is enabled, so that the user can disable it through the UI.
+                            // Once disabled, it will disappear entirely if not in virtual display mode.
+                            driverState?.sbs_mode_enabled && enableSbsButton
+                        }
                         {isVirtualDisplayMode && driverState?.sbs_mode_enabled && <Fragment>
-                            {enableSbsButton}
-                            <PanelSectionRow>
-                                <SliderField value={config.display_distance}
-                                             min={0.25} max={2.5}
-                                             notchCount={10}
-                                             notchLabels={DisplayDisanceNotchLabels}
-                                             label={"Display distance"}
-                                             description={"Adjust perceived display depth for eye comfort."}
-                                             step={0.05}
-                                             editableValue={true}
-                                             onChange={(display_distance) => {
-                                                 if (config) {
-                                                     updateConfig({
-                                                         ...config,
-                                                         display_distance
-                                                     }).catch(e => setError(e))
-                                                 }
-                                             }}
-                                />
-                            </PanelSectionRow>
                             <PanelSectionRow>
                                 <ToggleField
                                     checked={config.sbs_mode_stretched}
