@@ -48,14 +48,18 @@ def parse_float(value, default):
 class Plugin:
     async def retrieve_config(self):
         config = {}
-        config['disabled'] = False
+        config['disabled'] = True
         config['output_mode'] = 'mouse'
+        config['external_mode'] = 'none'
         config['mouse_sensitivity'] = 20
-        config['display_zoom'] = 1
-        config['display_distance'] = 1
+        config['display_zoom'] = 1.0
         config['look_ahead'] = 0
+        config['sbs_display_size'] = 1.0
+        config['sbs_display_distance'] = 1.0
         config['sbs_content'] = False
         config['sbs_mode_stretched'] = False
+        config['sideview_position'] = 'top_left'
+        config['sideview_display_size'] = 0.5
 
         try:
             with open(CONFIG_FILE_PATH, 'r') as f:
@@ -66,14 +70,17 @@ class Plugin:
                             config[key] = parse_boolean(value, config[key])
                         elif key in ['mouse_sensitivity', 'look_ahead']:
                             config[key] = parse_int(value, config[key])
-                        elif key in ['external_zoom', 'display_zoom', 'display_distance']:
-                            config['display_zoom' if key in ['external_zoom', 'display_zoom'] else key] = parse_float(value, config[key])
+                        elif key in ['external_zoom', 'display_zoom', 'sbs_display_distance', 'sbs_display_size', 'sideview_display_size']:
+                            if key in ['external_zoom', 'display_zoom']:
+                                key = 'display_zoom'
+                            config[key] = parse_float(value, config[key])
                         else:
                             config[key] = value
                     except Exception as e:
-                        decky_plugin.logger.error(f"Error parsing key-value pair {key}={value}: {e}")
-        except FileNotFoundError:
-            pass
+                        decky_plugin.logger.error(f"Error parsing line {line}: {e}")
+        except FileNotFoundError as e:
+            decky_plugin.logger.error(f"Config file not found {e}")
+            return config
 
         return config
 
@@ -175,7 +182,8 @@ class Plugin:
             output = subprocess.check_output(['systemctl', 'is-active', 'xreal-air-driver'], stderr=subprocess.STDOUT)
             return output.strip() == b'active'
         except subprocess.CalledProcessError as exc:
-            decky_plugin.logger.error(f"Error checking driver status {exc.output}")
+            if exc.output.strip() != b'inactive':
+                decky_plugin.logger.error(f"Error checking driver status {exc.output}")
             return False
 
     async def is_driver_installed(self):

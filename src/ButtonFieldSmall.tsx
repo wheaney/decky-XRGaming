@@ -2,23 +2,15 @@ import {
     PanelSectionRow,
     DialogButton,
     Field,
-    Focusable,
-    Navigation,
+    Focusable, gamepadDialogClasses,
 } from 'decky-frontend-lib';
 import { FC, ReactNode } from 'react';
-import showQrModal from "./showQrModal";
 
-const navLink = (url: string) => {
-    Navigation.CloseSideMenus();
-    Navigation.NavigateToExternalWeb(url);
-};
-
-const QrButton: FC<{
-    icon: ReactNode;
-    url: string;
-    followLink?: boolean;
-}> = ({ icon, children, url, followLink }) => {
-    const clickAction = followLink ? () => navLink(url) : () => showQrModal(url);
+const ButtonFieldSmall: FC<{
+    label: ReactNode;
+    onClick: (e: MouseEvent) => void;
+    buttonText: string;
+}> = ({ label, onClick, buttonText }) => {
     return <PanelSectionRow>
         <Field
             icon={null}
@@ -37,12 +29,12 @@ const QrButton: FC<{
                         marginRight: '.5em',
                         flexGrow: 1
                     }}
+                    className={gamepadDialogClasses.FieldLabel}
                 >
-                    {children}
+                    {label}
                 </div>
                 <DialogButton
-                    onOKActionDescription={followLink ? 'Follow Link' : 'Show Link QR'}
-                    onClick={clickAction}
+                    onClick={onClick}
                     style={{
                         flexShrink: 0,
                         alignSelf: 'center',
@@ -50,16 +42,16 @@ const QrButton: FC<{
                         justifyContent: 'center',
                         alignItems: 'center',
                         padding: '10px',
-                        maxWidth: '40px',
+                        maxWidth: '45%',
                         minWidth: 'auto',
                         marginLeft: '.5em'
                     }}
                 >
-                    {icon}
+                    {buttonText}
                 </DialogButton>
             </Focusable>
         </Field>
     </PanelSectionRow>
 };
 
-export default QrButton;
+export default ButtonFieldSmall;
