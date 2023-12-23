@@ -7,6 +7,7 @@ import { defineConfig } from 'rollup';
 import importAssets from 'rollup-plugin-import-assets';
 
 import { name } from "./plugin.json";
+import url from "@rollup/plugin-url";
 
 export default defineConfig({
   input: './src/index.tsx',
@@ -21,6 +22,14 @@ export default defineConfig({
     }),
     importAssets({
       publicPath: `http://127.0.0.1:1337/plugins/${name}/`
+    }),
+    url({
+      include: ['**/*.webp'],
+      emitFiles: true,
+      limit: 0,
+      destDir: 'dist/assets',
+      fileName: '[name][hash][extname]',
+      publicPath: `http://127.0.0.1:1337/plugins/${name}/assets/`
     })
   ],
   context: 'window',
