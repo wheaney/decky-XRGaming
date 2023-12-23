@@ -16,7 +16,7 @@ import {
     ToggleField
 } from "decky-frontend-lib";
 // @ts-ignore
-import React, {Fragment, useEffect, useState, VFC} from "react";
+import React, {Dispatch, Fragment, SetStateAction, useEffect, useState, VFC} from "react";
 import {FaGlasses} from "react-icons/fa";
 import {BiMessageError} from "react-icons/bi";
 import { PiPlugsConnected } from "react-icons/pi";
@@ -26,6 +26,8 @@ import {LuHelpCircle} from 'react-icons/lu';
 import QrButton from "./QrButton";
 import beam from "../assets/beam.png";
 import ButtonFieldSmall from "./ButtonFieldSmall";
+import {onChangeTutorial} from "./tutorials";
+import {useStableState} from "./stableState";
 
 interface Config {
     disabled: boolean;
@@ -93,7 +95,7 @@ function headsetModeToConfig(headsetMode: HeadsetModeOption, joystickMode: boole
         case "virtual_display":
             return { disabled: false, output_mode: "external_only", external_mode: "virtual_display" }
         case "vr_lite":
-            return { disabled: false, output_mode: joystickMode ? "joystick" : "mouse" }
+            return { disabled: false, output_mode: joystickMode ? "joystick" : "mouse", external_mode: "none" }
         case "sideview":
             return { disabled: false, output_mode: "external_only", external_mode: "sideview" }
         case "disabled":
@@ -106,6 +108,8 @@ function configToHeadsetMode(config?: Config): HeadsetModeOption {
     if (config.output_mode == "external_only" && config.external_mode != 'none') return config.external_mode
     return "vr_lite"
 }
+
+const HeadsetModeConfirmationTimeoutMs = 1000
 
 const ModeNotchLabels: NotchLabel[] = [
     {
@@ -180,6 +184,8 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
     const [installationStatus, setInstallationStatus] = useState<InstallationStatus>("checking");
     const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
     const [error, setError] = useState<string>();
+    const [dontShowAgainKeys, setDontShowAgainKeys] = useState<string[]>([]);
+    const [dirtyHeadsetMode, stableHeadsetMode, setDirtyHeadsetMode] = useStableState<HeadsetModeOption | undefined>(undefined, HeadsetModeConfirmationTimeoutMs);
 
     async function retrieveConfig() {
         const configRes: ServerResponse<Config> = await serverAPI.callPluginMethod<{}, Config>("retrieve_config", {});
@@ -199,6 +205,15 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
         setTimeout(() => {
             retrieveDriverState().catch((err) => setError(err));
         }, 1000);
+    }
+
+    async function retrieveDontShowAgainKeys() {
+        const dontShowAgainKeysRes: ServerResponse<string[]> = await serverAPI.callPluginMethod<{}, string[]>("retrieve_dont_show_again_keys", {});
+        if (dontShowAgainKeysRes.success) {
+            setDontShowAgainKeys(dontShowAgainKeysRes.result);
+        } else {
+            setError(dontShowAgainKeysRes.result);
+        }
     }
 
     async function checkInstallation() {
@@ -233,11 +248,21 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
         res.success ? setDirtyControlFlags({...flags, last_updated: Date.now()}) : setError(res.result);
     }
 
+    async function setDontShowAgain(key: string) {
+        const res = await serverAPI.callPluginMethod<{ key: string }, void>("set_dont_show_again", { key });
+        if (res.success) {
+            setDontShowAgainKeys([...dontShowAgainKeys, key]);
+        } else {
+            setError(res.result);
+        }
+    }
+
     // these asynchronous calls should execute ONLY one time, hence the empty array as the second argument
     useEffect(() => {
         retrieveConfig().catch((err) => setError(err));
         checkInstallation().catch((err) => setError(err));
         retrieveDriverState().catch((err) => setError(err));
+        retrieveDontShowAgainKeys().catch((err) => setError(err));
     }, []);
 
     useEffect(() => {
@@ -253,9 +278,21 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
         }
     }, [driverState])
 
+    // this effect will be triggered after headsetMode has been stable for a certain period of time
+    useEffect(() => {
+        if (stableHeadsetMode&& config) {
+            onChangeTutorial(`headset_mode_${stableHeadsetMode}`, () => {
+                updateConfig({
+                    ...config,
+                    ...headsetModeToConfig(stableHeadsetMode, isJoystickMode)
+                }).catch(e => setError(e))
+            }, dontShowAgainKeys, setDontShowAgain);
+        }
+    }, [stableHeadsetMode])
+
     const deviceConnected = !!driverState?.connected_device_brand && !!driverState?.connected_device_model
     const deviceName = deviceConnected ? `${driverState?.connected_device_brand} ${driverState?.connected_device_model}` : "No device connected"
-    const headsetMode: HeadsetModeOption = configToHeadsetMode(config)
+    const headsetMode: HeadsetModeOption = dirtyHeadsetMode ?? configToHeadsetMode(config)
     const isDisabled = !deviceConnected || headsetMode == "disabled"
     const isVirtualDisplayMode = !isDisabled && headsetMode == "virtual_display"
     const isSideviewMode = !isDisabled && headsetMode == "sideview"
@@ -269,11 +306,16 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
             checked={sbsModeEnabled}
             label={"Enable side-by-side mode"}
             description={!driverState?.sbs_mode_enabled && "Adjust virtual display depth. View 3D content."}
-            onChange={(sbs_mode_enabled) => writeControlFlags(
-                {
-                    sbs_mode: sbs_mode_enabled ? 'enable' : 'disable'
-                }
-            )}/>
+            onChange={(sbs_mode_enabled) => {
+                onChangeTutorial(`sbs_mode_enabled_${sbs_mode_enabled}`, () => {
+                    writeControlFlags(
+                        {
+                            sbs_mode: sbs_mode_enabled ? 'enable' : 'disable'
+                        }
+                    )}, dontShowAgainKeys, setDontShowAgain
+                )
+            }}
+        />
     </PanelSectionRow>;
 
     const joystickModeButton = <PanelSectionRow>
@@ -385,14 +427,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                                          min={0} max={HeadsetModeOptions.length-1}
                                          notchLabels={ModeNotchLabels}
                                          notchCount={HeadsetModeOptions.length}
-                                         onChange={(newMode) => {
-                                             if (config) {
-                                                 updateConfig({
-                                                     ...config,
-                                                     ...headsetModeToConfig(HeadsetModeOptions[newMode], isJoystickMode)
-                                                 }).catch(e => setError(e))
-                                             }
-                                         }}
+                                         onChange={(newMode) => setDirtyHeadsetMode(HeadsetModeOptions[newMode])}
                             />
                         </PanelSectionRow>}
                         {isVrLiteMode && isJoystickMode && joystickModeButton}

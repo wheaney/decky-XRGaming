@@ -19,6 +19,7 @@ CONTROL_FLAGS_FILE_PATH = '/dev/shm/xr_driver_control'
 DRIVER_STATE_FILE_PATH = '/dev/shm/xr_driver_state'
 
 INSTALLED_VERSION_SETTING_KEY = "installed_from_plugin_version"
+DONT_SHOW_AGAIN_SETTING_KEY = "dont_show_again"
 CONTROL_FLAGS = ['recenter_screen', 'recalibrate', 'sbs_mode']
 SBS_MODE_VALUES = ['unset', 'enable', 'disable']
 
@@ -162,6 +163,19 @@ class Plugin:
             return {}
 
         return state
+
+    async def retrieve_dont_show_again_keys(self):
+        return [key for key in settings.getSetting(DONT_SHOW_AGAIN_SETTING_KEY, "").split(",") if key]
+
+    async def set_dont_show_again(self, key):
+        try:
+            dont_show_again_keys = await self.retrieve_dont_show_again_keys(self)
+            dont_show_again_keys.append(key)
+            settings.setSetting(DONT_SHOW_AGAIN_SETTING_KEY, ",".join(dont_show_again_keys))
+            return True
+        except Exception as e:
+            decky_plugin.logger.error(f"Error setting dont_show_again {e}")
+            return False
 
     async def is_driver_running(self):
         try:

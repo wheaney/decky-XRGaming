@@ -1,6 +1,6 @@
 {
   "name": "decky-xrealAir",
-  "version": "0.6.0",
+  "version": "0.6.0.1",
   "description": "Virtual display and head-tracking modes for the XREAL Air glasses",
   "scripts": {
     "build": "shx rm -rf dist && rollup -c",
