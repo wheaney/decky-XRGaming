@@ -17,17 +17,21 @@ This plugin installs and keeps you up-to-date with the latest version of Breezy.
 
 From the plugin sidebar, you can control the following:
 * **Change headset modes**.
-  * In [virtual display mode](#virtual-display-help), a display will be rendered in a fixed space, allowing you to move your head to look at different parts of the screen.
-  * In [mouse-mode](#mouse-mode), head movements are translated to mouse movements.
-  * In joystick-mode, head movements are translated to right-joystick movements on a virtual controller (use this as [a fallback option](#enable-joystick-mode) if mouse mode doesn't work).
+  * In [virtual display mode](#virtual-display-help), a display will be rendered in a fixed position, allowing you to move your head to look at different parts of the screen.
+  * In [VR-lite mode](#vr-lite-mode), head movements are translated to mouse (or joystick) movements for a VR-like experience in first-person games.
   * When disabled, your Air glasses will be display-only, no head movements will be tracked.
-* **Mouse sensitivity**. In mouse-mode, this setting controls how much/quickly the mouse will move relative to your head movements.
-* **Display size**. In virtual display mode, this setting controls how big the screen appears. A setting of 1 will render at the game's resolution, while a higher setting zooms in (e.g. 2 for 2x zoom) and lower zooms out (e.g. 0.5 for a 50% smaller screen).
-* **Recenter display** button. In virtual display mode, if you don't like where your virtual display has been placed, you can use this button or multi-tap to re-center it. See ["I don't like where the screen was placed, or it has drifted from where it was."](#i-dont-like-where-the-screen-was-placed-or-it-has-drifted-from-where-it-was) for more details.
-* **Advanced settings** (virtual display mode only):
-  * **Recalibrate headset** button. If you're experiencing drift, noisiness, or a twisting/swaying of the screen when you move, you can use this button or multi-tap to try re-calibrating your headset. See ["I don't like where the screen was placed, or it has drifted from where it was."](#i-dont-like-where-the-screen-was-placed-or-it-has-drifted-from-where-it-was) for more details.
-  * **Movement look-ahead**. In virtual display mode, Breezy automatically attempts to anticipate where the screen will be when the next frame is rendered. If you find that its default look-ahead is producing a screen that drags behind your movements or a screen that is over-eager or jittery, you can tweak this yourself. The max is capped because higher values produce jitter and become unusable.
-  * **Enable SBS mode** (only shows up for some devices). This toggle switch will put your glasses in or out of SBS mode. When in SBS mode, your display resolution will double in width (to 3840x1080), and each eye will show only half of the screen. Don't switch into SBS mode unless your screen is already displaying SBS content, or you know what you're doing.
+* **In Virtual Display mode**:
+  * **Display size**. Controls how big the screen appears. A setting of 1 will render at the game's resolution, while a higher setting zooms in (e.g. 2 for 2x zoom) and lower zooms out (e.g. 0.5 for a 50% smaller screen).
+  * **Recenter display** button. If you don't like where your virtual display has been placed, you can use this button or multi-tap to re-center it. See ["I don't like where the screen was placed, or it has drifted from where it was."](#i-dont-like-where-the-screen-was-placed-or-it-has-drifted-from-where-it-was) for more details.
+  * Advanced Settings / **Movement look-ahead**. In virtual display mode, Breezy automatically attempts to anticipate where the screen will be when the next frame is rendered. If you find that its default look-ahead is producing a screen that drags behind your movements or a screen that is over-eager or jittery, you can tweak this yourself. The max is capped because higher values produce jitter and become unusable.
+  * Advanced Settings / **Enable SBS mode**. This toggle switch will put your glasses in or out of SBS mode. When in SBS mode, your display resolution will double in width (to 3840x1080), and each eye will show only half of the screen to allow for stereoscopic-depth-based functionality. Turning this on will enable two new controls:
+    * **Display distance**. Uses stereoscopic depth perception to move the display closer or farther from you. You may find that a different display distance reduces eye strain. A value greater than 1 is farther away (e.g. 2 is 2x farther than the glasses' default) and less than 1 is closer (e.g. 0.5 is half the default distance).
+    * **Content is stretched**. Enable this if your device is rendering content using the entire width of the SBS screen. For a more consistent SBS experience across games, enable this toggle, then enable stretching by going to **the Deck's** `...` **Performance menu** and move the **Scaling Mode** slider to `Stretch`.
+    * **Content is 3D**. Enable this if the game you're playing is rendering with side-by-side stereoscopic 3D support (either natively or using a third-party tool such as ReShade's Depth3D shader). This will render 3D content inside the virtual display.
+* In **VR-lite mode**:
+  * **Mouse sensitivity**. Controls how much/quickly the mouse will move relative to your head movements.
+  * Advanced Settings / **Joystick mode**. When enabled, head movements are translated to right-joystick movements on a virtual controller (use this as [a fallback option](#enable-joystick-mode) if the default mouse mode controls don't work for your game).
+* Advanced Settings / **Recalibrate headset** button. If you're experiencing drift, noisiness, or a twisting/swaying of the screen when you move, you can use this button or multi-tap to try re-calibrating your headset. See ["I don't like where the screen was placed, or it has drifted from where it was."](#i-dont-like-where-the-screen-was-placed-or-it-has-drifted-from-where-it-was) for more details.
 
 ## Virtual display help
 
@@ -40,6 +44,7 @@ From the plugin sidebar, you can control the following:
 * [I can see the screen shaking when I'm sitting still.](#i-can-see-the-screen-shaking-when-im-sitting-still)
 * [The screen lags behind my head movements.](#the-screen-lags-behind-my-head-movements)
 * [My screen is small when the display size is set to "1", or is using a lower resolution than my glasses.](#my-screen-is-small-when-the-display-size-is-set-to-1-or-is-using-a-lower-resolution-than-my-glasses)
+* [SBS mode isn't working](#sbs-mode-isnt-working)
 
 ### What does virtual display mode do?
 Typically, when you plug your glasses directly into the Steam Deck, you get a screen that stretches to fill your glasses entirely. And since that image is always centered in your lenses, no matter how you move your head, it will always remain centered in your vision. This forces you to look around the screen using only eye movements, which can be tiring on the eyes, and blurring on the edges of the screen means you can't always easily read content that's not near the center.
@@ -71,8 +76,8 @@ In general, these will have the biggest impact on input lag:
 * Increase framerate by maximizing performance settings of your games. If you want to choose a lower resolution to achieve this, be sure it's at the glasses' native aspect ratio.
 
 Here are specific ways you can try to achieve that on the Steam Deck:
-* In **Steam's Settings/Display dialog,** check that the resolution is set to `1920x1080@60`. Choosing the automatic option may also be fine.
-* In **the Game Details view** (where it shows the green "Play" button before launching a game), click the **Settings** (cog) icon, go to the **Properties** view, and set the resolution to `Native`.
+* In **Steam's Settings/Display dialog,** make sure the **Automatically set resolution** toggle is enabled.
+* Prior to launching a game, in **the Game Details view** (where it shows the green "Play" button), click the **Settings** (cog) icon, go to the **Properties** view, and set the resolution to `Native`.
 * In **the in-game Video/Graphics settings**, set the resolution to `1920x1080` (or any 16:9 aspect ratio), disable `VSync`, and set everything to lower-quality, higher-performance settings.
 * In **the Deck's** `...` **Performance menu**, flip on `Disable Frame Limit` (I know it's confusing to "turn on" a feature that "turns off" something, but either way the switch should be flipped to the "on" position) and enable `Allow Tearing`.
 
@@ -106,9 +111,20 @@ If the screen appears very small in your view, you may be playing at the Deck sc
 
 If you *WANT* to keep a low resolution, then you can just use the `Display size` slider to make the screen appear larger.
 
-## Mouse mode
+### SBS mode isn't working ###
+For the most consistent experience across all games and graphics settings:
+* Use stretched content. To do this, first enable stretching by going to **the Deck's** `...` **Performance menu** and move the **Scaling Mode** slider to `Stretch`. Then in the plugin's Decky sidebar, enable the **Content is stretched** toggle.
+* In **Steam's Settings/Display dialog,** make sure the **Automatically set resolution** toggle is enabled.
+* Prior to launching a game, in **the Game Details view** (where it shows the green "Play" button), click the **Settings** (cog) icon, go to the **Properties** view, and set the resolution to `Native`.
 
-When in mouse mode, the device movements are converted to mouse movements, and should be recognized by any PC game that supports keyboard/mouse input. This will work most naturally for games where mouse movements is used to control "look"/camera movements. For point-and-click style games, you may want to disable the driver so your glasses act as just a simple display.
+If you're seeing a different image in each eye:
+* Be sure the plugin's mode is still set to `Virtual Display`.
+* If your game is **NOT** 3D (this is most games), disable the **Content is 3D** toggle.
+* If your game is 3D, enable the **Content is 3D** toggle.
+
+## VR-Lite mode
+
+When in VR-lite mode, the device movements are converted to mouse movements (by default), and should be recognized by any PC game that supports keyboard/mouse input. This will work most naturally for games where mouse movements is used to control "look"/camera movements. For point-and-click style games, you may want to disable the driver so your glasses act as just a simple display.
 
 To adjust the sensitivity of mapping head movements to mouse movements, use the Decky UI on Steam Deck, or `~/bin/xreal_driver_config --mouse-sensitivity 20` via the terminal.
 
