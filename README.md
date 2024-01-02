@@ -19,6 +19,7 @@ From the plugin sidebar, you can control the following:
 * **Change headset modes**.
   * In [virtual display mode](#virtual-display-help), a display will be rendered in a fixed position, allowing you to move your head to look at different parts of the screen.
   * In [VR-lite mode](#vr-lite-mode), head movements are translated to mouse (or joystick) movements for a VR-like experience in first-person games.
+  * In [Sideview mode](#sideview-mode), games can be moved to the corner of your screen, allowing you to pay attention to the world around you while gaming.
   * When disabled, your Air glasses will be display-only, no head movements will be tracked.
 * **In Virtual Display mode**:
   * **Display size**. Controls how big the screen appears. A setting of 1 will render at the game's resolution, while a higher setting zooms in (e.g. 2 for 2x zoom) and lower zooms out (e.g. 0.5 for a 50% smaller screen).
@@ -31,6 +32,9 @@ From the plugin sidebar, you can control the following:
 * In **VR-lite mode**:
   * **Mouse sensitivity**. Controls how much/quickly the mouse will move relative to your head movements.
   * Advanced Settings / **Joystick mode**. When enabled, head movements are translated to right-joystick movements on a virtual controller (use this as [a fallback option](#enable-joystick-mode) if the default mouse mode controls don't work for your game).
+* In **Sideview mode**:
+  * **Display position**. Choose which corner of the screen to position your display.
+  * **Display size**. Choose how much of the glasses screen should be taken up by the sideview display.
 * Advanced Settings / **Recalibrate headset** button. If you're experiencing drift, noisiness, or a twisting/swaying of the screen when you move, you can use this button or multi-tap to try re-calibrating your headset. See ["I don't like where the screen was placed, or it has drifted from where it was."](#i-dont-like-where-the-screen-was-placed-or-it-has-drifted-from-where-it-was) for more details.
 
 ## Virtual display help
@@ -147,6 +151,14 @@ You'll probably want to use a utility that does what Steam's controller layouts 
 ### Enable joystick mode
 
 One last alternative if mouse input just won't work is to enable the driver's joystick mode, using the Decky UI on Steam Deck, or `~/bin/xreal_driver_config --use-joystick` via the terminal (you can revert this with `--use-mouse`). This will create a virtual gamepad whose right joystick is driven by movements from the glasses. This is less ideal because joystick movements are technically capped (you can only move a joystick so far...) and because it's a *second* controller on your PC. If the game you're trying to play is okay being driven by two controllers, then this may work, but if your game interprets another controller as a second player then its movements won't get combined with your real controller's movements.
+
+## Sideview mode
+
+When in Sideview mode, the display will shrink into one corner of the screen. Using the **Display position** menu, you can choose between top/bottom + left/right corners. The **Display size** slider allows you to choose how much of the glasses screen should be taken up by the sideview display; as little as 20%, up to 100% of the native screen size.
+
+### Sideview mode isn't working
+
+Sideview mode has the same constraints as Virtual display mode. See [Why isn't it working?](#why-isnt-it-working) in the Virtual display help section.
 
 ## Upcoming features
 So much more is already in the works for this plugin! If you're enjoying it and any of the upcoming features sound appealing, or if you have a feature request, or if you want to join the Discord, please consider [becoming a supporter](https://ko-fi.com/wheaney).
