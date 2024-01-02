@@ -45,6 +45,11 @@ function SteamDisplayResolutionListItem() {
     </li>
 }
 
+type TutorialComponentProps = {
+    deviceBrand: string,
+    deviceModel: string
+}
+type TutorialComponent = React.FC<TutorialComponentProps>;
 
 function VirtualDisplayTutorial() {
     return <Fragment>
@@ -87,7 +92,7 @@ function VirtualDisplayTutorial() {
     </Fragment>
 }
 
-function SBSTutorial() {
+function SBSTutorial(props: TutorialComponentProps) {
     return <Fragment>
         <PanelSection title={'Usage'}>
             <Focusable focusWithinClassName="gpfocuswithin" onActivate={() => {}} noFocusRing={true}>
@@ -125,9 +130,11 @@ function SBSTutorial() {
         <PanelSection title={'Controls'}>
             <Focusable focusWithinClassName="gpfocuswithin" onActivate={() => {}} noFocusRing={true}>
                 <p>
-                    You can enable or disable SBS mode directly from the glasses by long-pressing the brightness-up
-                    button for about 3 seconds. Or you can return to the plugin sidebar menu and disable it through the
-                    toggle.
+                    You can enable or disable SBS mode directly from the glasses by long-pressing
+                    the {props.deviceBrand == "XREAL" ?
+                        "brightness/volume-up button for about 3 seconds" :
+                        "mode (short) button for about 2 seconds"}.
+                    Or you can return to the plugin sidebar menu and disable it through the toggle.
                 </p>
                 <p>
                     You'll see some new controls in the plugin sidebar menu when SBS is enabled:
@@ -155,7 +162,7 @@ function SBSTutorial() {
 type tutorial = {
     title: string,
     description?: string,
-    component: React.FC
+    component: TutorialComponent
 }
 export const tutorials: { [key: string]: tutorial } = {
     'headset_mode_virtual_display': {
@@ -168,8 +175,8 @@ export const tutorials: { [key: string]: tutorial } = {
     }
 }
 
-export function onChangeTutorial(tutorialKey: string, onConfirm: () => void, dontShowAgainKeys: string[],
-                                 setDontShowAgain: (key: string) => Promise<void>) {
+export function onChangeTutorial(tutorialKey: string, deviceBrand: string, deviceModel:string, onConfirm: () => void,
+                                 dontShowAgainKeys: string[], setDontShowAgain: (key: string) => Promise<void>) {
     if (dontShowAgainKeys.includes(tutorialKey) || !tutorials[tutorialKey]) {
         onConfirm();
     } else {
@@ -185,6 +192,6 @@ export function onChangeTutorial(tutorialKey: string, onConfirm: () => void, don
                 onConfirm();
                 await setDontShowAgain(tutorialKey);
             }}
-            onOK={onConfirm}><TutorialComponent /></ConfirmModal>);
+            onOK={onConfirm}><TutorialComponent deviceBrand={deviceBrand} deviceModel={deviceModel} /></ConfirmModal>);
     }
 }

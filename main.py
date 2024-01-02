@@ -177,6 +177,14 @@ class Plugin:
             decky_plugin.logger.error(f"Error setting dont_show_again {e}")
             return False
 
+    async def reset_dont_show_again(self):
+        try:
+            settings.setSetting(DONT_SHOW_AGAIN_SETTING_KEY, "")
+            return True
+        except Exception as e:
+            decky_plugin.logger.error(f"Error resetting dont_show_again {e}")
+            return False
+
     async def is_driver_running(self):
         try:
             output = subprocess.check_output(['systemctl', 'is-active', 'xreal-air-driver'], stderr=subprocess.STDOUT)

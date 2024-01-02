@@ -1,13 +1,13 @@
-# XREAL Air Driver
+# XR Gaming Plugin
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/U7U8OVC0L) 
 
 [![Chat](https://img.shields.io/badge/chat-on%20discord-7289da.svg)](https://discord.gg/azSBTXNXMt)
 
-This plugin provides virtual display and head-tracking modes for the XREAL Air 1, 2, and 2 Pro glasses by installing [Breezy Desktop's Vulkan implementation](https://github.com/wheaney/breezy-desktop). It also provides a UI for easily changing common configurations. All without leaving Game Mode.
+This plugin provides virtual display and head-tracking modes for the XREAL Air 1, 2, 2 Pro and VITURE One glasses by installing [Breezy Desktop's Vulkan implementation](https://github.com/wheaney/breezy-desktop). It also provides a UI for easily changing common configurations. All without leaving Game Mode.
 
 For the moment, virtual display support only works for Vulkan games. See what's [in the works](#upcoming-features).
 
-![XREAL Air Driver plugin](./assets/store_image.png)
+![XR Gaming Plugin](./assets/store_image.png)
 
 ## How it works
 
@@ -56,7 +56,7 @@ Right now there's no surefire way to tell since this mode only supports Vulkan g
 
 ### Why isn't it working?
 Virtual display mode only works under certain conditions. Double-check the following:
-* Are you **using the XREAL or NREAL Air glasses**? Air 1, 2, and 2 Pro models *are* supported, but XREAL Light is *not*, nor are models from other brands, but soon this will include a wider range of devices. See the [upcoming features](#upcoming-features) section.
+* Are you **using the XREAL/NREAL Air or VITURE One glasses**? XREAL Air 1, 2, and 2 Pro and VITURE One models *are* supported, but XREAL Light is *not*, nor are models from other brands, but soon this will include a wider range of devices. See the [upcoming features](#upcoming-features) section.
 * Are your **glasses plugged into your Steam Deck**? Are they **displaying content when games aren't running**? 
   * Sometimes the display on the glasses will turn off as the battery level goes down. You can verify this by hitting the `Steam` or `...` buttons, since the Game Mode menus display no matter where the virtual screen is. If the glasses have powered down, try lowering your TDP wattage setting in the Performance panel to get more play time.
 * Have you **selected the "Virtual display" headset mode** in the plugin settings? Mouse, joystick, and disabled settings will all disable the virtual display.
@@ -81,12 +81,12 @@ Here are specific ways you can try to achieve that on the Steam Deck:
 * In **the in-game Video/Graphics settings**, set the resolution to `1920x1080` (or any 16:9 aspect ratio), disable `VSync`, and set everything to lower-quality, higher-performance settings.
 * In **the Deck's** `...` **Performance menu**, flip on `Disable Frame Limit` (I know it's confusing to "turn on" a feature that "turns off" something, but either way the switch should be flipped to the "on" position) and enable `Allow Tearing`.
 
-After you make these changes, if the display is still either lagging behind or jumping ahead of your movements or exhibiting a lot of shakiness, go into the **XREAL Air Driver** plugin settings and change the **Movement look-ahead** setting to `Min`, then slowly dial it up while moving your head until the display seems to most stable.
+After you make these changes, if the display is still either lagging behind or jumping ahead of your movements or exhibiting a lot of shakiness, go into the **XR Gaming** plugin settings and change the **Movement look-ahead** setting to `Min`, then slowly dial it up while moving your head until the display seems to most stable.
 
 ### I don't like where the screen was placed, or it has drifted from where it was.
 Unfortunately, screen drift will probably remain an issue for the foreseeable future. The only workarounds for this currently are to either (a) keep re-centering it, or (b) try re-calibrating it.
 
-This section will suggest you either use buttons in the plugin sidebar or use the multi-tap functionality built into this driver. For multi-tap, use one finger to tap down on the top of your glasses by your template. Each tap should firm and sharp, with a split-second wait before the next, as it needs to detect a slight pause in between. The cadence should be more like knocking on a door than double-clicking a mouse. If multi-tap isn't working or you would prefer not to use it, use the suggested buttons instead. **Note: XREAL did NOT build multi-tap support and has NOT condoned this practice; tap on your glasses at your own risk.**
+This section will suggest you either use buttons in the plugin sidebar or use the multi-tap functionality built into this driver. For multi-tap, use one finger to tap down on the top of your glasses by your template. Each tap should firm and sharp, with a split-second wait before the next, as it needs to detect a slight pause in between. The cadence should be more like knocking on a door than double-clicking a mouse. If multi-tap isn't working or you would prefer not to use it, use the suggested buttons instead. **Note: The device manufacturers did NOT build multi-tap support and have NOT condoned this practice; tap on your glasses at your own risk.**
 
 To re-center your screen, either use the **Recenter display** button in the plugin sidebar, or perform a double-tap on your glasses.
 
@@ -152,12 +152,10 @@ One last alternative if mouse input just won't work is to enable the driver's jo
 So much more is already in the works for this plugin! If you're enjoying it and any of the upcoming features sound appealing, or if you have a feature request, or if you want to join the Discord, please consider [becoming a supporter](https://ko-fi.com/wheaney).
 
 Upcoming features:
-* Increased device support (VITURE, Rokid, etc...).
+* Increased device support (Rokid, etc...).
 * Virtual display for all of Game Mode, not just Vulkan games.
 * General Linux virtual display support for productivity.
-* 3D SBS support for virtual display depth to make the display appear closer or farther away for eye comfort.
-* 3D SBS content virtual display support: render 3D content in a body-anchor display.
-* Sideview and smooth follow modes.
+* Smooth follow mode.
 
 ## Uninstalling
 
@@ -165,7 +163,7 @@ If you wish to completely remove the installation, run the following: `sudo ~/bi
 
 ## Decky Loader
 
-This plugin requires [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader). XREAL Air Driver is available on the store.
+This plugin requires [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader). It is available for free on the Decky store.
 
 ## Steam Deck Homebrew Discord
 [![Chat](https://img.shields.io/badge/chat-on%20discord-7289da.svg)](https://deckbrew.xyz/discord)

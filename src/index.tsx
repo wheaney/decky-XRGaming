@@ -16,7 +16,7 @@ import {
     ToggleField
 } from "decky-frontend-lib";
 // @ts-ignore
-import React, {Dispatch, Fragment, SetStateAction, useEffect, useState, VFC} from "react";
+import React, {CSSProperties, Dispatch, Fragment, ReactNode, SetStateAction, useEffect, useState, VFC} from "react";
 import {FaGlasses} from "react-icons/fa";
 import {BiMessageError} from "react-icons/bi";
 import { PiPlugsConnected } from "react-icons/pi";
@@ -257,6 +257,15 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
         }
     }
 
+    async function resetDontShowAgain() {
+        const res = await serverAPI.callPluginMethod<{}, void>("reset_dont_show_again", {});
+        if (res.success) {
+            setDontShowAgainKeys([]);
+        } else {
+            setError(res.result);
+        }
+    }
+
     // these asynchronous calls should execute ONLY one time, hence the empty array as the second argument
     useEffect(() => {
         retrieveConfig().catch((err) => setError(err));
@@ -280,8 +289,9 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
 
     // this effect will be triggered after headsetMode has been stable for a certain period of time
     useEffect(() => {
-        if (stableHeadsetMode&& config) {
-            onChangeTutorial(`headset_mode_${stableHeadsetMode}`, () => {
+        if (stableHeadsetMode && config && driverState) {
+            onChangeTutorial(`headset_mode_${stableHeadsetMode}`, driverState.connected_device_brand,
+                driverState.connected_device_model, () => {
                 updateConfig({
                     ...config,
                     ...headsetModeToConfig(stableHeadsetMode, isJoystickMode)
@@ -301,13 +311,14 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
     if (dirtyControlFlags?.sbs_mode && dirtyControlFlags?.sbs_mode !== 'unset') sbsModeEnabled = dirtyControlFlags.sbs_mode === 'enable'
     const calibrating = dirtyControlFlags.recalibrate || driverState?.calibration_state == "CALIBRATING";
 
-    const enableSbsButton = <PanelSectionRow>
+    const enableSbsButton = driverState && <PanelSectionRow>
         <ToggleField
             checked={sbsModeEnabled}
             label={"Enable side-by-side mode"}
             description={!driverState?.sbs_mode_enabled && "Adjust virtual display depth. View 3D content."}
             onChange={(sbs_mode_enabled) => {
-                onChangeTutorial(`sbs_mode_enabled_${sbs_mode_enabled}`, () => {
+                onChangeTutorial(`sbs_mode_enabled_${sbs_mode_enabled}`, driverState!.connected_device_brand,
+                    driverState!.connected_device_model, () => {
                     writeControlFlags(
                         {
                             sbs_mode: sbs_mode_enabled ? 'enable' : 'disable'
@@ -363,6 +374,11 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                     <span><Spinner style={{height: '16px', marginRight: 10}} />Calibrating headset</span> :
                     "Recalibrate headset"
                 }
+            </ButtonItem>
+        </PanelSectionRow>,
+        isVirtualDisplayMode && dontShowAgainKeys.length && <PanelSectionRow>
+            <ButtonItem description={"Clear your \"Don't show again\" settings."} layout="below" onClick={() => resetDontShowAgain()}>
+                Show all tutorials
             </ButtonItem>
         </PanelSectionRow>
     ].filter(Boolean);
@@ -593,34 +609,31 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                                 Need help?
                             </QrButton>
                         }
-                        {deviceConnected && <QrButton icon={<SiKofi />} url={"https://ko-fi.com/wheaney"}>
+                        {deviceConnected && <QrButton icon={<SiKofi color={"red"} />} url={"https://ko-fi.com/wheaney"}>
                             <span style={{fontSize: 'small'}}>
                                 {driverState.connected_device_brand === 'XREAL' && <Fragment>
-                                    Didn't need to buy a Beam?
                                     <img
                                         src={beam}
                                         style={{
                                             position: 'relative',
                                             top: '6px',
-                                            left: '4px',
                                             width: '15px',
                                             height: 'auto',
                                             alignSelf: 'center',
                                         }}
-                                    />
-                                    <br/>
-                                    <span style={{color:'white', fontWeight: 'bold'}}>
-                                        Give $20 in support. Keep $99.
+                                    /> Beam features. <CrossOut>Beam price.</CrossOut><br/>
+                                    <span style={{color:'white'}}>
+                                        Give <span style={{fontWeight: 'bold'}}>$20</span> in support. Keep <span style={{fontWeight: 'bold'}}>$99</span>.
                                     </span>
                                 </Fragment> || <Fragment>
-                                    Want more great stuff like this?<br/>
-                                    <span style={{color:'white', fontWeight: 'bold'}}>
-                                        Become a <SiKofi style={{position: 'relative', top: '2px'}} color={"red"} /> supporter!
+                                    <span style={{fontSize: 'smaller'}}>Glasses + Deck + <CrossOut altText={'a free plugin'}>a 3rd device??</CrossOut> = XR</span><br/>
+                                    <span style={{color:'white'}}>
+                                        Saved $$$? Give <span style={{fontWeight: 'bold'}}>$20</span> in support.
                                     </span>
                                 </Fragment>}
                             </span>
                         </QrButton>}
-                        <QrButton icon={<SiDiscord />} url={"https://discord.gg/GRQcfR5h9c"}>
+                        <QrButton icon={<SiDiscord color={"#7289da"} />} url={"https://discord.gg/GRQcfR5h9c"}>
                             <span style={{fontSize: 'small'}}>
                                 News. Discussions. Help.<br/>
                                 <span style={{color:'white', fontWeight: 'bold'}}>Join the chat!</span>
@@ -641,9 +654,30 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
     );
 };
 
+const CrossOut = (props: { children: ReactNode, altText?: string }) => {
+    const commonStyles:CSSProperties = {
+        width: '100%',
+        position: 'absolute',
+        right: 0,
+        top: '50%',
+        borderBottom: '2px solid red',
+        transform: 'skewY(8deg)'
+    };
+
+    // this allows us to mimick the ::after CSS style to get the desired crossout effect
+    return (
+        <div style={{ position: 'relative', display: 'inline-block', top: props.altText ? '-9px' : '0' }}>
+            {props.children}
+            <div style={commonStyles} />
+            <div style={commonStyles} />
+            {props.altText && <div style={{position: 'absolute'}}>{props.altText}</div>}
+        </div>
+    );
+};
+
 export default definePlugin((serverApi: ServerAPI) => {
     return {
-        title: <div className={staticClasses.Title}>XREAL Air Driver</div>,
+        title: <div className={staticClasses.Title}>XR Gaming</div>,
         content: <Content serverAPI={serverApi}/>,
         icon: <FaGlasses/>
     };
