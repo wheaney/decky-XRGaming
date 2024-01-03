@@ -88,7 +88,7 @@ Here are specific ways you can try to achieve that on the Steam Deck:
 After you make these changes, if the display is still either lagging behind or jumping ahead of your movements or exhibiting a lot of shakiness, go into the **XR Gaming** plugin settings and change the **Movement look-ahead** setting to `Min`, then slowly dial it up while moving your head until the display seems to most stable.
 
 ### I don't like where the screen was placed, or it has drifted from where it was.
-Unfortunately, screen drift will probably remain an issue for the foreseeable future. The only workarounds for this currently are to either (a) keep re-centering it, or (b) try re-calibrating it.
+Unfortunately, without an official SDK from XREAL, screen drift will probably remain an issue for the foreseeable future for the supported XREAL devices. The only workarounds for this currently are to either (a) keep re-centering it, or (b) try re-calibrating it. 
 
 This section will suggest you either use buttons in the plugin sidebar or use the multi-tap functionality built into this driver. For multi-tap, use one finger to tap down on the top of your glasses by your template. Each tap should firm and sharp, with a split-second wait before the next, as it needs to detect a slight pause in between. The cadence should be more like knocking on a door than double-clicking a mouse. If multi-tap isn't working or you would prefer not to use it, use the suggested buttons instead. **Note: The device manufacturers did NOT build multi-tap support and have NOT condoned this practice; tap on your glasses at your own risk.**
 
