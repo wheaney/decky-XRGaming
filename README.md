@@ -1,7 +1,7 @@
 # XR Gaming Plugin
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/U7U8OVC0L) 
 
-[![Chat](https://img.shields.io/badge/chat-on%20discord-7289da.svg)](https://discord.gg/azSBTXNXMt)
+[![Chat](https://img.shields.io/badge/chat-on%20discord-7289da.svg)](https://discord.gg/aJT72wKpXn)
 
 This plugin provides virtual display and head-tracking modes for the XREAL Air 1, 2, 2 Pro and VITURE One glasses by installing [Breezy Desktop's Vulkan implementation](https://github.com/wheaney/breezy-desktop). It also provides a UI for easily changing common configurations. All without leaving Game Mode.
 
@@ -161,13 +161,17 @@ When in Sideview mode, the display will shrink into one corner of the screen. Us
 Sideview mode has the same constraints as Virtual display mode. See [Why isn't it working?](#why-isnt-it-working) in the Virtual display help section.
 
 ## Upcoming features
-So much more is already in the works for this plugin! If you're enjoying it and any of the upcoming features sound appealing, or if you have a feature request, or if you want to join the Discord, please consider [becoming a supporter](https://ko-fi.com/wheaney).
+So much more is already in the works for this plugin! If you're enjoying it and any of the upcoming features sound appealing, or if you have a feature request, please consider [becoming a supporter](https://ko-fi.com/wheaney).
 
 Upcoming features:
 * Increased device support (Rokid, etc...).
 * Virtual display for all of Game Mode, not just Vulkan games.
 * General Linux virtual display support for productivity.
-* Smooth follow mode.
+* Smooth follow mode
+
+## Stay in touch
+
+To keep up on the latest news, discuss, get help, report bugs, etc... you can follow me along on [Reddit](https://www.reddit.com/user/watercanhydrate/), [Ko-fi](https://ko-fi.com/wheaney), [Github](https://github.com/wheaney), or join the [LinuXR Discord server](https://discord.gg/aJT72wKpXn).
 
 ## Uninstalling
 
@@ -175,7 +179,4 @@ If you wish to completely remove the installation, run the following: `sudo ~/bi
 
 ## Decky Loader
 
-This plugin requires [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader). It is available for free on the Decky store.
-
-## Steam Deck Homebrew Discord
-[![Chat](https://img.shields.io/badge/chat-on%20discord-7289da.svg)](https://deckbrew.xyz/discord)
+This plugin requires [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader), and is available for free on the Decky store.
