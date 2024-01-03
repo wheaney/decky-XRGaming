@@ -171,7 +171,7 @@ Upcoming features:
 
 ## Stay in touch
 
-To keep up on the latest news, discuss, get help, report bugs, etc... you can follow me along on [Reddit](https://www.reddit.com/user/watercanhydrate/), [Ko-fi](https://ko-fi.com/wheaney), [Github](https://github.com/wheaney), or join the [LinuXR Discord server](https://discord.gg/aJT72wKpXn).
+To keep up on the latest news, discuss, get help, report bugs, etc... you can follow along on [Reddit](https://www.reddit.com/user/watercanhydrate/), [Ko-fi](https://ko-fi.com/wheaney), [Github](https://github.com/wheaney), or join the [LinuXR Discord server](https://discord.gg/aJT72wKpXn).
 
 ## Uninstalling
 
