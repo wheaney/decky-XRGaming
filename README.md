@@ -37,6 +37,18 @@ From the plugin sidebar, you can control the following:
   * **Display size**. Choose how much of the glasses screen should be taken up by the sideview display.
 * Advanced Settings / **Recalibrate headset** button. If you're experiencing drift, noisiness, or a twisting/swaying of the screen when you move, you can use this button or multi-tap to try re-calibrating your headset. See ["I don't like where the screen was placed, or it has drifted from where it was."](#i-dont-like-where-the-screen-was-placed-or-it-has-drifted-from-where-it-was) for more details.
 
+## Supported devices
+
+| Brand    | Model             | Status            | Recommended?       | Notes                                                                                                                                   |
+| -------- | ----------------- | ----------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| XREAL    | Air 1, 2, 2 Pro   | **Live**          | :x:                | Unwilling to collaborate. [Unofficial, open-source SDK](https://gitlab.com/TheJackiMonster/nrealAirLinuxDriver). Exhibits drift, noise. |
+| VITURE   | One               | **Ready** (v0.6)  | :heavy_check_mark: | Official collaboration. [Closed source SDK available](https://www.viture.com/developer/viture-one-sdk-for-linux).                       |
+| Rokid    | Max               | *In development*  |                    | Official collaboration. SDK situation unknown.                                                                                          |
+| TCL      | NXTWEAR           | Need POC**        |                    |                                                                                                                                         |
+| Lenovo   | Legion Glasses    | Need POC**        |                    |                                                                                                                                         |
+
+** If you're a rep from this company or know one, please reach out via any of [these channels](#stay-in-touch).
+
 ## Virtual display help
 
 * [What does virtual display mode do?](#what-does-virtual-display-mode-do)
