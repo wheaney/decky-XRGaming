@@ -52,6 +52,7 @@ interface DriverState {
     calibration_state: CalibrationState;
     sbs_mode_enabled: boolean;
     sbs_mode_supported: boolean;
+    firmware_update_recommended: boolean;
 }
 
 interface ControlFlags {
@@ -141,7 +142,7 @@ const DisplayZoomNotchLabels: NotchLabel[] = [
     },
     {
         label: "Biggest",
-        notchIndex: 9
+        notchIndex: 7
     }
 ];
 
@@ -156,7 +157,7 @@ const DisplayDisanceNotchLabels: NotchLabel[] = [
     },
     {
         label: "Farthest",
-        notchIndex: 9
+        notchIndex: 7
     }
 ];
 
@@ -311,11 +312,14 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
     if (dirtyControlFlags?.sbs_mode && dirtyControlFlags?.sbs_mode !== 'unset') sbsModeEnabled = dirtyControlFlags.sbs_mode === 'enable'
     const calibrating = dirtyControlFlags.recalibrate || driverState?.calibration_state == "CALIBRATING";
 
+    const sbsFirmwareUpdateNeeded = !driverState?.sbs_mode_supported && driverState?.firmware_update_recommended;
     const enableSbsButton = driverState && <PanelSectionRow>
         <ToggleField
             checked={sbsModeEnabled}
+            disabled={!driverState?.sbs_mode_supported}
             label={"Enable side-by-side mode"}
-            description={!driverState?.sbs_mode_enabled && "Adjust virtual display depth. View 3D content."}
+            description={sbsFirmwareUpdateNeeded ? "Update your glasses' firmware to enable side-by-side mode." :
+                (!driverState?.sbs_mode_enabled && "Adjust virtual display depth. View 3D content.")}
             onChange={(sbs_mode_enabled) => {
                 onChangeTutorial(`sbs_mode_enabled_${sbs_mode_enabled}`, driverState!.connected_device_brand,
                     driverState!.connected_device_model, () => {
@@ -347,7 +351,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
 
     const advancedSettings = [
         isVrLiteMode && !isJoystickMode && joystickModeButton,
-        isVirtualDisplayMode && driverState?.sbs_mode_supported && !driverState?.sbs_mode_enabled && enableSbsButton,
+        isVirtualDisplayMode && !driverState?.sbs_mode_enabled && enableSbsButton,
         config && isVirtualDisplayMode && <PanelSectionRow>
             <SliderField value={config.look_ahead}
                          min={0} max={30} notchTicksVisible={true}
@@ -488,8 +492,8 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                         {isVirtualDisplayMode && <Fragment>
                             <PanelSectionRow>
                                 <SliderField value={sbsModeEnabled ? config.sbs_display_size : config.display_zoom}
-                                             min={0.25} max={2.5}
-                                             notchCount={10}
+                                             min={0.1} max={2.2}
+                                             notchCount={8}
                                              notchLabels={DisplayZoomNotchLabels}
                                              label={"Display size"}
                                              description={sbsModeEnabled && "Display distance setting also affects perceived display size."}
@@ -510,8 +514,8 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                             </PanelSectionRow>
                             {driverState?.sbs_mode_enabled && <PanelSectionRow>
                                 <SliderField value={config.sbs_display_distance}
-                                             min={0.25} max={2.5}
-                                             notchCount={10}
+                                             min={0.1} max={2.2}
+                                             notchCount={8}
                                              notchLabels={DisplayDisanceNotchLabels}
                                              label={"Display distance"}
                                              description={"Adjust perceived display depth for eye comfort."}
@@ -603,7 +607,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                                 }}>Virtual display</span> help</span>
                             </QrButton> ||
                             <QrButton icon={<LuHelpCircle />}
-                                      url={"https://github.com/wheaney/decky-xrealAir#xreal-air-driver"}
+                                      url={"https://github.com/wheaney/decky-xrealAir#xr-gaming-plugin"}
                                       followLink={true}
                             >
                                 Need help?

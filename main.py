@@ -138,6 +138,7 @@ class Plugin:
         state['calibration_state'] = "NOT_CALIBRATED"
         state['sbs_mode_enabled'] = False
         state['sbs_mode_supported'] = False
+        state['firmware_update_recommended'] = False
 
         try:
             with open(DRIVER_STATE_FILE_PATH, 'r') as f:
@@ -149,7 +150,7 @@ class Plugin:
                             state[key] = parse_int(value, 0)
                         elif key in ['calibration_setup', 'calibration_state', 'connected_device_brand', 'connected_device_model']:
                             state[key] = value
-                        elif key in ['sbs_mode_enabled', 'sbs_mode_supported']:
+                        elif key in ['sbs_mode_enabled', 'sbs_mode_supported', 'firmware_update_recommended']:
                             state[key] = parse_boolean(value, False)
                         else:
                             decky_plugin.logger.error(f"Unknown key {key} in driver state file")
