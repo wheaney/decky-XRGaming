@@ -72,8 +72,8 @@ type HeadsetModeOption = "virtual_display" | "vr_lite" | "sideview" | "disabled"
 type CalibrationSetup = "AUTOMATIC" | "INTERACTIVE"
 type CalibrationState = "NOT_CALIBRATED" | "CALIBRATING" | "CALIBRATED" | "WAITING_ON_USER"
 type SbsModeControl = "unset" | "enable" | "disable"
-type SideviewPosition = "top_left" | "top_right" | "bottom_left" | "bottom_right"
-const SideviewPositions: SideviewPosition[] = ["top_left", "top_right", "bottom_left", "bottom_right"]
+type SideviewPosition = "top_left" | "top_right" | "bottom_left" | "bottom_right" | "center"
+const SideviewPositions: SideviewPosition[] = ["top_left", "top_right", "bottom_left", "bottom_right", "center"]
 const DirtyControlFlagsExpireMilliseconds = 3000
 
 const HeadsetModeDescriptions: {[key in HeadsetModeOption]: string} = {
@@ -89,6 +89,7 @@ const SideviewPositionDescriptions: {[key in SideviewPosition]: string} = {
     "top_right": "Top\u00a0right",
     "bottom_left": "Bottom\u00a0left",
     "bottom_right": "Bottom\u00a0right",
+    "center": "Center"
 };
 
 function headsetModeToConfig(headsetMode: HeadsetModeOption, joystickMode: boolean): Partial<Config> {
