@@ -41,8 +41,8 @@ From the plugin sidebar, you can control the following:
 
 | Brand    | Model             | Status            | Recommended?       | Notes                                                                                                                                   |
 | -------- | ----------------- | ----------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| VITURE   | One               | **Live** (v0.6)  | :heavy_check_mark: | Official collaboration. [Closed source SDK available](https://www.viture.com/developer/viture-one-sdk-for-linux).                       |
 | XREAL    | Air 1, 2, 2 Pro   | **Live**          | :x:                | Unwilling to collaborate. [Unofficial, open-source SDK](https://gitlab.com/TheJackiMonster/nrealAirLinuxDriver). Exhibits drift, noise. |
-| VITURE   | One               | **Ready** (v0.6)  | :heavy_check_mark: | Official collaboration. [Closed source SDK available](https://www.viture.com/developer/viture-one-sdk-for-linux).                       |
 | Rokid    | Max               | *In development*  |                    | Official collaboration. SDK situation unknown.                                                                                          |
 | TCL      | NXTWEAR           | Need POC**        |                    |                                                                                                                                         |
 | Lenovo   | Legion Glasses    | Need POC**        |                    |                                                                                                                                         |
