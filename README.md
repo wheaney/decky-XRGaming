@@ -134,6 +134,7 @@ For the most consistent experience across all games and graphics settings:
 * Prior to launching a game, in **the Game Details view** (where it shows the green "Play" button), click the **Settings** (cog) icon, go to the **Properties** view, and set the resolution to `Native`.
 
 If you're seeing a different image in each eye:
+* Make sure you're only using SBS mode while in-game. Steam menus and other non-game interfaces won't be properly displayed while in this mode.
 * Be sure the plugin's mode is still set to `Virtual Display`.
 * If your game is **NOT** 3D (this is most games), disable the **Content is 3D** toggle.
 * If your game is 3D, enable the **Content is 3D** toggle.
