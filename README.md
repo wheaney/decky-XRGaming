@@ -139,6 +139,8 @@ If you're seeing a different image in each eye:
 * If your game is **NOT** 3D (this is most games), disable the **Content is 3D** toggle.
 * If your game is 3D, enable the **Content is 3D** toggle.
 
+If you enable SBS mode, the glasses turn off and never come back on, try updating your glasses' firmware.
+
 ## VR-Lite mode
 
 When in VR-lite mode, the device movements are converted to mouse movements (by default), and should be recognized by any PC game that supports keyboard/mouse input. This will work most naturally for games where mouse movements is used to control "look"/camera movements. For point-and-click style games, you may want to disable the driver so your glasses act as just a simple display.
