@@ -1,6 +1,6 @@
 {
   "name": "decky-XRGaming",
-  "version": "0.6.5",
+  "version": "0.6.7",
   "description": "Virtual display and head-tracking modes for the XREAL Air glasses",
   "scripts": {
     "build": "shx rm -rf dist && rollup -c",
@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/wheaney/decky-xrealAir.git"
+    "url": "git+https://github.com/wheaney/decky-XRGaming.git"
   },
   "keywords": [
     "decky",
@@ -25,9 +25,9 @@
   "author": "Wayne Heaney",
   "license": "GPL-3.0-or-later",
   "bugs": {
-    "url": "https://github.com/wheaney/decky-xrealAir/issues"
+    "url": "https://github.com/wheaney/decky-XRGaming/issues"
   },
-  "homepage": "https://github.com/wheaney/decky-xrealAir",
+  "homepage": "https://github.com/wheaney/decky-XRGaming",
   "devDependencies": {
     "@rollup/plugin-commonjs": "^21.1.0",
     "@rollup/plugin-json": "^4.1.0",
@@ -59,13 +59,13 @@
   "custom_remote_binary": [
     {
       "name": "breezy_vulkan_setup",
-      "url": "https://github.com/wheaney/breezy-desktop/releases/download/v0.6.5-beta/breezy_vulkan_setup",
+      "url": "https://github.com/wheaney/breezy-desktop/releases/download/v0.6.7-beta/breezy_vulkan_setup",
       "sha256hash": "74b2d30b89b7dfa96d42fcffe3079a6a0f823adf444432666f2bb77f1039547b"
     },
     {
       "name": "breezyVulkan.tar.gz",
-      "url": "https://github.com/wheaney/breezy-desktop/releases/download/v0.6.5-beta/breezyVulkan.tar.gz",
-      "sha256hash": "3596ae054f7e95bf9d88be53469b1cccb4883cd46b63d8c9155034ef6e12ae90"
+      "url": "https://github.com/wheaney/breezy-desktop/releases/download/v0.6.7-beta/breezyVulkan.tar.gz",
+      "sha256hash": "405e646468c609bcdb2d065f43d0c002f5bffb4be887e2ecc53f294f824dccb3"
     }
   ]
 }

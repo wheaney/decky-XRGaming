@@ -230,7 +230,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                     setInstallationStatus("installed")
                 else
                     setError("There was an error during setup. Try restarting your Steam Deck. " +
-                        "If the error persists, please file an issue in the decky-xrealAir GitHub repository.")
+                        "If the error persists, please file an issue in the decky-XRGaming GitHub repository.")
             }
         } else {
             setError(installedRes.result);
@@ -597,7 +597,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                         </Fragment>}
                         {isVirtualDisplayMode &&
                             <QrButton icon={<LuHelpCircle />}
-                                      url={"https://github.com/wheaney/decky-xrealAir#virtual-display-help"}
+                                      url={"https://github.com/wheaney/decky-XRGaming#virtual-display-help"}
                                       followLink={true}
                             >
                                 <span style={{fontSize: 'large'}}><span style={{
@@ -608,7 +608,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                                 }}>Virtual display</span> help</span>
                             </QrButton> ||
                             <QrButton icon={<LuHelpCircle />}
-                                      url={"https://github.com/wheaney/decky-xrealAir#xr-gaming-plugin"}
+                                      url={"https://github.com/wheaney/decky-XRGaming#xr-gaming-plugin"}
                                       followLink={true}
                             >
                                 Need help?

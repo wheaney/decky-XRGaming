@@ -218,7 +218,12 @@ class Plugin:
         attempt = 0
         while attempt < 3:
             try:
-                subprocess.check_output([setup_script_path, binary_path], stderr=subprocess.STDOUT, env=env_copy)
+                subprocess.check_output([
+                    setup_script_path,
+                    "-v",
+                    decky_plugin.DECKY_PLUGIN_VERSION,
+                    binary_path
+                ], stderr=subprocess.STDOUT, env=env_copy)
                 if await self.is_driver_running(self):
                     settings.setSetting(INSTALLED_VERSION_SETTING_KEY, decky_plugin.DECKY_PLUGIN_VERSION)
                     return True

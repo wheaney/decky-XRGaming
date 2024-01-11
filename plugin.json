@@ -5,6 +5,6 @@
   "publish": {
     "tags": ["xreal", "viture", "xr", "ar", "vr", "root"],
     "description": "Virtual display, VR-Lite, and Sideview modes for supported XR glasses",
-    "image": "https://raw.githubusercontent.com/wheaney/decky-xrealAir/main/assets/store_image.png"
+    "image": "https://raw.githubusercontent.com/wheaney/decky-XRGaming/main/assets/store_image.png"
   }
 }
