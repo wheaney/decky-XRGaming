@@ -389,6 +389,12 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
             {!error && <Fragment>
                 {installationStatus == "installed" && driverState && config &&
                     <PanelSection>
+                        <PanelSectionRow>
+                            <p>
+                                Uninstall this plugin and install the <b>XR Gaming</b> plugin from the Decky store.
+                                This plugin is no longer receiving updates.
+                            </p>
+                        </PanelSectionRow>
                         <PanelSectionRow style={{fontSize: 'medium', textAlign: 'center'}}>
                             <Field padding={'none'} childrenContainerWidth={'max'}>
                                 <span style={{color: deviceConnected ? 'white' : 'gray'}}>
