@@ -15,6 +15,8 @@ This plugin installs and keeps you up-to-date with the latest version of Breezy.
 
 ## Decky Controls
 
+Watch the [video overview](https://youtu.be/FespQ5peme4) of the plugin, including controls and recommended settings and usage. Or, just keep reading.
+
 From the plugin sidebar, you can control the following:
 * **Change headset modes**.
   * In [virtual display mode](#virtual-display-help), a display will be rendered in a fixed position, allowing you to move your head to look at different parts of the screen.
@@ -59,7 +61,6 @@ From the plugin sidebar, you can control the following:
 * [The screen flickers a lot when I move.](#the-screen-flickers-a-lot-when-i-move)
 * [I can see the screen shaking when I'm sitting still.](#i-can-see-the-screen-shaking-when-im-sitting-still)
 * [The screen lags behind my head movements.](#the-screen-lags-behind-my-head-movements)
-* [My screen is small when the display size is set to "1", or is using a lower resolution than my glasses.](#my-screen-is-small-when-the-display-size-is-set-to-1-or-is-using-a-lower-resolution-than-my-glasses)
 * [SBS mode isn't working](#sbs-mode-isnt-working)
 
 ### What does virtual display mode do?
@@ -118,14 +119,6 @@ If you're still experiencing shaking, see "[How can I optimize my setup for the 
 
 ### The screen lags behind my head movements.
 Since a bigger look-ahead produces more shaking, the max look-ahead is capped pretty conservatively. For games around 30 FPS, screen drag will become more noticeable, below 30 FPS the drag and flicking during head movements will be even worse. Try optimizing your game settings for better performance to achieve a higher FPS. See "[How can I optimize my setup for the best experience?](#how-can-i-optimize-my-setup-for-the-best-experience)" for other performance-related recommendations.
-
-### My screen is small when the display size is set to "1", or is using a lower resolution than my glasses.
-
-If the screen appears very small in your view, you may be playing at the Deck screen's native resolution (1280x800), and not at the glasses' native resolution (1920x1080). To fix this:
-1. Go to the game details in Steam, hit the Settings/cog icon, and open `Properties`, then for `Game Resolution` choose `Native`.
-2. After launching the game, if it's still small, go into the game options, and in the graphics or video settings, change the resolution.
-
-If you *WANT* to keep a low resolution, then you can just use the `Display size` slider to make the screen appear larger.
 
 ### SBS mode isn't working ###
 For the most consistent experience across all games and graphics settings:
