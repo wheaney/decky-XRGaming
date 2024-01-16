@@ -221,7 +221,7 @@ class Plugin:
                 subprocess.check_output([
                     setup_script_path,
                     "-v",
-                    decky_plugin.DECKY_PLUGIN_VERSION,
+                    decky_plugin.DECKY_PLUGIN_VERSION.replace("-", "_")
                     binary_path
                 ], stderr=subprocess.STDOUT, env=env_copy)
                 if await self.is_driver_running(self):
