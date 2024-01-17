@@ -58,8 +58,10 @@ class Plugin:
         config['sbs_display_distance'] = 1.0
         config['sbs_content'] = False
         config['sbs_mode_stretched'] = False
-        config['sideview_position'] = 'top_left'
-        config['sideview_display_size'] = 0.5
+        config['sideview_position'] = 'center'
+        config['sideview_display_size'] = 1.0
+        config['virtual_display_smooth_follow_enabled'] = False
+        config['sideview_smooth_follow_enabled'] = False
 
         try:
             with open(CONFIG_FILE_PATH, 'r') as f:
