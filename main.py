@@ -58,8 +58,8 @@ class Plugin:
         config['sbs_display_distance'] = 1.0
         config['sbs_content'] = False
         config['sbs_mode_stretched'] = False
-        config['sideview_position'] = 'center'
-        config['sideview_display_size'] = 1.0
+        config['sideview_position'] = 'top_left'
+        config['sideview_display_size'] = 0.5
 
         try:
             with open(CONFIG_FILE_PATH, 'r') as f:
