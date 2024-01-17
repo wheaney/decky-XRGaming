@@ -58,8 +58,8 @@ class Plugin:
         config['sbs_display_distance'] = 1.0
         config['sbs_content'] = False
         config['sbs_mode_stretched'] = False
-        config['sideview_position'] = 'top_left'
-        config['sideview_display_size'] = 0.5
+        config['sideview_position'] = 'center'
+        config['sideview_display_size'] = 1.0
 
         try:
             with open(CONFIG_FILE_PATH, 'r') as f:
@@ -221,7 +221,7 @@ class Plugin:
                 subprocess.check_output([
                     setup_script_path,
                     "-v",
-                    decky_plugin.DECKY_PLUGIN_VERSION.replace("-", "_")
+                    decky_plugin.DECKY_PLUGIN_VERSION.replace("-", "_"),
                     binary_path
                 ], stderr=subprocess.STDOUT, env=env_copy)
                 if await self.is_driver_running(self):
