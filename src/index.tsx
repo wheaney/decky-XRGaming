@@ -48,6 +48,8 @@ interface Config {
     sbs_mode_stretched: boolean;
     sideview_position: SideviewPosition;
     sideview_display_size: number;
+    virtual_display_smooth_follow_enabled: boolean;
+    sideview_smooth_follow_enabled: boolean;
 }
 
 interface DriverState {
@@ -80,24 +82,24 @@ type HeadsetModeOption = "virtual_display" | "vr_lite" | "sideview" | "disabled"
 type CalibrationSetup = "AUTOMATIC" | "INTERACTIVE"
 type CalibrationState = "NOT_CALIBRATED" | "CALIBRATING" | "CALIBRATED" | "WAITING_ON_USER"
 type SbsModeControl = "unset" | "enable" | "disable"
-type SideviewPosition = "top_left" | "top_right" | "bottom_left" | "bottom_right" | "center"
-const SideviewPositions: SideviewPosition[] = ["top_left", "top_right", "bottom_left", "bottom_right", "center"]
+type SideviewPosition = "center" | "top_left" | "top_right" | "bottom_left" | "bottom_right"
+const SideviewPositions: SideviewPosition[] = ["center", "top_left", "top_right", "bottom_left", "bottom_right"]
 const DirtyControlFlagsExpireMilliseconds = 3000
 
 const HeadsetModeDescriptions: {[key in HeadsetModeOption]: string} = {
     "virtual_display": "Virtual display is only available in-game.",
     "vr_lite": "Use Head movements to look around in-game.",
-    "sideview": "Move the screen to your peripheral.",
+    "sideview": "Display follow, sizing, and positioning.",
     "disabled": "Static display with no head-tracking."
 };
 const HeadsetModeOptions: HeadsetModeOption[] =  Object.keys(HeadsetModeDescriptions) as HeadsetModeOption[];
 
 const SideviewPositionDescriptions: {[key in SideviewPosition]: string} = {
+    "center": "Center",
     "top_left": "Top\u00a0left",
     "top_right": "Top\u00a0right",
     "bottom_left": "Bottom\u00a0left",
-    "bottom_right": "Bottom\u00a0right",
-    "center": "Center"
+    "bottom_right": "Bottom\u00a0right"
 };
 
 function headsetModeToConfig(headsetMode: HeadsetModeOption, joystickMode: boolean): Partial<Config> {
@@ -131,7 +133,7 @@ const ModeNotchLabels: NotchLabel[] = [
         notchIndex: 1
     },
     {
-        label: "Sideview",
+        label: "Follow",
         notchIndex: 2
     },
     {
@@ -546,20 +548,41 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                             <PanelSectionRow>
                                 <DropdownItem label={"Display position"}
                                               rgOptions={SideviewPositions.map((position) => ({
-                                                    label: SideviewPositionDescriptions[position],
-                                                    data: position
+                                                  label: SideviewPositionDescriptions[position],
+                                                  data: position
                                               }))}
                                               onChange={(selection) => {
-                                                    if (config) {
-                                                        updateConfig({
-                                                            ...config,
-                                                            sideview_position: selection.data
-                                                        }).catch(e => setError(e))
-                                                    }
+                                                  if (config) {
+                                                      const position = selection.data;
+                                                      let displaySize = config.sideview_display_size;
+                                                      if (position != "center" && displaySize == 1.0) {
+                                                          displaySize = 0.5;
+                                                      }
+                                                      updateConfig({
+                                                          ...config,
+                                                          sideview_position: position,
+                                                          sideview_display_size: displaySize
+                                                      }).catch(e => setError(e))
+                                                  }
                                               }}
                                               menuLabel={SideviewPositionDescriptions[config?.sideview_position]}
                                               selectedOption={config?.sideview_position} />
                             </PanelSectionRow>
+                            <PanelSectionRow>
+                                <ToggleField
+                                    checked={config.sideview_smooth_follow_enabled}
+                                    label={"Smooth follow"}
+                                    description={"Display movements are more elastic"}
+                                    onChange={(sideview_smooth_follow_enabled) => {
+                                        if (config) {
+                                            updateConfig({
+                                                ...config,
+                                                sideview_smooth_follow_enabled
+                                            }).catch(e => setError(e))
+                                        }
+                                    }}/>
+                            </PanelSectionRow>
+                            <ButtonFieldSmall label={"Display position"} onClick={showMenu} buttonText={SideviewPositionDescriptions[config.sideview_position]} />
                             <PanelSectionRow>
                                 <SliderField value={config.sideview_display_size}
                                              min={0.2} max={1.0}
@@ -583,6 +606,20 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                             </PanelSectionRow>
                         </Fragment>}
                         {isVirtualDisplayMode && <Fragment>
+                            <PanelSectionRow>
+                                <ToggleField
+                                    checked={config.virtual_display_smooth_follow_enabled}
+                                    label={"Automatic recentering"}
+                                    description={"Recenter under certain conditions"}
+                                    onChange={(virtual_display_smooth_follow_enabled) => {
+                                        if (config) {
+                                            updateConfig({
+                                                ...config,
+                                                virtual_display_smooth_follow_enabled
+                                            }).catch(e => setError(e))
+                                        }
+                                    }}/>
+                            </PanelSectionRow>
                             <PanelSectionRow>
                                 <SliderField value={sbsModeEnabled ? config.sbs_display_size : config.display_zoom}
                                              min={0.1} max={2.2}
