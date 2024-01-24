@@ -40,14 +40,15 @@ From the plugin sidebar, you can control the following:
 * Advanced Settings / **Recalibrate headset** button. If you're experiencing drift, noisiness, or a twisting/swaying of the screen when you move, you can use this button or multi-tap to try re-calibrating your headset. See ["I don't like where the screen was placed, or it has drifted from where it was."](#i-dont-like-where-the-screen-was-placed-or-it-has-drifted-from-where-it-was) for more details.
 
 ## Supported devices
+Check below to see if your device is supported. **Note: be sure you're on the latest firmware for your device.**
 
-| Brand    | Model             | Status            | Recommended?       | Notes                                                                                                                                   |
-| -------- | ----------------- | ----------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
-| VITURE   | One               | **Live** (v0.6)  | :heavy_check_mark: | Official collaboration. [Closed source SDK available](https://www.viture.com/developer/viture-one-sdk-for-linux).                       |
-| XREAL    | Air 1, 2, 2 Pro   | **Live**          | :x:                | Unwilling to collaborate. [Unofficial, open-source SDK](https://gitlab.com/TheJackiMonster/nrealAirLinuxDriver). Exhibits drift, noise. |
-| Rokid    | Max               | *In development*  |                    | Official collaboration. SDK situation unknown.                                                                                          |
-| TCL      | NXTWEAR           | Need POC**        |                    |                                                                                                                                         |
-| Lenovo   | Legion Glasses    | Need POC**        |                    |                                                                                                                                         |
+| Brand    | Model             | Status            | Recommended?       | Firmware updates                                                                         | Notes                                                                                                                                   |
+| -------- | ----------------- | ----------------- | ------------------ | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| VITURE   | One               | **Live** (v0.6)   | :heavy_check_mark: | [Official update site](https://static.viture.com/dfu-util/). Requires Chrome on Windows. | Official collaboration. [Closed source SDK available](https://www.viture.com/developer/viture-one-sdk-for-linux).                       |
+| XREAL    | Air 1, 2, 2 Pro   | **Live**          | :x:                | [Officlal update site](https://www.xreal.com/support/update/). Requires Chrome.          | Unwilling to collaborate. [Unofficial, open-source SDK](https://gitlab.com/TheJackiMonster/nrealAirLinuxDriver). Exhibits drift, noise. |
+| Rokid    | Max               | *In development*  |                    |                                                                                          | Official collaboration. SDK situation unknown.                                                                                          |
+| TCL      | NXTWEAR           | Need POC**        |                    |                                                                                          |                                                                                                                                          |
+| Lenovo   | Legion Glasses    | Need POC**        |                    |                                                                                          |                                                                                                                                          |
 
 ** If you're a rep from this company or know one, please reach out via any of [these channels](#stay-in-touch).
 
@@ -76,6 +77,7 @@ Virtual display mode only works under certain conditions. Double-check the follo
 * Are you **using the XREAL/NREAL Air or VITURE One glasses**? XREAL Air 1, 2, and 2 Pro and VITURE One models *are* supported, but XREAL Light is *not*, nor are models from other brands, but soon this will include a wider range of devices. See the [upcoming features](#upcoming-features) section.
 * Are your **glasses plugged into your Steam Deck**? Are they **displaying content when games aren't running**? 
   * Sometimes the display on the glasses will turn off as the battery level goes down. You can verify this by hitting the `Steam` or `...` buttons, since the Game Mode menus display no matter where the virtual screen is. If the glasses have powered down, try lowering your TDP wattage setting in the Performance panel to get more play time.
+* Is your device **[on the latest firmware](#supported-devices)**? Does the XR Gaming sidebar show your **device is "connected"**?
 * Have you **selected the "Virtual display" headset mode** in the plugin settings? Mouse, joystick, and disabled settings will all disable the virtual display.
 * Are you **playing a Vulkan game**? Currently only Vulkan is supported.
 * Is your **game running locally** (not streaming over Moonlight, Steam Link, etc...)? Remote gaming is probably a no-go for now.
