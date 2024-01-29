@@ -1,3 +1,4 @@
+import json
 import os
 import stat
 import subprocess
@@ -20,7 +21,7 @@ DRIVER_STATE_FILE_PATH = '/dev/shm/xr_driver_state'
 
 INSTALLED_VERSION_SETTING_KEY = "installed_from_plugin_version"
 DONT_SHOW_AGAIN_SETTING_KEY = "dont_show_again"
-CONTROL_FLAGS = ['recenter_screen', 'recalibrate', 'sbs_mode']
+CONTROL_FLAGS = ['recenter_screen', 'recalibrate', 'sbs_mode', 'refresh_device_license']
 SBS_MODE_VALUES = ['unset', 'enable', 'disable']
 
 settings = SettingsManager(name="settings", settings_directory=decky_plugin.DECKY_PLUGIN_SETTINGS_DIR)
@@ -65,6 +66,9 @@ class Plugin:
             with open(CONFIG_FILE_PATH, 'r') as f:
                 for line in f:
                     try:
+                        if not line.strip():
+                            continue
+
                         key, value = line.strip().split('=')
                         if key in ['disabled', 'sbs_mode_stretched', 'sbs_content']:
                             config[key] = parse_boolean(value, config[key])
@@ -139,12 +143,16 @@ class Plugin:
         state['sbs_mode_enabled'] = False
         state['sbs_mode_supported'] = False
         state['firmware_update_recommended'] = False
+        state['device_license'] = {}
 
         try:
             with open(DRIVER_STATE_FILE_PATH, 'r') as f:
                 output = f.read()
                 for line in output.splitlines():
                     try:
+                        if not line.strip():
+                            continue
+
                         key, value = line.strip().split('=')
                         if key == 'heartbeat':
                             state[key] = parse_int(value, 0)
@@ -152,6 +160,8 @@ class Plugin:
                             state[key] = value
                         elif key in ['sbs_mode_enabled', 'sbs_mode_supported', 'firmware_update_recommended']:
                             state[key] = parse_boolean(value, False)
+                        elif key == 'device_license':
+                            state[key] = json.loads(value)
                         else:
                             decky_plugin.logger.error(f"Unknown key {key} in driver state file")
                     except Exception as e:
@@ -159,9 +169,11 @@ class Plugin:
         except FileNotFoundError:
             pass
 
-        # state is stale, ignore it
+        # state is stale, just send the license
         if state['heartbeat'] == 0 or (time.time() - state['heartbeat']) > 5:
-            return {}
+            return {
+                'device_license': state['device_license']
+            }
 
         return state
 
@@ -186,6 +198,14 @@ class Plugin:
             decky_plugin.logger.error(f"Error resetting dont_show_again {e}")
             return False
 
+    async def is_breezy_installed_and_running(self):
+        waitSecs = 0
+        while self.breezy_installing and waitSecs < 3:
+            time.sleep(1)
+            waitSecs += 1
+
+        return self.breezy_installed and await self.is_driver_running(self)
+
     async def is_driver_running(self):
         try:
             output = subprocess.check_output(['systemctl', 'is-active', 'xreal-air-driver'], stderr=subprocess.STDOUT)
@@ -195,7 +215,7 @@ class Plugin:
                 decky_plugin.logger.error(f"Error checking driver status {exc.output}")
             return False
 
-    async def is_driver_installed(self):
+    async def is_breezy_installed(self):
         try:
             if not await self.is_driver_running(self):
                 return False
@@ -206,7 +226,7 @@ class Plugin:
             decky_plugin.logger.error(f"Error checking driver installation {exc.output}")
             return False
 
-    async def install_driver(self):
+    async def install_breezy(self):
         decky_plugin.logger.info(f"Installing breezy for plugin version {decky_plugin.DECKY_PLUGIN_VERSION}")
 
         # Set the USER environment variable for this command
@@ -235,9 +255,46 @@ class Plugin:
 
         return False
 
+    async def request_token(self, email):
+        decky_plugin.logger.info(f"Requesting a new token for {email}")
+
+        # Set the USER environment variable for this command
+        env_copy = os.environ.copy()
+        env_copy["USER"] = decky_plugin.DECKY_USER
+
+        try:
+            output = subprocess.check_output([decky_plugin.DECKY_USER_HOME + "/bin/xreal_driver_config", "--request-token", email], stderr=subprocess.STDOUT, env=env_copy)
+            return output.strip() == b"Token request sent"
+        except subprocess.CalledProcessError as exc:
+            decky_plugin.logger.error(f"Error running config script {exc.output}")
+            return False
+
+    async def verify_token(self, token):
+        decky_plugin.logger.info(f"Verifying token {token}")
+
+        # Set the USER environment variable for this command
+        env_copy = os.environ.copy()
+        env_copy["USER"] = decky_plugin.DECKY_USER
+
+        try:
+            output = subprocess.check_output([decky_plugin.DECKY_USER_HOME + "/bin/xreal_driver_config", "--verify-token", token], stderr=subprocess.STDOUT, env=env_copy)
+            return output.strip() == b"Token verified"
+        except subprocess.CalledProcessError as exc:
+            decky_plugin.logger.error(f"Error running config script {exc.output}")
+            return False
+
     # Asyncio-compatible long-running code, executed in a task when the plugin is loaded
     async def _main(self):
-        pass
+        self.breezy_installing = True
+        self.breezy_installed = await self.is_breezy_installed(self)
+
+        if self.breezy_installed:
+            self.breezy_installing = False
+            return
+
+        self.breezy_installed = await self.install_breezy(self)
+        self.breezy_installing = False
+
 
     # Function called first during the unload process, utilize this to handle your plugin being removed
     async def _unload(self):

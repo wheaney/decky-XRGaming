@@ -1,0 +1,370 @@
+import {
+    ModalRoot,
+    PanelSection,
+    gamepadDialogClasses, TextField, Spinner, DialogButtonPrimary, DialogButtonSecondary, Focusable, Navigation
+} from 'decky-frontend-lib';
+import {FC, MutableRefObject, useEffect, useState} from "react";
+import {QRCodeSVG} from "qrcode.react";
+
+enum SupporterTierView {
+    Enroll,
+    Renew,
+    Donate,
+    VerifyToken,
+    RequestToken,
+    Done
+}
+
+function SupporterTierFeaturesList() {
+    return <div style={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between', gap: '40px'}}>
+        <div style={{flex: 0.8}}>
+            <div style={{textAlign: 'center', fontWeight: 'bold', paddingBottom: '3px', borderBottom: '2px outset white'}}>
+                Side-by-side
+            </div>
+            <div style={{padding: '0 7px'}} className={gamepadDialogClasses.FieldDescription}>
+                Change the display distance. View 3D content.
+            </div>
+        </div>
+        <div style={{flex: 1}}>
+            <div style={{textAlign: 'center', fontWeight: 'bold', paddingBottom: '3px', borderBottom: '2px outset white'}}>
+                Smooth Follow
+            </div>
+            <div style={{padding: '0 7px'}} className={gamepadDialogClasses.FieldDescription}>
+                Display follows you. Tracks movements with smooth accelerations.
+            </div>
+        </div>
+        <div style={{flex: 1.2}}>
+            <div style={{textAlign: 'center', fontWeight: 'bold', paddingBottom: '3px', borderBottom: '2px outset white'}}>
+                Auto re-centering
+            </div>
+            <div style={{padding: '0 7px'}} className={gamepadDialogClasses.FieldDescription}>
+                Virtual display automatically re-centers itself based on look-away distance or duration.
+            </div>
+        </div>
+    </div>;
+}
+
+interface SupportTierModalDetails {
+    confirmedToken?: boolean;
+    timeRemainingText?: string;
+    fundsNeeded?: number;
+}
+
+export interface RefreshLicenseResponse extends SupportTierModalDetails {
+    isRenewed: boolean;
+}
+
+interface SupporterTierModalProps extends SupportTierModalDetails {
+    requestTokenFn: (email: string) => Promise<any>;
+    verifyTokenFn: (token: string) => Promise<any>;
+    refreshLicenseFn: () => Promise<RefreshLicenseResponse>;
+    supporterTierModalCloseRef: MutableRefObject<(() => void) | undefined>;
+}
+
+interface SupporterTierStepProps extends SupporterTierModalProps {
+    changeViewFn: (view: SupporterTierView) => void;
+}
+
+interface SupporterTierAboutBlurbProps {
+    timeRemainingText?: string;
+    fundsNeeded?: number;
+}
+
+function SupporterTierAboutRenewBlurb(props: SupporterTierAboutBlurbProps) {
+    return <p style={{textAlign: 'center'}}>
+        Your <b>Supporter Tier</b> access ends in {props.timeRemainingText}. Donate ${props.fundsNeeded} more to
+        renew for another year.
+    </p>;
+}
+
+function SupporterTierAboutEnrollBlurb(props: SupporterTierAboutBlurbProps) {
+    return <p style={{textAlign: 'center'}}>
+        {props.timeRemainingText && <span>
+                Your <b>Supporter Tier</b> trial ends in {props.timeRemainingText}.
+            </span>} Donate just ${props.fundsNeeded} to get Supporter Tier access for 12 months.
+    </p>
+}
+
+interface SupporterTierAboutProps extends SupporterTierStepProps {
+    blurb: FC<SupporterTierAboutBlurbProps>;
+}
+
+function SupporterTierAbout(props: SupporterTierAboutProps) {
+    const [isFetchingLicense, setFetchingLicense] = useState(false);
+    const [timeRemainingText, setTimeRemainingText] = useState(props.timeRemainingText);
+    const [fundsNeeded, setFundsNeeded] = useState(props.fundsNeeded);
+
+    function fetchLicense() {
+        (async () => {
+            setFetchingLicense(true);
+            const res = await props.refreshLicenseFn();
+            if (res.isRenewed) {
+                props.supporterTierModalCloseRef.current?.();
+            } else {
+                setTimeRemainingText(res.timeRemainingText);
+                setFundsNeeded(res.fundsNeeded);
+            }
+            setFetchingLicense(false);
+        })().catch(() => setFetchingLicense(false));
+    }
+
+    const alreadyDonatedOnClick = props.confirmedToken ? fetchLicense : () => props.changeViewFn(SupporterTierView.VerifyToken);
+    const Blurb = props.blurb;
+    return <PanelSection title={'Supporter Tier - Renewal'}>
+        <Blurb timeRemainingText={timeRemainingText} fundsNeeded={fundsNeeded}/>
+        <SupporterTierFeaturesList/>
+        <Focusable
+            style={{
+                paddingTop: '25px',
+                display: 'flex',
+                flexDirection: 'row-reverse',
+                justifyContent: 'space-between',
+                gap: '50px'
+            }}
+            flow-children={"horizontal"}
+        >
+            <DialogButtonPrimary onClick={() => props.changeViewFn(SupporterTierView.Donate)}>Renew now</DialogButtonPrimary>
+            <DialogButtonSecondary onClick={alreadyDonatedOnClick} disabled={isFetchingLicense}>
+                {isFetchingLicense && <span>
+                    <Spinner style={{height: '16px', marginRight: 10}}/>
+                    Refreshing license
+                </span> ||
+                "I've already donated"}
+            </DialogButtonSecondary>
+        </Focusable>
+    </PanelSection>
+}
+
+function SupporterTierEnroll(props: SupporterTierStepProps) {
+    return <SupporterTierAbout blurb={SupporterTierAboutEnrollBlurb} {...props} />
+}
+
+function SupporterTierRenew(props: SupporterTierStepProps) {
+    return <SupporterTierAbout blurb={SupporterTierAboutRenewBlurb} {...props} />
+}
+
+const DonationURL = 'https://ko-fi.com/wheaney';
+
+function SupporterTierDonate(props: SupporterTierStepProps) {
+    return <PanelSection title={'Supporter Tier - Donate'}>
+        <p style={{textAlign: 'center'}}>
+            Donate ${props.fundsNeeded} to get Supporter Tier access for 12 months.
+        </p>
+        <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            flexDirection: 'column'
+        }}>
+            <QRCodeSVG
+                style={{margin: '0 auto 1.5em auto'}}
+                value={DonationURL}
+                includeMargin
+                size={150}
+            />
+            <a style={{textAlign: 'center', wordBreak: 'break-word'}} onClick={() => {
+                props.supporterTierModalCloseRef.current?.();
+                Navigation.NavigateToExternalWeb(DonationURL);
+            }}>{DonationURL}</a>
+        </div>
+        <Focusable
+            style={{
+                paddingTop: '25px',
+                display: 'flex',
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                gap: '50px'
+            }}
+            flow-children={"horizontal"}
+        >
+            <div style={{flex: 0.5}}></div>
+            <div style={{flex: 1}}>
+                <DialogButtonPrimary onClick={() => props.changeViewFn(SupporterTierView.VerifyToken)}>
+                    Okay, I've donated
+                </DialogButtonPrimary>
+            </div>
+            <div style={{flex: 0.5}}></div>
+        </Focusable>
+    </PanelSection>
+}
+
+function SupporterTierVerifyToken(props: SupporterTierStepProps) {
+    const [token, setToken] = useState('');
+    const [checkingToken, setCheckingToken] = useState(false);
+    const [fieldError, setFieldError] = useState<string | undefined>(undefined);
+    const [isSuccess, setSuccess] = useState(false);
+
+    useEffect(() => {
+        (async () => {
+            if (token.length === 6) {
+                setCheckingToken(true);
+                try {
+                    const success = await props.verifyTokenFn(token);
+                    setCheckingToken(false);
+                    if (success) {
+                        setSuccess(true);
+                        await props.refreshLicenseFn();
+                        setTimeout(() => props.supporterTierModalCloseRef.current?.(), 3000);
+                    } else {
+                        setFieldError(`Token "${token}" is invalid or was requested from another device`)
+                        setToken('');
+                    }
+                } catch (e) {
+                    setCheckingToken(false);
+                    setFieldError('An error occurred. Please report this issue if it persists.');
+                }
+            } else if (token) {
+                setFieldError(undefined);
+            }
+        })().catch(() => {
+            setCheckingToken(false);
+            setFieldError('An error occurred. Please report this issue if it persists.');
+        });
+    }, [token]);
+
+    return <PanelSection title={'Supporter Tier - Verify Token'}>
+        <p style={{textAlign: 'center'}}>
+            Enter the token that was emailed to you at the email address you use as your Ko-fi login.
+            If you don't receive it, double-check that you're using the correct email address, check your spam folder,
+            or request a new one.
+        </p>
+        <div style={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between'}}>
+            <div style={{flex: 1.25}}></div>
+            <div style={{flex: 1}}>
+                <TextField disabled={checkingToken}
+                           label={'Token'}
+                           value={token}
+                           onChange={newToken => setToken(newToken.currentTarget.value.toUpperCase())}
+                           description={
+                                fieldError && <span style={{color: 'red'}}>{fieldError}</span> ||
+                                isSuccess && <span style={{color: 'green'}}>&#x2714;&nbsp;Success!</span>
+                            }
+                />
+            </div>
+            <div style={{flex: 1.25}}></div>
+        </div>
+        <Focusable
+            style={{
+                paddingTop: '25px',
+                display: 'flex',
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                gap: '50px'
+            }}
+            flow-children={"horizontal"}
+        >
+            <div style={{flex: 0.5}}></div>
+            <div style={{flex: 1}}>
+                <DialogButtonPrimary onClick={() => props.changeViewFn(SupporterTierView.RequestToken)}
+                                     disabled={checkingToken || isSuccess}>
+                    {checkingToken && <Spinner style={{height: '16px', marginRight: 10}}/>}I need a new token
+                </DialogButtonPrimary>
+            </div>
+            <div style={{flex: 0.5}}></div>
+        </Focusable>
+    </PanelSection>
+}
+
+function SupporterTierRequestToken(props: SupporterTierStepProps) {
+    const [email, setEmail] = useState('');
+    const [requestingToken, setRequestingToken] = useState(false);
+    const [fieldError, setFieldError] = useState<string | undefined>(undefined);
+    const [isEmailError, setEmailError] = useState(true);
+
+    function sendVerificationEmail() {
+        (async () => {
+            if (email) {
+                setRequestingToken(true);
+                try {
+                    await props.requestTokenFn(email);
+                    setRequestingToken(false);
+                    props.changeViewFn(SupporterTierView.VerifyToken);
+                } catch (e) {
+                    setRequestingToken(false);
+                    setFieldError('An error occurred. Please report this issue if it persists.');
+                }
+            } else {
+                setRequestingToken(false);
+                setFieldError(undefined);
+            }
+        })().catch(() => setFieldError('An error occurred. Please report this issue if it persists.'));
+    }
+
+    function isValidEmail(email: string) {
+        return /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(email)
+    }
+
+    return <PanelSection title={'Supporter Tier - Request Token'}>
+        <p style={{textAlign: 'center'}}>
+            Enter the same email address you use as your Ko-fi login.
+        </p>
+        <div style={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between', gap: '50px'}}>
+            <div style={{flex: 1.5}}>
+                <TextField label={'Email'}
+                           value={email}
+                           mustBeEmail={true}
+                           onChange={emailField => {
+                               setEmail(emailField.currentTarget.value);
+                               setEmailError(!isValidEmail(emailField.currentTarget.value));
+                           }}
+                           description={fieldError && <span style={{color: 'red'}}>{fieldError}</span>}
+                />
+            </div>
+        </div>
+        <Focusable
+            style={{
+                paddingTop: '25px',
+                display: 'flex',
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                gap: '50px'
+            }}
+            flow-children={"horizontal"}
+        >
+            <div style={{flex: 0.5}}></div>
+            <div style={{flex: 1}}>
+                <DialogButtonPrimary onClick={sendVerificationEmail} disabled={requestingToken || isEmailError}>
+                    {requestingToken && <Spinner style={{height: '16px', marginRight: 10}}/>}Send verification
+                </DialogButtonPrimary>
+            </div>
+            <div style={{flex: 0.5}}></div>
+        </Focusable>
+    </PanelSection>
+}
+
+export function SupporterTierModal(props: SupporterTierModalProps) {
+    const {confirmedToken, timeRemainingText} = props;
+    const [view, setView] =
+        useState(confirmedToken && timeRemainingText ? SupporterTierView.Renew : SupporterTierView.Enroll);
+    const stepProps: SupporterTierStepProps = {
+        ...props,
+        changeViewFn: setView
+    };
+
+    let View: FC<SupporterTierStepProps>;
+    switch (view) {
+        case SupporterTierView.Renew:
+            View = SupporterTierRenew;
+            break;
+        case SupporterTierView.Enroll:
+            View = SupporterTierEnroll;
+            break;
+        case SupporterTierView.Donate:
+            View = SupporterTierDonate;
+            break;
+        case SupporterTierView.VerifyToken:
+            View = SupporterTierVerifyToken;
+            break;
+        case SupporterTierView.RequestToken:
+            View = SupporterTierRequestToken;
+            break;
+        default:
+            View = SupporterTierEnroll;
+    }
+
+    return <ModalRoot onCancel={() => props.supporterTierModalCloseRef.current?.()}
+                      onEscKeypress={() => props.supporterTierModalCloseRef.current?.()}
+    >
+        <View {...stepProps} />
+    </ModalRoot>
+}

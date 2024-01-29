@@ -1,33 +1,39 @@
 import {
     ButtonItem,
-    definePlugin,
+    definePlugin, DropdownItem,
     Field,
-    Menu,
-    MenuItem,
+    gamepadDialogClasses,
     NotchLabel,
     PanelSection,
     PanelSectionRow,
     ServerAPI,
     ServerResponse,
-    showContextMenu,
+    showModal,
     SliderField,
     Spinner,
     staticClasses,
     ToggleField
 } from "decky-frontend-lib";
 // @ts-ignore
-import React, {CSSProperties, Dispatch, Fragment, ReactNode, SetStateAction, useEffect, useState, VFC} from "react";
+import React, {
+    Fragment, MutableRefObject,
+    useEffect,
+    useRef,
+    useState,
+    VFC
+} from "react";
 import {FaGlasses} from "react-icons/fa";
-import {BiMessageError} from "react-icons/bi";
+import {BiMessageError, BiSolidLock} from "react-icons/bi";
 import { PiPlugsConnected } from "react-icons/pi";
 import { TbPlugConnectedX } from "react-icons/tb";
-import {SiDiscord, SiKofi} from 'react-icons/si';
-import {LuHelpCircle} from 'react-icons/lu';
+import {SiDiscord} from 'react-icons/si';
+import {LuHelpCircle, LuTimer} from 'react-icons/lu';
 import QrButton from "./QrButton";
-import beam from "../assets/beam.png";
-import ButtonFieldSmall from "./ButtonFieldSmall";
 import {onChangeTutorial} from "./tutorials";
 import {useStableState} from "./stableState";
+import {featureEnabled, featureSubtext, License, secondsRemaining, timeRemainingText, trialTimeRemaining} from "./license";
+import {BsFillSuitHeartFill} from "react-icons/bs";
+import {RefreshLicenseResponse, SupporterTierModal} from "./SupporterTierModal";
 
 interface Config {
     disabled: boolean;
@@ -53,12 +59,14 @@ interface DriverState {
     sbs_mode_enabled: boolean;
     sbs_mode_supported: boolean;
     firmware_update_recommended: boolean;
+    device_license: License
 }
 
 interface ControlFlags {
     recenter_screen: boolean;
     recalibrate: boolean;
     sbs_mode: SbsModeControl;
+    refresh_device_license: boolean
 }
 
 type DirtyControlFlags = {
@@ -173,7 +181,7 @@ const LookAheadNotchLabels: NotchLabel[] = [
     },
     {
         label: "Higher",
-        notchIndex: 5
+        notchIndex: 9
     }
 ];
 
@@ -189,7 +197,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
     const [dontShowAgainKeys, setDontShowAgainKeys] = useState<string[]>([]);
     const [dirtyHeadsetMode, stableHeadsetMode, setDirtyHeadsetMode] = useStableState<HeadsetModeOption | undefined>(undefined, HeadsetModeConfirmationTimeoutMs);
 
-    async function retrieveConfig() {
+    async function refreshConfig() {
         const configRes: ServerResponse<Config> = await serverAPI.callPluginMethod<{}, Config>("retrieve_config", {});
         if (configRes.success) {
             setConfig(configRes.result);
@@ -199,17 +207,30 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
         }
     }
 
-    // have this function call itself every second to keep the UI up to date
-    async function retrieveDriverState() {
+    async function retrieveDriverState(): Promise<DriverState> {
         const driverStateRes: ServerResponse<DriverState> = await serverAPI.callPluginMethod<{}, DriverState>("retrieve_driver_state", {});
-        driverStateRes.success ? setDriverState(driverStateRes.result) : setError(driverStateRes.result);
+        if (driverStateRes.success) {
+            return driverStateRes.result;
+        } else {
+            throw Error(driverStateRes.result);
+        }
+    }
+
+    // have this function call itself every second to keep the UI up to date
+    async function refreshDriverState() {
+        try {
+            const driverState = await retrieveDriverState();
+            setDriverState(driverState);
+        } catch (e) {
+            setError((e as Error).message);
+        }
 
         setTimeout(() => {
-            retrieveDriverState().catch((err) => setError(err));
+            refreshDriverState().catch((err) => setError(err));
         }, 1000);
     }
 
-    async function retrieveDontShowAgainKeys() {
+    async function refreshDontShowAgainKeys() {
         const dontShowAgainKeysRes: ServerResponse<string[]> = await serverAPI.callPluginMethod<{}, string[]>("retrieve_dont_show_again_keys", {});
         if (dontShowAgainKeysRes.success) {
             setDontShowAgainKeys(dontShowAgainKeysRes.result);
@@ -219,14 +240,15 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
     }
 
     async function checkInstallation() {
-        const installedRes: ServerResponse<boolean> = await serverAPI.callPluginMethod<{}, boolean>("is_driver_installed", {});
+        setInstallationStatus("inProgress");
+        const installedRes: ServerResponse<boolean> = await serverAPI.callPluginMethod<{}, boolean>("is_breezy_installed_and_running", {});
         if (installedRes.success) {
             if (installedRes.result) {
                 setInstallationStatus("installed")
             } else {
                 setInstallationStatus("inProgress")
-                const installDriverRes = await serverAPI.callPluginMethod<{}, boolean>("install_driver", {});
-                if (installDriverRes.success && installDriverRes.result)
+                const installBreezyRes = await serverAPI.callPluginMethod<{}, boolean>("install_breezy", {});
+                if (installBreezyRes.success && installBreezyRes.result)
                     setInstallationStatus("installed")
                 else
                     setError("There was an error during setup. Try restarting your Steam Deck. " +
@@ -241,7 +263,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
         const res = await serverAPI.callPluginMethod<{ config: Config }, void>("write_config", { config: newConfig });
         if (!res.success) {
             setError(res.result);
-            await retrieveConfig();
+            await refreshConfig();
         }
     }
 
@@ -268,12 +290,54 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
         }
     }
 
+    async function requestToken(email: string) {
+        const res = await serverAPI.callPluginMethod<{ email: string }, void>("request_token", { email });
+        if (!res.success) {
+            throw Error(res.result);
+        } else {
+            return res.result
+        }
+    }
+
+    async function verifyToken(token: string) {
+        const res = await serverAPI.callPluginMethod<{ token: string }, void>("verify_token", { token });
+        if (!res.success) {
+            throw Error(res.result);
+        } else {
+            return res.result
+        }
+    }
+
+    async function refreshLicense(): Promise<RefreshLicenseResponse> {
+        await writeControlFlags({
+            refresh_device_license: true
+        });
+
+        return new Promise((resolve, reject) => {
+            setTimeout(async () => {
+                try {
+                    const latestState = await retrieveDriverState();
+                    const remaining = latestState?.device_license?.tiers?.supporter?.fundsToRenew ? Infinity : secondsRemaining(latestState?.device_license?.tiers?.supporter?.endDate);
+                    const remainingText = timeRemainingText(remaining);
+                    resolve({
+                        confirmedToken: latestState?.device_license?.confirmedToken,
+                        timeRemainingText: remainingText,
+                        fundsNeeded: latestState?.device_license?.tiers?.supporter?.fundsNeededUSD,
+                        isRenewed: (latestState?.device_license?.tiers?.supporter?.active ?? false) && !remainingText
+                    })
+                } catch (e) {
+                    reject((e as Error).message)
+                }
+            }, 3000)
+        })
+    }
+
     // these asynchronous calls should execute ONLY one time, hence the empty array as the second argument
     useEffect(() => {
-        retrieveConfig().catch((err) => setError(err));
+        refreshConfig().catch((err) => setError(err));
         checkInstallation().catch((err) => setError(err));
-        retrieveDriverState().catch((err) => setError(err));
-        retrieveDontShowAgainKeys().catch((err) => setError(err));
+        refreshDriverState().catch((err) => setError(err));
+        refreshDontShowAgainKeys().catch((err) => setError(err));
     }, []);
 
     useEffect(() => {
@@ -312,24 +376,43 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
     let sbsModeEnabled = driverState?.sbs_mode_enabled ?? false
     if (dirtyControlFlags?.sbs_mode && dirtyControlFlags?.sbs_mode !== 'unset') sbsModeEnabled = dirtyControlFlags.sbs_mode === 'enable'
     const calibrating = dirtyControlFlags.recalibrate || driverState?.calibration_state == "CALIBRATING";
+    const supporterTierSecondsRemaining = driverState?.device_license?.tiers?.supporter?.fundsToRenew ? Infinity : secondsRemaining(driverState?.device_license?.tiers?.supporter?.endDate);
+    const supporterTierTimeRemainingText = timeRemainingText(supporterTierSecondsRemaining);
+    const supporterTrialTimeRemaining = trialTimeRemaining(driverState?.device_license);
+    const supporterTrialTimeRemainingText = timeRemainingText(supporterTrialTimeRemaining);
+    const supporterTierActive = driverState?.device_license?.tiers?.supporter?.active && supporterTierSecondsRemaining > 0;
 
     const sbsFirmwareUpdateNeeded = !driverState?.sbs_mode_supported && driverState?.firmware_update_recommended;
+    const sbsFeatureEnabled = featureEnabled(driverState?.device_license, "sbs");
+    const sbsSubtext = featureSubtext(driverState?.device_license, "sbs");
     const enableSbsButton = driverState && <PanelSectionRow>
         <ToggleField
             checked={sbsModeEnabled}
-            disabled={!driverState?.sbs_mode_supported}
-            label={"Enable side-by-side mode"}
+            disabled={!driverState?.sbs_mode_enabled && (!driverState?.sbs_mode_supported)}
+            label={<span>
+                Enable side-by-side mode{sbsSubtext && <Fragment><br/>
+                    <span className={gamepadDialogClasses.FieldDescription} style={{fontStyle: 'italic'}}>
+                        {!sbsFeatureEnabled && <BiSolidLock style={{position: 'relative', top: '1px', left: '-3px'}} />}
+                        {sbsSubtext}
+                    </span>
+                </Fragment>}
+            </span>}
             description={sbsFirmwareUpdateNeeded ? "Update your glasses' firmware to enable side-by-side mode." :
-                (!driverState?.sbs_mode_enabled && "Adjust virtual display depth. View 3D content.")}
+                (!driverState?.sbs_mode_enabled && "Adjust display distance. View 3D content.")}
             onChange={(sbs_mode_enabled) => {
-                onChangeTutorial(`sbs_mode_enabled_${sbs_mode_enabled}`, driverState!.connected_device_brand,
-                    driverState!.connected_device_model, () => {
-                    writeControlFlags(
-                        {
-                            sbs_mode: sbs_mode_enabled ? 'enable' : 'disable'
-                        }
-                    )}, dontShowAgainKeys, setDontShowAgain
-                )
+                if (!sbsFeatureEnabled) {
+                    showSupporterTierDetails();
+                } else {
+                    onChangeTutorial(`sbs_mode_enabled_${sbs_mode_enabled}`, driverState!.connected_device_brand,
+                        driverState!.connected_device_model, () => {
+                            writeControlFlags(
+                                {
+                                    sbs_mode: sbs_mode_enabled ? 'enable' : 'disable'
+                                }
+                            )
+                        }, dontShowAgainKeys, setDontShowAgain
+                    )
+                }
             }}
         />
     </PanelSectionRow>;
@@ -355,8 +438,8 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
         isVirtualDisplayMode && !driverState?.sbs_mode_enabled && enableSbsButton,
         config && isVirtualDisplayMode && <PanelSectionRow>
             <SliderField value={config.look_ahead}
-                         min={0} max={30} notchTicksVisible={true}
-                         notchCount={6} notchLabels={LookAheadNotchLabels}
+                         min={0} max={45} notchTicksVisible={true}
+                         notchCount={10} notchLabels={LookAheadNotchLabels}
                          step={3}
                          label={"Movement look-ahead"}
                          description={config.look_ahead > 0 ? "Use Default unless screen is noticeably ahead or behind your movements. May introduce jitter at higher values." : undefined}
@@ -383,7 +466,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
         </PanelSectionRow>,
         isVirtualDisplayMode && dontShowAgainKeys.length && <PanelSectionRow>
             <ButtonItem description={"Clear your \"Don't show again\" settings."} layout="below" onClick={() => resetDontShowAgain()}>
-                Show all tutorials
+                Show all guides
             </ButtonItem>
         </PanelSectionRow>
     ].filter(Boolean);
@@ -395,27 +478,20 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
         await Promise.all([setConfig(newConfig), writeConfig(newConfig)])
     }
 
-    function showMenu() {
-        showContextMenu(
-            <Menu label={"Sideview display position"}>
-                {SideviewPositions.map((position) => (
-                    <MenuItem
-                        key={position}
-                        onClick={() => {
-                            if (config) {
-                                updateConfig({
-                                    ...config,
-                                    sideview_position: position
-                                }).catch(e => setError(e))
-                            }
-                        }}
-                        selected={config?.sideview_position == position}
-                    >
-                        {SideviewPositionDescriptions[position]}
-                    </MenuItem>
-                ))}
-            </Menu>
+    const supporterTierModalCloseRef: MutableRefObject<(() => void) | undefined> = useRef<() => void>();
+    function showSupporterTierDetails() {
+        const modalResult = showModal(
+            <SupporterTierModal confirmedToken={driverState?.device_license?.confirmedToken}
+                                timeRemainingText={supporterTierTimeRemainingText}
+                                fundsNeeded={driverState?.device_license?.tiers?.supporter?.fundsNeededUSD}
+                                requestTokenFn={requestToken}
+                                verifyTokenFn={verifyToken}
+                                refreshLicenseFn={refreshLicense}
+                                supporterTierModalCloseRef={supporterTierModalCloseRef}
+            />,
+            window
         );
+        supporterTierModalCloseRef.current = modalResult.Close;
     }
 
     return (
@@ -467,7 +543,23 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                             />
                         </PanelSectionRow>}
                         {isSideviewMode && <Fragment>
-                            <ButtonFieldSmall label={"Display position"} onClick={showMenu} buttonText={SideviewPositionDescriptions[config.sideview_position]} />
+                            <PanelSectionRow>
+                                <DropdownItem label={"Display position"}
+                                              rgOptions={SideviewPositions.map((position) => ({
+                                                    label: SideviewPositionDescriptions[position],
+                                                    data: position
+                                              }))}
+                                              onChange={(selection) => {
+                                                    if (config) {
+                                                        updateConfig({
+                                                            ...config,
+                                                            sideview_position: selection.data
+                                                        }).catch(e => setError(e))
+                                                    }
+                                              }}
+                                              menuLabel={SideviewPositionDescriptions[config?.sideview_position]}
+                                              selectedOption={config?.sideview_position} />
+                            </PanelSectionRow>
                             <PanelSectionRow>
                                 <SliderField value={config.sideview_display_size}
                                              min={0.2} max={1.0}
@@ -595,8 +687,84 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                                 </ButtonItem>
                             </PanelSectionRow>}
                         </Fragment>}
+                        <PanelSectionRow>
+                            {supporterTrialTimeRemaining && <Field
+                                    icon={null}
+                                    label={null}
+                                    childrenLayout={undefined}
+                                    inlineWrap="keep-inline"
+                                    padding="none"
+                                    spacingBetweenLabelAndChild="none"
+                                    childrenContainerWidth="max">
+                                    <div style={{ textAlign: 'center',
+                                        alignSelf: 'center',
+                                        marginRight: '.5em',
+                                        flexGrow: 1 }}>
+                                        Supporter Tier: <span style={{fontWeight: 'bold', color: 'white'}}>
+                                            <LuTimer style={{position: 'relative', top: '1px', marginRight: '2px'}} />In trial
+                                        </span><br/>
+                                        {supporterTrialTimeRemainingText && <span className={gamepadDialogClasses.FieldDescription}>
+                                            Trial ends in {supporterTrialTimeRemainingText}
+                                        </span>}
+                                    </div>
+                                    <ButtonItem layout="below" onClick={showSupporterTierDetails}
+                                                bottomSeparator={'none'} highlightOnFocus={false}>
+                                        Become a supporter
+                                    </ButtonItem>
+                                </Field> ||
+                                supporterTierActive && <Field
+                                    icon={null}
+                                    label={null}
+                                    childrenLayout={undefined}
+                                    inlineWrap="keep-inline"
+                                    padding="none"
+                                    spacingBetweenLabelAndChild="none"
+                                    childrenContainerWidth="max">
+                                    <div style={{ textAlign: 'center',
+                                                  alignSelf: 'center',
+                                                  marginRight: '.5em',
+                                                  flexGrow: 1 }}>
+                                        Supporter Tier: <span style={{fontWeight: 'bold', color: 'white'}}>Unlocked</span><br/>
+                                        <span className={gamepadDialogClasses.FieldDescription}>
+                                            {supporterTierTimeRemainingText ? `Access ends in ${supporterTierTimeRemainingText}` :
+                                                <Fragment><BsFillSuitHeartFill color={'red'}/> You rock! Thanks!</Fragment>}
+                                        </span>
+                                    </div>
+                                    {supporterTierTimeRemainingText && <ButtonItem layout="below"
+                                                                                   onClick={showSupporterTierDetails}
+                                                                                   bottomSeparator={'none'}
+                                                                                   highlightOnFocus={false}>
+                                        Renew now
+                                    </ButtonItem>}
+                                </Field> ||
+                                <Field
+                                    icon={null}
+                                    label={null}
+                                    childrenLayout={undefined}
+                                    inlineWrap="keep-inline"
+                                    padding="none"
+                                    spacingBetweenLabelAndChild="none"
+                                    childrenContainerWidth="max">
+                                    <div style={{
+                                        textAlign: 'center',
+                                        alignSelf: 'center',
+                                        marginRight: '.5em',
+                                        flexGrow: 1
+                                    }}>
+                                        Supporter Tier:
+                                        <span style={{fontWeight: 'bold', color: 'white'}}>
+                                            <BiSolidLock style={{position: 'relative', top: '1px', margin: '0 2px'}} />Locked
+                                        </span>
+                                    </div>
+                                    <ButtonItem layout="below" onClick={showSupporterTierDetails}
+                                                bottomSeparator={'none'} highlightOnFocus={false}>
+                                        Unlock now
+                                    </ButtonItem>
+                                </Field>
+                            }
+                        </PanelSectionRow>
                         {isVirtualDisplayMode &&
-                            <QrButton icon={<LuHelpCircle />}
+                            <QrButton icon={<LuHelpCircle/>}
                                       url={"https://github.com/wheaney/decky-XRGaming#virtual-display-help"}
                                       followLink={true}
                             >
@@ -614,34 +782,10 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                                 Need help?
                             </QrButton>
                         }
-                        {deviceConnected && <QrButton icon={<SiKofi color={"red"} />} url={"https://ko-fi.com/wheaney"}>
-                            <span style={{fontSize: 'small'}}>
-                                {driverState.connected_device_brand === 'XREAL' && <Fragment>
-                                    <img
-                                        src={beam}
-                                        style={{
-                                            position: 'relative',
-                                            top: '6px',
-                                            width: '15px',
-                                            height: 'auto',
-                                            alignSelf: 'center',
-                                        }}
-                                    /> Beam features. <CrossOut>Beam price.</CrossOut><br/>
-                                    <span style={{color:'white'}}>
-                                        Give <span style={{fontWeight: 'bold'}}>$20</span> in support. Keep <span style={{fontWeight: 'bold'}}>$99</span>.
-                                    </span>
-                                </Fragment> || <Fragment>
-                                    <span style={{fontSize: 'smaller'}}>Glasses + Deck + <CrossOut altText={'a free plugin'}>a 3rd device??</CrossOut> = XR</span><br/>
-                                    <span style={{color:'white'}}>
-                                        Saved $$$? Give <span style={{fontWeight: 'bold'}}>$20</span> in support.
-                                    </span>
-                                </Fragment>}
-                            </span>
-                        </QrButton>}
-                        <QrButton icon={<SiDiscord color={"#7289da"} />} url={"https://discord.gg/GRQcfR5h9c"}>
+                        <QrButton icon={<SiDiscord color={"#7289da"}/>} url={"https://discord.gg/GRQcfR5h9c"}>
                             <span style={{fontSize: 'small'}}>
                                 News. Discussions. Help.<br/>
-                                <span style={{color:'white', fontWeight: 'bold'}}>Join the chat!</span>
+                                <span style={{color: 'white', fontWeight: 'bold'}}>Join the chat!</span>
                             </span>
                         </QrButton>
                     </PanelSection> ||
@@ -656,27 +800,6 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                 }
             </Fragment>}
         </Fragment>
-    );
-};
-
-const CrossOut = (props: { children: ReactNode, altText?: string }) => {
-    const commonStyles:CSSProperties = {
-        width: '100%',
-        position: 'absolute',
-        right: 0,
-        top: '50%',
-        borderBottom: '2px solid red',
-        transform: 'skewY(8deg)'
-    };
-
-    // this allows us to mimick the ::after CSS style to get the desired crossout effect
-    return (
-        <div style={{ position: 'relative', display: 'inline-block', top: props.altText ? '-9px' : '0' }}>
-            {props.children}
-            <div style={commonStyles} />
-            <div style={commonStyles} />
-            {props.altText && <div style={{position: 'absolute'}}>{props.altText}</div>}
-        </div>
     );
 };
 
