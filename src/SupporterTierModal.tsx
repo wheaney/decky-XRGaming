@@ -146,9 +146,26 @@ function SupporterTierRenew(props: SupporterTierStepProps) {
 const DonationURL = 'https://ko-fi.com/wheaney';
 
 function SupporterTierDonate(props: SupporterTierStepProps) {
+    const [isFetchingLicense, setFetchingLicense] = useState(false);
+    const [fundsNeeded, setFundsNeeded] = useState(props.fundsNeeded);
+
+    function fetchLicense() {
+        (async () => {
+            setFetchingLicense(true);
+            const res = await props.refreshLicenseFn();
+            if (res.isRenewed) {
+                props.supporterTierModalCloseRef.current?.();
+            } else {
+                setFundsNeeded(res.fundsNeeded);
+            }
+            setFetchingLicense(false);
+        })().catch(() => setFetchingLicense(false));
+    }
+
+    const donatedOnClick = props.confirmedToken ? fetchLicense : () => props.changeViewFn(SupporterTierView.VerifyToken);
     return <PanelSection title={'Supporter Tier - Donate'}>
         <p style={{textAlign: 'center'}}>
-            Donate ${props.fundsNeeded} to get Supporter Tier access for 12 months.
+            Donate ${fundsNeeded} to get Supporter Tier access for 12 months.
         </p>
         <div style={{
             display: 'flex',
@@ -179,8 +196,12 @@ function SupporterTierDonate(props: SupporterTierStepProps) {
         >
             <div style={{flex: 0.5}}></div>
             <div style={{flex: 1}}>
-                <DialogButtonPrimary onClick={() => props.changeViewFn(SupporterTierView.VerifyToken)}>
-                    Okay, I've donated
+                <DialogButtonPrimary onClick={donatedOnClick} disabled={isFetchingLicense}>
+                    {isFetchingLicense && <span>
+                        <Spinner style={{height: '16px', marginRight: 10}}/>
+                        Refreshing license
+                    </span> ||
+                    "Okay, I've donated"}
                 </DialogButtonPrimary>
             </div>
             <div style={{flex: 0.5}}></div>
@@ -257,7 +278,11 @@ function SupporterTierVerifyToken(props: SupporterTierStepProps) {
             <div style={{flex: 1}}>
                 <DialogButtonPrimary onClick={() => props.changeViewFn(SupporterTierView.RequestToken)}
                                      disabled={checkingToken || isSuccess}>
-                    {checkingToken && <Spinner style={{height: '16px', marginRight: 10}}/>}I need a new token
+                    {checkingToken && <span>
+                        <Spinner style={{height: '16px', marginRight: 10}}/>
+                        Checking token
+                    </span> ||
+                        "I need a new token"}
                 </DialogButtonPrimary>
             </div>
             <div style={{flex: 0.5}}></div>

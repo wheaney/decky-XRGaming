@@ -21,6 +21,7 @@ DRIVER_STATE_FILE_PATH = '/dev/shm/xr_driver_state'
 
 INSTALLED_VERSION_SETTING_KEY = "installed_from_plugin_version"
 DONT_SHOW_AGAIN_SETTING_KEY = "dont_show_again"
+MANIFEST_CHECKSUM_KEY = "manifest_checksum"
 CONTROL_FLAGS = ['recenter_screen', 'recalibrate', 'sbs_mode', 'refresh_device_license']
 SBS_MODE_VALUES = ['unset', 'enable', 'disable']
 
@@ -221,10 +222,27 @@ class Plugin:
                 return False
 
             installed_from_plugin_version = settings.getSetting(INSTALLED_VERSION_SETTING_KEY)
-            return installed_from_plugin_version == decky_plugin.DECKY_PLUGIN_VERSION
+            if not installed_from_plugin_version == decky_plugin.DECKY_PLUGIN_VERSION:
+                return False
+
+            if (await self.get_breezy_manifest_checksum(self)) != settings.getSetting(MANIFEST_CHECKSUM_KEY):
+                return False
+
+            output = subprocess.check_output([decky_plugin.DECKY_USER_HOME + "/.local/bin/breezy_vulkan/verify_installation"], stderr=subprocess.STDOUT)
+            return output.strip() == b"Verification succeeded"
         except subprocess.CalledProcessError as exc:
             decky_plugin.logger.error(f"Error checking driver installation {exc.output}")
             return False
+
+    async def get_breezy_manifest_checksum(self):
+        try:
+            output = subprocess.check_output(["sha256sum", decky_plugin.DECKY_USER_HOME + "/.local/bin/breezy_vulkan/manifest"], stderr=subprocess.STDOUT)
+
+            # convert to a non-byte string, then split on spaces
+            return output.strip().decode("utf-8").split(" ")[0]
+        except subprocess.CalledProcessError as exc:
+            decky_plugin.logger.error(f"Error getting breezy manifest checksum {exc.output}")
+            return None
 
     async def install_breezy(self):
         decky_plugin.logger.info(f"Installing breezy for plugin version {decky_plugin.DECKY_PLUGIN_VERSION}")
@@ -246,6 +264,7 @@ class Plugin:
                 ], stderr=subprocess.STDOUT, env=env_copy)
                 if await self.is_driver_running(self):
                     settings.setSetting(INSTALLED_VERSION_SETTING_KEY, decky_plugin.DECKY_PLUGIN_VERSION)
+                    settings.setSetting(MANIFEST_CHECKSUM_KEY, await self.get_breezy_manifest_checksum(self))
                     return True
             except subprocess.CalledProcessError as exc:
                 decky_plugin.logger.error(f"Error running setup script: {exc.output}")

@@ -177,7 +177,7 @@ const LookAheadNotchLabels: NotchLabel[] = [
     },
     {
         label: "Lower",
-        notchIndex: 1
+        notchIndex: 2
     },
     {
         label: "Higher",
@@ -400,7 +400,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
             description={sbsFirmwareUpdateNeeded ? "Update your glasses' firmware to enable side-by-side mode." :
                 (!driverState?.sbs_mode_enabled && "Adjust display distance. View 3D content.")}
             onChange={(sbs_mode_enabled) => {
-                if (!sbsFeatureEnabled) {
+                if (sbs_mode_enabled && !sbsFeatureEnabled) {
                     showSupporterTierDetails();
                 } else {
                     onChangeTutorial(`sbs_mode_enabled_${sbs_mode_enabled}`, driverState!.connected_device_brand,
