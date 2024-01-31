@@ -73,7 +73,8 @@ class Plugin:
                             continue
 
                         key, value = line.strip().split('=')
-                        if key in ['disabled', 'sbs_mode_stretched', 'sbs_content']:
+                        if key in ['disabled', 'sbs_mode_stretched', 'sbs_content',
+                                   'virtual_display_smooth_follow_enabled', 'sideview_smooth_follow_enabled']:
                             config[key] = parse_boolean(value, config[key])
                         elif key in ['mouse_sensitivity', 'look_ahead']:
                             config[key] = parse_int(value, config[key])
