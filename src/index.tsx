@@ -48,6 +48,8 @@ interface Config {
     sbs_mode_stretched: boolean;
     sideview_position: SideviewPosition;
     sideview_display_size: number;
+    virtual_display_smooth_follow_enabled: boolean;
+    sideview_smooth_follow_enabled: boolean;
 }
 
 interface DriverState {
@@ -80,24 +82,24 @@ type HeadsetModeOption = "virtual_display" | "vr_lite" | "sideview" | "disabled"
 type CalibrationSetup = "AUTOMATIC" | "INTERACTIVE"
 type CalibrationState = "NOT_CALIBRATED" | "CALIBRATING" | "CALIBRATED" | "WAITING_ON_USER"
 type SbsModeControl = "unset" | "enable" | "disable"
-type SideviewPosition = "top_left" | "top_right" | "bottom_left" | "bottom_right" | "center"
-const SideviewPositions: SideviewPosition[] = ["top_left", "top_right", "bottom_left", "bottom_right", "center"]
+type SideviewPosition = "center" | "top_left" | "top_right" | "bottom_left" | "bottom_right"
+const SideviewPositions: SideviewPosition[] = ["center", "top_left", "top_right", "bottom_left", "bottom_right"]
 const DirtyControlFlagsExpireMilliseconds = 3000
 
 const HeadsetModeDescriptions: {[key in HeadsetModeOption]: string} = {
     "virtual_display": "Virtual display is only available in-game.",
     "vr_lite": "Use Head movements to look around in-game.",
-    "sideview": "Move the screen to your peripheral.",
+    "sideview": "Display follow, sizing, and positioning.",
     "disabled": "Static display with no head-tracking."
 };
 const HeadsetModeOptions: HeadsetModeOption[] =  Object.keys(HeadsetModeDescriptions) as HeadsetModeOption[];
 
 const SideviewPositionDescriptions: {[key in SideviewPosition]: string} = {
+    "center": "Center",
     "top_left": "Top\u00a0left",
     "top_right": "Top\u00a0right",
     "bottom_left": "Bottom\u00a0left",
-    "bottom_right": "Bottom\u00a0right",
-    "center": "Center"
+    "bottom_right": "Bottom\u00a0right"
 };
 
 function headsetModeToConfig(headsetMode: HeadsetModeOption, joystickMode: boolean): Partial<Config> {
@@ -131,7 +133,7 @@ const ModeNotchLabels: NotchLabel[] = [
         notchIndex: 1
     },
     {
-        label: "Sideview",
+        label: "Follow",
         notchIndex: 2
     },
     {
@@ -382,13 +384,16 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
     const supporterTrialTimeRemainingText = timeRemainingText(supporterTrialTimeRemaining);
     const supporterTierActive = driverState?.device_license?.tiers?.supporter?.active && supporterTierSecondsRemaining > 0;
 
+    const smoothFollowFeatureEnabled = featureEnabled(driverState?.device_license, "smooth_follow");
+    const smoothFollowSubtext = featureSubtext(driverState?.device_license, "smooth_follow");
+
     const sbsFirmwareUpdateNeeded = !driverState?.sbs_mode_supported && driverState?.firmware_update_recommended;
     const sbsFeatureEnabled = featureEnabled(driverState?.device_license, "sbs");
     const sbsSubtext = featureSubtext(driverState?.device_license, "sbs");
     const enableSbsButton = driverState && <PanelSectionRow>
         <ToggleField
             checked={sbsModeEnabled}
-            disabled={!driverState?.sbs_mode_enabled && (!driverState?.sbs_mode_supported)}
+            disabled={!driverState?.sbs_mode_enabled && !driverState?.sbs_mode_supported}
             label={<span>
                 Enable side-by-side mode{sbsSubtext && <Fragment><br/>
                     <span className={gamepadDialogClasses.FieldDescription} style={{fontStyle: 'italic'}}>
@@ -546,19 +551,48 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                             <PanelSectionRow>
                                 <DropdownItem label={"Display position"}
                                               rgOptions={SideviewPositions.map((position) => ({
-                                                    label: SideviewPositionDescriptions[position],
-                                                    data: position
+                                                  label: SideviewPositionDescriptions[position],
+                                                  data: position
                                               }))}
                                               onChange={(selection) => {
-                                                    if (config) {
-                                                        updateConfig({
-                                                            ...config,
-                                                            sideview_position: selection.data
-                                                        }).catch(e => setError(e))
-                                                    }
+                                                  if (config) {
+                                                      const position = selection.data;
+                                                      let displaySize = config.sideview_display_size;
+                                                      if (position != "center" && displaySize == 1.0) {
+                                                          displaySize = 0.5;
+                                                      }
+                                                      updateConfig({
+                                                          ...config,
+                                                          sideview_position: position,
+                                                          sideview_display_size: displaySize
+                                                      }).catch(e => setError(e))
+                                                  }
                                               }}
                                               menuLabel={SideviewPositionDescriptions[config?.sideview_position]}
                                               selectedOption={config?.sideview_position} />
+                            </PanelSectionRow>
+                            <PanelSectionRow>
+                                <ToggleField
+                                    checked={config.sideview_smooth_follow_enabled && smoothFollowFeatureEnabled}
+                                    label={<span>
+                                                Smooth follow{smoothFollowSubtext && <Fragment><br/>
+                                                <span className={gamepadDialogClasses.FieldDescription} style={{fontStyle: 'italic'}}>
+                                                    {!smoothFollowFeatureEnabled && <BiSolidLock style={{position: 'relative', top: '1px', left: '-3px'}} />}
+                                                    {smoothFollowSubtext}
+                                                </span>
+                                            </Fragment>}
+                                        </span>}
+                                    description={"Display movements are more elastic"}
+                                    onChange={(sideview_smooth_follow_enabled) => {
+                                        if (!smoothFollowFeatureEnabled) {
+                                            showSupporterTierDetails();
+                                        } else if (config) {
+                                            updateConfig({
+                                                ...config,
+                                                sideview_smooth_follow_enabled
+                                            }).catch(e => setError(e))
+                                        }
+                                    }}/>
                             </PanelSectionRow>
                             <PanelSectionRow>
                                 <SliderField value={config.sideview_display_size}
@@ -583,6 +617,29 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                             </PanelSectionRow>
                         </Fragment>}
                         {isVirtualDisplayMode && <Fragment>
+                            <PanelSectionRow>
+                                <ToggleField
+                                    checked={config.virtual_display_smooth_follow_enabled && smoothFollowFeatureEnabled}
+                                    label={<span>
+                                                Automatic recentering{smoothFollowSubtext && <Fragment><br/>
+                                                <span className={gamepadDialogClasses.FieldDescription} style={{fontStyle: 'italic'}}>
+                                                    {!smoothFollowFeatureEnabled && <BiSolidLock style={{position: 'relative', top: '1px', left: '-3px'}} />}
+                                                    {smoothFollowSubtext}
+                                                </span>
+                                            </Fragment>}
+                                        </span>}
+                                    description={"Recenter under certain conditions"}
+                                    onChange={(virtual_display_smooth_follow_enabled) => {
+                                        if (!smoothFollowFeatureEnabled) {
+                                            showSupporterTierDetails();
+                                        } else if (config) {
+                                            updateConfig({
+                                                ...config,
+                                                virtual_display_smooth_follow_enabled
+                                            }).catch(e => setError(e))
+                                        }
+                                    }}/>
+                            </PanelSectionRow>
                             <PanelSectionRow>
                                 <SliderField value={sbsModeEnabled ? config.sbs_display_size : config.display_zoom}
                                              min={0.1} max={2.2}
