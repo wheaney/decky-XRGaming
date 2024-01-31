@@ -86,6 +86,8 @@ function SupporterTierAboutEnrollBlurb(props: SupporterTierAboutBlurbProps) {
 }
 
 interface SupporterTierAboutProps extends SupporterTierStepProps {
+    title: string;
+    primaryButtonLabel: string;
     blurb: FC<SupporterTierAboutBlurbProps>;
 }
 
@@ -110,7 +112,7 @@ function SupporterTierAbout(props: SupporterTierAboutProps) {
 
     const alreadyDonatedOnClick = props.confirmedToken ? fetchLicense : () => props.changeViewFn(SupporterTierView.VerifyToken);
     const Blurb = props.blurb;
-    return <PanelSection title={'Supporter Tier - Renewal'}>
+    return <PanelSection title={props.title}>
         <Blurb timeRemainingText={timeRemainingText} fundsNeeded={fundsNeeded}/>
         <SupporterTierFeaturesList/>
         <Focusable
@@ -123,7 +125,7 @@ function SupporterTierAbout(props: SupporterTierAboutProps) {
             }}
             flow-children={"horizontal"}
         >
-            <DialogButtonPrimary onClick={() => props.changeViewFn(SupporterTierView.Donate)}>Renew now</DialogButtonPrimary>
+            <DialogButtonPrimary onClick={() => props.changeViewFn(SupporterTierView.Donate)}>{props.primaryButtonLabel}</DialogButtonPrimary>
             <DialogButtonSecondary onClick={alreadyDonatedOnClick} disabled={isFetchingLicense}>
                 {isFetchingLicense && <span>
                     <Spinner style={{height: '16px', marginRight: 10}}/>
@@ -136,11 +138,17 @@ function SupporterTierAbout(props: SupporterTierAboutProps) {
 }
 
 function SupporterTierEnroll(props: SupporterTierStepProps) {
-    return <SupporterTierAbout blurb={SupporterTierAboutEnrollBlurb} {...props} />
+    return <SupporterTierAbout title={'Supporter Tier'}
+                               primaryButtonLabel={'Donate now'}
+                               blurb={SupporterTierAboutEnrollBlurb}
+                               {...props} />
 }
 
 function SupporterTierRenew(props: SupporterTierStepProps) {
-    return <SupporterTierAbout blurb={SupporterTierAboutRenewBlurb} {...props} />
+    return <SupporterTierAbout title={'Supporter Tier - Renewal'}
+                               primaryButtonLabel={'Renew now'}
+                               blurb={SupporterTierAboutRenewBlurb}
+                               {...props} />
 }
 
 const DonationURL = 'https://ko-fi.com/wheaney';

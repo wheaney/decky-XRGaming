@@ -384,13 +384,16 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
     const supporterTrialTimeRemainingText = timeRemainingText(supporterTrialTimeRemaining);
     const supporterTierActive = driverState?.device_license?.tiers?.supporter?.active && supporterTierSecondsRemaining > 0;
 
+    const smoothFollowFeatureEnabled = featureEnabled(driverState?.device_license, "smooth_follow");
+    const smoothFollowSubtext = featureSubtext(driverState?.device_license, "smooth_follow");
+
     const sbsFirmwareUpdateNeeded = !driverState?.sbs_mode_supported && driverState?.firmware_update_recommended;
     const sbsFeatureEnabled = featureEnabled(driverState?.device_license, "sbs");
     const sbsSubtext = featureSubtext(driverState?.device_license, "sbs");
     const enableSbsButton = driverState && <PanelSectionRow>
         <ToggleField
             checked={sbsModeEnabled}
-            disabled={!driverState?.sbs_mode_enabled && (!driverState?.sbs_mode_supported)}
+            disabled={!driverState?.sbs_mode_enabled && !driverState?.sbs_mode_supported}
             label={<span>
                 Enable side-by-side mode{sbsSubtext && <Fragment><br/>
                     <span className={gamepadDialogClasses.FieldDescription} style={{fontStyle: 'italic'}}>
@@ -570,11 +573,20 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                             </PanelSectionRow>
                             <PanelSectionRow>
                                 <ToggleField
-                                    checked={config.sideview_smooth_follow_enabled}
-                                    label={"Smooth follow"}
+                                    checked={config.sideview_smooth_follow_enabled && smoothFollowFeatureEnabled}
+                                    label={<span>
+                                                Smooth follow{smoothFollowSubtext && <Fragment><br/>
+                                                <span className={gamepadDialogClasses.FieldDescription} style={{fontStyle: 'italic'}}>
+                                                    {!smoothFollowFeatureEnabled && <BiSolidLock style={{position: 'relative', top: '1px', left: '-3px'}} />}
+                                                    {smoothFollowSubtext}
+                                                </span>
+                                            </Fragment>}
+                                        </span>}
                                     description={"Display movements are more elastic"}
                                     onChange={(sideview_smooth_follow_enabled) => {
-                                        if (config) {
+                                        if (!smoothFollowFeatureEnabled) {
+                                            showSupporterTierDetails();
+                                        } else if (config) {
                                             updateConfig({
                                                 ...config,
                                                 sideview_smooth_follow_enabled
@@ -582,7 +594,6 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                                         }
                                     }}/>
                             </PanelSectionRow>
-                            <ButtonFieldSmall label={"Display position"} onClick={showMenu} buttonText={SideviewPositionDescriptions[config.sideview_position]} />
                             <PanelSectionRow>
                                 <SliderField value={config.sideview_display_size}
                                              min={0.2} max={1.0}
@@ -608,11 +619,20 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                         {isVirtualDisplayMode && <Fragment>
                             <PanelSectionRow>
                                 <ToggleField
-                                    checked={config.virtual_display_smooth_follow_enabled}
-                                    label={"Automatic recentering"}
+                                    checked={config.virtual_display_smooth_follow_enabled && smoothFollowFeatureEnabled}
+                                    label={<span>
+                                                Automatic recentering{smoothFollowSubtext && <Fragment><br/>
+                                                <span className={gamepadDialogClasses.FieldDescription} style={{fontStyle: 'italic'}}>
+                                                    {!smoothFollowFeatureEnabled && <BiSolidLock style={{position: 'relative', top: '1px', left: '-3px'}} />}
+                                                    {smoothFollowSubtext}
+                                                </span>
+                                            </Fragment>}
+                                        </span>}
                                     description={"Recenter under certain conditions"}
                                     onChange={(virtual_display_smooth_follow_enabled) => {
-                                        if (config) {
+                                        if (!smoothFollowFeatureEnabled) {
+                                            showSupporterTierDetails();
+                                        } else if (config) {
                                             updateConfig({
                                                 ...config,
                                                 virtual_display_smooth_follow_enabled
