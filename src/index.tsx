@@ -61,7 +61,7 @@ interface DriverState {
     sbs_mode_enabled: boolean;
     sbs_mode_supported: boolean;
     firmware_update_recommended: boolean;
-    device_license: License
+    device_license: License;
 }
 
 interface ControlFlags {

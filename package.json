@@ -1,6 +1,6 @@
 {
   "name": "decky-XRGaming",
-  "version": "0.8.3",
+  "version": "0.8.4",
   "description": "Virtual display and head-tracking modes for the XREAL Air glasses",
   "scripts": {
     "build": "shx rm -rf dist && rollup -c",
@@ -59,13 +59,13 @@
   "custom_remote_binary": [
     {
       "name": "breezy_vulkan_setup",
-      "url": "https://github.com/wheaney/breezy-desktop/releases/download/v0.8.3-beta/breezy_vulkan_setup",
+      "url": "https://github.com/wheaney/breezy-desktop/releases/download/v0.8.4-beta/breezy_vulkan_setup",
       "sha256hash": "26affe86fbc809a3e750aa3a1d161878c57ac5875369964ab9312b60db4882f7"
     },
     {
       "name": "breezyVulkan.tar.gz",
-      "url": "https://github.com/wheaney/breezy-desktop/releases/download/v0.8.3-beta/breezyVulkan.tar.gz",
-      "sha256hash": "343666bd1d9229b6fd1bd1df7039b44e6ac99c20e418a4b29b6bb375ddfaf2ec"
+      "url": "https://github.com/wheaney/breezy-desktop/releases/download/v0.8.4-beta/breezyVulkan.tar.gz",
+      "sha256hash": "e1eb9a20d46595f1aff7cb6489a5cfa6aa10b877597d2851c10fef341112e101"
     }
   ]
 }
