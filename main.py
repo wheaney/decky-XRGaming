@@ -166,8 +166,6 @@ class Plugin:
                             state[key] = parse_boolean(value, False)
                         elif key == 'device_license':
                             state[key] = json.loads(value)
-                        else:
-                            decky_plugin.logger.error(f"Unknown key {key} in driver state file")
                     except Exception as e:
                         decky_plugin.logger.error(f"Error parsing key-value pair {key}={value}: {e}")
         except FileNotFoundError:
