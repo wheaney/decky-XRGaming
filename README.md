@@ -190,3 +190,23 @@ If you wish to completely remove the installation, run the following: `sudo ~/bi
 ## Decky Loader
 
 This plugin requires [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader), and is available for free on the Decky store.
+
+## Data Privacy Notice
+
+Your right to privacy and the protection of your personal data are baked into every decision around how your personal data is collected, handled and stored. Your personal data will never be shared, sold, or distributed in any form.
+
+### Data Collected
+
+In order to provide you with Supporter Tier features, this application and its backend services have to collect the following pieces of personal information:
+
+* Your email address is sent to this application's backend server from either the payment vendor (Ko-fi) or from your device (at your request). Your email address may be used immediately upon receipt in its unaltered form to send you a transactional email, but it is then hashed prior to storage. The unaltered form of your email address is never stored and can no longer be referenced. The hashed value is stored for later reference.
+  * Other personal data may be sent from the payment vendor, but is never utilized nor stored. 
+* Your device's MAC address is hashed on your device. It never leaves your device in its original, unaltered form. The hashed value is sent to this application's backend server and stored for later reference.
+
+Hashing functions are a one-way process that serve to anonymize your personal data by irreversibly changing them. Once hashed, they can never be unhashed or traced back to their original values.
+
+### Contact
+
+For inquires about data privacy or any related concerns, please contact:
+
+Wayne Heaney - **xr.on.linux@gmail.com**
