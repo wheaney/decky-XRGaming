@@ -24,18 +24,20 @@ From the plugin sidebar, you can control the following:
   * In [Sideview mode](#sideview-mode), games can be moved to the corner of your screen, allowing you to pay attention to the world around you while gaming.
   * When disabled, your Air glasses will be display-only, no head movements will be tracked.
 * **In Virtual Display mode**:
+  * **Automatic Recentering** ([Supporter Tier](#supporter-tier) feature). Enabling this will make the display recenter itself under certain conditions: (1) if you move your vision most of the way off the screen or (2) if you move about halfway off the screen and haven't returned to the center after a couple seconds.
   * **Display size**. Controls how big the screen appears. A setting of 1 will render at the game's resolution, while a higher setting zooms in (e.g. 2 for 2x zoom) and lower zooms out (e.g. 0.5 for a 50% smaller screen).
   * **Recenter display** button. If you don't like where your virtual display has been placed, you can use this button or multi-tap to re-center it. See ["I don't like where the screen was placed, or it has drifted from where it was."](#i-dont-like-where-the-screen-was-placed-or-it-has-drifted-from-where-it-was) for more details.
   * Advanced Settings / **Movement look-ahead**. In virtual display mode, Breezy automatically attempts to anticipate where the screen will be when the next frame is rendered. If you find that its default look-ahead is producing a screen that drags behind your movements or a screen that is over-eager or jittery, you can tweak this yourself. The max is capped because higher values produce jitter and become unusable.
-  * Advanced Settings / **Enable SBS mode**. This toggle switch will put your glasses in or out of SBS mode. When in SBS mode, your display resolution will double in width (to 3840x1080), and each eye will show only half of the screen to allow for stereoscopic-depth-based functionality. Turning this on will enable two new controls:
+  * Advanced Settings / **Enable SBS mode** ([Supporter Tier](#supporter-tier) feature). This toggle switch will put your glasses in or out of SBS mode. When in SBS mode, your display resolution will double in width (to 3840x1080), and each eye will show only half of the screen to allow for stereoscopic-depth-based functionality. Turning this on will enable two new controls:
     * **Display distance**. Uses stereoscopic depth perception to move the display closer or farther from you. You may find that a different display distance reduces eye strain. A value greater than 1 is farther away (e.g. 2 is 2x farther than the glasses' default) and less than 1 is closer (e.g. 0.5 is half the default distance).
     * **Content is stretched**. Enable this if your device is rendering content using the entire width of the SBS screen. For a more consistent SBS experience across games, enable this toggle, then enable stretching by going to **the Deck's** `...` **Performance menu** and move the **Scaling Mode** slider to `Stretch`.
     * **Content is 3D**. Enable this if the game you're playing is rendering with side-by-side stereoscopic 3D support (either natively or using a third-party tool such as ReShade's Depth3D shader). This will render 3D content inside the virtual display.
 * In **VR-lite mode**:
   * **Mouse sensitivity**. Controls how much/quickly the mouse will move relative to your head movements.
   * Advanced Settings / **Joystick mode**. When enabled, head movements are translated to right-joystick movements on a virtual controller (use this as [a fallback option](#enable-joystick-mode) if the default mouse mode controls don't work for your game).
-* In **Sideview mode**:
+* In **Follow mode**:
   * **Display position**. Choose which corner of the screen to position your display.
+  * **Smooth follow** ([Supporter Tier](#supporter-tier) feature). Enabling this gives the display a little more "weight" so that it doesn't move with every jerk and bump of your headset, but instead will gravitate towards the center of your vision, making for an overall more pleasant experience.
   * **Display size**. Choose how much of the glasses screen should be taken up by the sideview display.
 * Advanced Settings / **Recalibrate headset** button. If you're experiencing drift, noisiness, or a twisting/swaying of the screen when you move, you can use this button or multi-tap to try re-calibrating your headset. See ["I don't like where the screen was placed, or it has drifted from where it was."](#i-dont-like-where-the-screen-was-placed-or-it-has-drifted-from-where-it-was) for more details.
 
@@ -74,7 +76,7 @@ Right now there's no surefire way to tell since this mode only supports Vulkan g
 
 ### Why isn't it working?
 Virtual display mode only works under certain conditions. Double-check the following:
-* Are you **using the XREAL/NREAL Air or VITURE One glasses**? XREAL Air 1, 2, and 2 Pro and VITURE One models *are* supported, but XREAL Light is *not*, nor are models from other brands, but soon this will include a wider range of devices. See the [upcoming features](#upcoming-features) section.
+* Are you **using the XREAL/NREAL Air or VITURE One (non-Lite) glasses**? XREAL Air 1, 2, and 2 Pro and VITURE One models *are* supported, but VITURE One Lite and XREAL Light are *not*, nor are models from other brands, but soon this will include a wider range of devices. See the [upcoming features](#upcoming-features) section.
 * Are your **glasses plugged into your Steam Deck**? Are they **displaying content when games aren't running**? 
   * Sometimes the display on the glasses will turn off as the battery level goes down. You can verify this by hitting the `Steam` or `...` buttons, since the Game Mode menus display no matter where the virtual screen is. If the glasses have powered down, try lowering your TDP wattage setting in the Performance panel to get more play time.
 * Is your device **[on the latest firmware](#supported-devices)**? Does the XR Gaming sidebar show your **device is "connected"**?
@@ -170,7 +172,17 @@ When in Sideview mode, the display will shrink into one corner of the screen. Us
 
 Sideview mode has the same constraints as Virtual display mode. See [Why isn't it working?](#why-isnt-it-working) in the Virtual display help section.
 
+## Supporter Tier
+
+Supporter Tier features are enhancments to core functionality, offered as a way to reward those who have [supported the project](https://ko-fi.com/wheaney). Core features -- like Virtual Display mode, VR-Lite mouse/joystick modes, and Follow mode's display positioning/resizing settings -- will always remain available to everyone regardless of supporter status. Donating $10 gets you a year, and $25 gets you lifetime of Supporter Tier access. The plugin will begin to warn you when you're within 30 days of expiration, and -- if you have enough funds -- your access will renew automatically within 7 days of expiration so you never experience an unexpected outage. Your device is never required to be online to continue using Supporter Tier features when enabled, but if your access expires while offline (even if you have enough funds), the features will be disabled until the next time your device goes online and the license can be refreshed. Be sure to check for expiration warnings prior to travel.
+
+Features currently offered:
+* Smooth Follow (in Follow mode)
+* Automatic Recentering (in Virtual Display mode)
+* Side-by-side suppor (in Virtual Display mode)
+
 ## Upcoming features
+
 So much more is already in the works for this plugin! If you're enjoying it and any of the upcoming features sound appealing, or if you have a feature request, please consider [becoming a supporter](https://ko-fi.com/wheaney).
 
 Upcoming features:
