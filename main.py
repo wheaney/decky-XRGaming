@@ -48,6 +48,10 @@ def parse_float(value, default):
 
 
 class Plugin:
+    def __init__(self):
+        self.breezy_installed = False
+        self.breezy_installing = False
+        
     async def retrieve_config(self):
         config = {}
         config['disabled'] = True

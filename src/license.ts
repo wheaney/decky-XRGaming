@@ -13,6 +13,7 @@ export interface LicenseTier {
     endDate?: number;
     fundsToRenew?: boolean;
     fundsNeededUSD?: number;
+    lifetimeFundsNeededUSD?: number;
 }
 
 export interface License {
@@ -33,6 +34,17 @@ export function toSec(date: number) {
 export function secondsRemaining(date: number | undefined) {
     const now = toSec(Date.now());
     return (date ?? Infinity) - now;
+}
+
+export interface LicenseFeatureDetails {
+    enabled: boolean;
+    subtext?: string;
+}
+export function featureDetails(license: License | undefined, featureName: string): LicenseFeatureDetails {
+    return {
+        enabled: featureEnabled(license, featureName),
+        subtext: featureSubtext(license, featureName)
+    }
 }
 
 export function featureEnabled(license: License | undefined, featureName: string): boolean {
