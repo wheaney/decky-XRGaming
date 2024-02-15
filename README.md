@@ -21,7 +21,7 @@ From the plugin sidebar, you can control the following:
 * **Change headset modes**.
   * In [virtual display mode](#virtual-display-help), a display will be rendered in a fixed position, allowing you to move your head to look at different parts of the screen.
   * In [VR-lite mode](#vr-lite-mode), head movements are translated to mouse (or joystick) movements for a VR-like experience in first-person games.
-  * In [Sideview mode](#sideview-mode), games can be moved to the corner of your screen, allowing you to pay attention to the world around you while gaming.
+  * In [Follow mode](#follow-mode), games can be moved and resized, allowing you to pay attention to the world around you while gaming.
   * When disabled, your Air glasses will be display-only, no head movements will be tracked.
 * **In Virtual Display mode**:
   * **Automatic Recentering** ([Supporter Tier](#supporter-tier) feature). Enabling this will make the display recenter itself under certain conditions: (1) if you move your vision most of the way off the screen or (2) if you move about halfway off the screen and haven't returned to the center after a couple seconds.
@@ -38,7 +38,7 @@ From the plugin sidebar, you can control the following:
 * In **Follow mode**:
   * **Display position**. Choose which corner of the screen to position your display.
   * **Smooth follow** ([Supporter Tier](#supporter-tier) feature). Enabling this gives the display a little more "weight" so that it doesn't move with every jerk and bump of your headset, but instead will gravitate towards the center of your vision, making for an overall more pleasant experience.
-  * **Display size**. Choose how much of the glasses screen should be taken up by the sideview display.
+  * **Display size**. Choose how much of the glasses screen should be taken up by the display.
 * Advanced Settings / **Recalibrate headset** button. If you're experiencing drift, noisiness, or a twisting/swaying of the screen when you move, you can use this button or multi-tap to try re-calibrating your headset. See ["I don't like where the screen was placed, or it has drifted from where it was."](#i-dont-like-where-the-screen-was-placed-or-it-has-drifted-from-where-it-was) for more details.
 
 ## Supported devices
@@ -164,13 +164,13 @@ You'll probably want to use a utility that does what Steam's controller layouts 
 
 One last alternative if mouse input just won't work is to enable the driver's joystick mode. Enable this using the **Use joystick** toggle. This will create a virtual gamepad whose right joystick is driven by movements from the glasses. This is less ideal because joystick movements are technically capped (you can only move a joystick so far...) and because it's a *second* controller on your PC. If the game you're trying to play is okay being driven by two controllers, then this may work, but if your game interprets another controller as a second player then its movements won't get combined with your real controller's movements.
 
-## Sideview mode
+## Follow mode
 
-When in Sideview mode, the display will shrink into one corner of the screen. Using the **Display position** menu, you can choose between top/bottom + left/right corners. The **Display size** slider allows you to choose how much of the glasses screen should be taken up by the sideview display; as little as 20%, up to 100% of the native screen size.
+When in Follow mode, the display can be moved and resized. Using the **Display position** menu, you can choose between top/bottom + left/right corners, or center if you just want to shrink the display. The **Display size** slider allows you to choose how much of the glasses screen should be taken up by the game; as little as 20%, up to 100% of the native screen size.
 
-### Sideview mode isn't working
+### Follow mode isn't working
 
-Sideview mode has the same constraints as Virtual display mode. See [Why isn't it working?](#why-isnt-it-working) in the Virtual display help section.
+Follow mode has the same constraints as Virtual display mode. See [Why isn't it working?](#why-isnt-it-working) in the Virtual display help section.
 
 ## Supporter Tier
 
@@ -179,7 +179,7 @@ Supporter Tier features are enhancments to core functionality, offered as a way 
 Features currently offered:
 * Smooth Follow (in Follow mode)
 * Automatic Recentering (in Virtual Display mode)
-* Side-by-side suppor (in Virtual Display mode)
+* Side-by-side support (in Virtual Display mode)
 
 ## Upcoming features
 
@@ -189,7 +189,8 @@ Upcoming features:
 * Increased device support (Rokid, etc...).
 * Virtual display for all of Game Mode, not just Vulkan games.
 * General Linux virtual display support for productivity.
-* Smooth follow mode
+* 6DoF support
+* Monado support
 
 ## Stay in touch
 

@@ -48,6 +48,7 @@ interface SupportTierModalDetails {
     confirmedToken?: boolean;
     timeRemainingText?: string;
     fundsNeeded?: number;
+    lifetimeFundsNeeded?: number;
 }
 
 export interface RefreshLicenseResponse extends SupportTierModalDetails {
@@ -68,11 +69,12 @@ interface SupporterTierStepProps extends SupporterTierModalProps {
 interface SupporterTierAboutBlurbProps {
     timeRemainingText?: string;
     fundsNeeded?: number;
+    lifetimeFundsNeeded?: number;
 }
 
 function SupporterTierAboutRenewBlurb(props: SupporterTierAboutBlurbProps) {
     return <p style={{textAlign: 'center'}}>
-        Your <b>Supporter Tier</b> access ends in {props.timeRemainingText}. Donate ${props.fundsNeeded} more to
+        Your <b>Supporter Tier</b> access ends in {props.timeRemainingText}. Donate ${props.fundsNeeded} USD more to
         renew for another year.
     </p>;
 }
@@ -81,7 +83,9 @@ function SupporterTierAboutEnrollBlurb(props: SupporterTierAboutBlurbProps) {
     return <p style={{textAlign: 'center'}}>
         {props.timeRemainingText && <span>
                 Your <b>Supporter Tier</b> trial ends in {props.timeRemainingText}.
-            </span>} Donate just ${props.fundsNeeded} to get Supporter Tier access for 12 months.
+            </span>} 
+            Donate just ${props.fundsNeeded} USD to get Supporter Tier access for 12 months, 
+            or ${props.lifetimeFundsNeeded} USD for lifetime access.
     </p>
 }
 
@@ -95,6 +99,7 @@ function SupporterTierAbout(props: SupporterTierAboutProps) {
     const [isFetchingLicense, setFetchingLicense] = useState(false);
     const [timeRemainingText, setTimeRemainingText] = useState(props.timeRemainingText);
     const [fundsNeeded, setFundsNeeded] = useState(props.fundsNeeded);
+    const [lifetimeFundsNeeded, setLifetimeFundsNeeded] = useState(props.lifetimeFundsNeeded);
 
     function fetchLicense() {
         (async () => {
@@ -105,6 +110,7 @@ function SupporterTierAbout(props: SupporterTierAboutProps) {
             } else {
                 setTimeRemainingText(res.timeRemainingText);
                 setFundsNeeded(res.fundsNeeded);
+                setLifetimeFundsNeeded(res.lifetimeFundsNeeded);
             }
             setFetchingLicense(false);
         })().catch(() => setFetchingLicense(false));
@@ -113,7 +119,7 @@ function SupporterTierAbout(props: SupporterTierAboutProps) {
     const alreadyDonatedOnClick = props.confirmedToken ? fetchLicense : () => props.changeViewFn(SupporterTierView.VerifyToken);
     const Blurb = props.blurb;
     return <PanelSection title={props.title}>
-        <Blurb timeRemainingText={timeRemainingText} fundsNeeded={fundsNeeded}/>
+        <Blurb timeRemainingText={timeRemainingText} fundsNeeded={fundsNeeded} lifetimeFundsNeeded={lifetimeFundsNeeded} />
         <SupporterTierFeaturesList/>
         <Focusable
             style={{
@@ -156,6 +162,7 @@ const DonationURL = 'https://ko-fi.com/wheaney';
 function SupporterTierDonate(props: SupporterTierStepProps) {
     const [isFetchingLicense, setFetchingLicense] = useState(false);
     const [fundsNeeded, setFundsNeeded] = useState(props.fundsNeeded);
+    const [lifetimeFundsNeeded, setLifetimeFundsNeeded] = useState(props.lifetimeFundsNeeded);
 
     function fetchLicense() {
         (async () => {
@@ -165,6 +172,7 @@ function SupporterTierDonate(props: SupporterTierStepProps) {
                 props.supporterTierModalCloseRef.current?.();
             } else {
                 setFundsNeeded(res.fundsNeeded);
+                setLifetimeFundsNeeded(res.lifetimeFundsNeeded);
             }
             setFetchingLicense(false);
         })().catch(() => setFetchingLicense(false));
@@ -172,9 +180,10 @@ function SupporterTierDonate(props: SupporterTierStepProps) {
 
     const donatedOnClick = props.confirmedToken ? fetchLicense : () => props.changeViewFn(SupporterTierView.VerifyToken);
     return <PanelSection title={'Supporter Tier - Donate'}>
-        <p style={{textAlign: 'center'}}>
-            Donate ${fundsNeeded} to get Supporter Tier access for 12 months.
-        </p>
+        <div style={{textAlign: 'center', marginBlockEnd: "1em"}}>
+            Donate ${fundsNeeded} USD to get Supporter Tier access for 12 months, 
+            or ${lifetimeFundsNeeded} USD for lifetime access.
+        </div>
         <div style={{
             display: 'flex',
             justifyContent: 'center',
@@ -182,11 +191,14 @@ function SupporterTierDonate(props: SupporterTierStepProps) {
             flexDirection: 'column'
         }}>
             <QRCodeSVG
-                style={{margin: '0 auto 1.5em auto'}}
+                style={{margin: '0 auto'}}
                 value={DonationURL}
                 includeMargin
-                size={150}
+                size={125}
             />
+            <div className={gamepadDialogClasses.FieldDescription} style={{marginBottom: "1em"}}>
+                To scan the code, you can view this dialog with your glasses unplugged.
+            </div>
             <a style={{textAlign: 'center', wordBreak: 'break-word'}} onClick={() => {
                 props.supporterTierModalCloseRef.current?.();
                 Navigation.NavigateToExternalWeb(DonationURL);
@@ -194,7 +206,7 @@ function SupporterTierDonate(props: SupporterTierStepProps) {
         </div>
         <Focusable
             style={{
-                paddingTop: '25px',
+                paddingTop: '15px',
                 display: 'flex',
                 flexDirection: 'row',
                 justifyContent: 'space-between',

@@ -2,13 +2,11 @@ import {
     ButtonItem,
     definePlugin, DropdownItem,
     Field,
-    gamepadDialogClasses,
     NotchLabel,
     PanelSection,
     PanelSectionRow,
     ServerAPI,
     ServerResponse,
-    showModal,
     SliderField,
     Spinner,
     staticClasses,
@@ -16,24 +14,24 @@ import {
 } from "decky-frontend-lib";
 // @ts-ignore
 import React, {
-    Fragment, MutableRefObject,
+    Fragment,
     useEffect,
-    useRef,
     useState,
     VFC
 } from "react";
 import {FaGlasses} from "react-icons/fa";
-import {BiMessageError, BiSolidLock} from "react-icons/bi";
+import {BiMessageError} from "react-icons/bi";
 import { PiPlugsConnected } from "react-icons/pi";
 import { TbPlugConnectedX } from "react-icons/tb";
 import {SiDiscord} from 'react-icons/si';
-import {LuHelpCircle, LuTimer} from 'react-icons/lu';
+import {LuHelpCircle} from 'react-icons/lu';
 import QrButton from "./QrButton";
 import {onChangeTutorial} from "./tutorials";
 import {useStableState} from "./stableState";
-import {featureEnabled, featureSubtext, License, secondsRemaining, timeRemainingText, trialTimeRemaining} from "./license";
-import {BsFillSuitHeartFill} from "react-icons/bs";
-import {RefreshLicenseResponse, SupporterTierModal} from "./SupporterTierModal";
+import {featureDetails, License, secondsRemaining, timeRemainingText} from "./license";
+import {RefreshLicenseResponse} from "./SupporterTierModal";
+import { useShowSupporterTierDetails, supporterTierDetails, SupporterTierStatus } from "./SupporterTierStatus";
+import { SupporterTierFeatureLabel } from "./SupporterTierFeatureLabel";
 
 interface Config {
     disabled: boolean;
@@ -325,6 +323,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                         confirmedToken: latestState?.device_license?.confirmedToken,
                         timeRemainingText: remainingText,
                         fundsNeeded: latestState?.device_license?.tiers?.supporter?.fundsNeededUSD,
+                        lifetimeFundsNeeded: latestState?.device_license?.tiers?.supporter?.lifetimeFundsNeededUSD,
                         isRenewed: (latestState?.device_license?.tiers?.supporter?.active ?? false) && !remainingText
                     })
                 } catch (e) {
@@ -368,6 +367,8 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
         }
     }, [stableHeadsetMode])
 
+    const showSuporterTierDetailsFn = useShowSupporterTierDetails();
+
     const deviceConnected = !!driverState?.connected_device_brand && !!driverState?.connected_device_model
     const deviceName = deviceConnected ? `${driverState?.connected_device_brand} ${driverState?.connected_device_model}` : "No device connected"
     const headsetMode: HeadsetModeOption = dirtyHeadsetMode ?? configToHeadsetMode(config)
@@ -378,35 +379,23 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
     let sbsModeEnabled = driverState?.sbs_mode_enabled ?? false
     if (dirtyControlFlags?.sbs_mode && dirtyControlFlags?.sbs_mode !== 'unset') sbsModeEnabled = dirtyControlFlags.sbs_mode === 'enable'
     const calibrating = dirtyControlFlags.recalibrate || driverState?.calibration_state == "CALIBRATING";
-    const supporterTierSecondsRemaining = driverState?.device_license?.tiers?.supporter?.fundsToRenew ? Infinity : secondsRemaining(driverState?.device_license?.tiers?.supporter?.endDate);
-    const supporterTierTimeRemainingText = timeRemainingText(supporterTierSecondsRemaining);
-    const supporterTrialTimeRemaining = trialTimeRemaining(driverState?.device_license);
-    const supporterTrialTimeRemainingText = timeRemainingText(supporterTrialTimeRemaining);
-    const supporterTierActive = driverState?.device_license?.tiers?.supporter?.active && supporterTierSecondsRemaining > 0;
+    const supporterTier = supporterTierDetails(driverState?.device_license);
 
-    const smoothFollowFeatureEnabled = featureEnabled(driverState?.device_license, "smooth_follow");
-    const smoothFollowSubtext = featureSubtext(driverState?.device_license, "smooth_follow");
+    const smoothFollowFeature = featureDetails(driverState?.device_license, "smooth_follow");
+    const sbsFeature = featureDetails(driverState?.device_license, "sbs");
 
     const sbsFirmwareUpdateNeeded = !driverState?.sbs_mode_supported && driverState?.firmware_update_recommended;
-    const sbsFeatureEnabled = featureEnabled(driverState?.device_license, "sbs");
-    const sbsSubtext = featureSubtext(driverState?.device_license, "sbs");
     const enableSbsButton = driverState && <PanelSectionRow>
         <ToggleField
             checked={sbsModeEnabled}
             disabled={!driverState?.sbs_mode_enabled && !driverState?.sbs_mode_supported}
-            label={<span>
-                Enable side-by-side mode{sbsSubtext && <Fragment><br/>
-                    <span className={gamepadDialogClasses.FieldDescription} style={{fontStyle: 'italic'}}>
-                        {!sbsFeatureEnabled && <BiSolidLock style={{position: 'relative', top: '1px', left: '-3px'}} />}
-                        {sbsSubtext}
-                    </span>
-                </Fragment>}
-            </span>}
+            label={<SupporterTierFeatureLabel label="Enable side-by-side mode" 
+                                              feature={sbsFeature} />}
             description={sbsFirmwareUpdateNeeded ? "Update your glasses' firmware to enable side-by-side mode." :
                 (!driverState?.sbs_mode_enabled && "Adjust display distance. View 3D content.")}
             onChange={(sbs_mode_enabled) => {
-                if (sbs_mode_enabled && !sbsFeatureEnabled) {
-                    showSupporterTierDetails();
+                if (sbs_mode_enabled && !sbsFeature.enabled) {
+                    showSuporterTierDetailsFn(supporterTier, requestToken, verifyToken, refreshLicense);
                 } else {
                     onChangeTutorial(`sbs_mode_enabled_${sbs_mode_enabled}`, driverState!.connected_device_brand,
                         driverState!.connected_device_model, () => {
@@ -483,22 +472,6 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
         await Promise.all([setConfig(newConfig), writeConfig(newConfig)])
     }
 
-    const supporterTierModalCloseRef: MutableRefObject<(() => void) | undefined> = useRef<() => void>();
-    function showSupporterTierDetails() {
-        const modalResult = showModal(
-            <SupporterTierModal confirmedToken={driverState?.device_license?.confirmedToken}
-                                timeRemainingText={supporterTierTimeRemainingText}
-                                fundsNeeded={driverState?.device_license?.tiers?.supporter?.fundsNeededUSD}
-                                requestTokenFn={requestToken}
-                                verifyTokenFn={verifyToken}
-                                refreshLicenseFn={refreshLicense}
-                                supporterTierModalCloseRef={supporterTierModalCloseRef}
-            />,
-            window
-        );
-        supporterTierModalCloseRef.current = modalResult.Close;
-    }
-
     return (
         <Fragment>
             {error && <PanelSection>
@@ -573,19 +546,13 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                             </PanelSectionRow>
                             <PanelSectionRow>
                                 <ToggleField
-                                    checked={config.sideview_smooth_follow_enabled && smoothFollowFeatureEnabled}
-                                    label={<span>
-                                                Smooth follow{smoothFollowSubtext && <Fragment><br/>
-                                                <span className={gamepadDialogClasses.FieldDescription} style={{fontStyle: 'italic'}}>
-                                                    {!smoothFollowFeatureEnabled && <BiSolidLock style={{position: 'relative', top: '1px', left: '-3px'}} />}
-                                                    {smoothFollowSubtext}
-                                                </span>
-                                            </Fragment>}
-                                        </span>}
+                                    checked={config.sideview_smooth_follow_enabled && smoothFollowFeature.enabled}
+                                    label={<SupporterTierFeatureLabel label="Smooth follow" 
+                                                                      feature={smoothFollowFeature} />}
                                     description={"Display movements are more elastic"}
                                     onChange={(sideview_smooth_follow_enabled) => {
-                                        if (!smoothFollowFeatureEnabled) {
-                                            showSupporterTierDetails();
+                                        if (!smoothFollowFeature.enabled) {
+                                            showSuporterTierDetailsFn(supporterTier, requestToken, verifyToken, refreshLicense);
                                         } else if (config) {
                                             updateConfig({
                                                 ...config,
@@ -619,19 +586,13 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                         {isVirtualDisplayMode && <Fragment>
                             <PanelSectionRow>
                                 <ToggleField
-                                    checked={config.virtual_display_smooth_follow_enabled && smoothFollowFeatureEnabled}
-                                    label={<span>
-                                                Automatic recentering{smoothFollowSubtext && <Fragment><br/>
-                                                <span className={gamepadDialogClasses.FieldDescription} style={{fontStyle: 'italic'}}>
-                                                    {!smoothFollowFeatureEnabled && <BiSolidLock style={{position: 'relative', top: '1px', left: '-3px'}} />}
-                                                    {smoothFollowSubtext}
-                                                </span>
-                                            </Fragment>}
-                                        </span>}
+                                    checked={config.virtual_display_smooth_follow_enabled && smoothFollowFeature.enabled}
+                                    label={<SupporterTierFeatureLabel label="Automatic recentering" 
+                                                                      feature={smoothFollowFeature} />}
                                     description={"Recenter under certain conditions"}
                                     onChange={(virtual_display_smooth_follow_enabled) => {
-                                        if (!smoothFollowFeatureEnabled) {
-                                            showSupporterTierDetails();
+                                        if (!smoothFollowFeature.enabled) {
+                                            showSuporterTierDetailsFn(supporterTier, requestToken, verifyToken, refreshLicense);
                                         } else if (config) {
                                             updateConfig({
                                                 ...config,
@@ -744,82 +705,10 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                                 </ButtonItem>
                             </PanelSectionRow>}
                         </Fragment>}
-                        <PanelSectionRow>
-                            {supporterTrialTimeRemaining && <Field
-                                    icon={null}
-                                    label={null}
-                                    childrenLayout={undefined}
-                                    inlineWrap="keep-inline"
-                                    padding="none"
-                                    spacingBetweenLabelAndChild="none"
-                                    childrenContainerWidth="max">
-                                    <div style={{ textAlign: 'center',
-                                        alignSelf: 'center',
-                                        marginRight: '.5em',
-                                        flexGrow: 1 }}>
-                                        Supporter Tier: <span style={{fontWeight: 'bold', color: 'white'}}>
-                                            <LuTimer style={{position: 'relative', top: '1px', marginRight: '2px'}} />In trial
-                                        </span><br/>
-                                        {supporterTrialTimeRemainingText && <span className={gamepadDialogClasses.FieldDescription}>
-                                            Trial ends in {supporterTrialTimeRemainingText}
-                                        </span>}
-                                    </div>
-                                    <ButtonItem layout="below" onClick={showSupporterTierDetails}
-                                                bottomSeparator={'none'} highlightOnFocus={false}>
-                                        Become a supporter
-                                    </ButtonItem>
-                                </Field> ||
-                                supporterTierActive && <Field
-                                    icon={null}
-                                    label={null}
-                                    childrenLayout={undefined}
-                                    inlineWrap="keep-inline"
-                                    padding="none"
-                                    spacingBetweenLabelAndChild="none"
-                                    childrenContainerWidth="max">
-                                    <div style={{ textAlign: 'center',
-                                                  alignSelf: 'center',
-                                                  marginRight: '.5em',
-                                                  flexGrow: 1 }}>
-                                        Supporter Tier: <span style={{fontWeight: 'bold', color: 'white'}}>Unlocked</span><br/>
-                                        <span className={gamepadDialogClasses.FieldDescription}>
-                                            {supporterTierTimeRemainingText ? `Access ends in ${supporterTierTimeRemainingText}` :
-                                                <Fragment><BsFillSuitHeartFill color={'red'}/> You rock! Thanks!</Fragment>}
-                                        </span>
-                                    </div>
-                                    {supporterTierTimeRemainingText && <ButtonItem layout="below"
-                                                                                   onClick={showSupporterTierDetails}
-                                                                                   bottomSeparator={'none'}
-                                                                                   highlightOnFocus={false}>
-                                        Renew now
-                                    </ButtonItem>}
-                                </Field> ||
-                                <Field
-                                    icon={null}
-                                    label={null}
-                                    childrenLayout={undefined}
-                                    inlineWrap="keep-inline"
-                                    padding="none"
-                                    spacingBetweenLabelAndChild="none"
-                                    childrenContainerWidth="max">
-                                    <div style={{
-                                        textAlign: 'center',
-                                        alignSelf: 'center',
-                                        marginRight: '.5em',
-                                        flexGrow: 1
-                                    }}>
-                                        Supporter Tier:
-                                        <span style={{fontWeight: 'bold', color: 'white'}}>
-                                            <BiSolidLock style={{position: 'relative', top: '1px', margin: '0 2px'}} />Locked
-                                        </span>
-                                    </div>
-                                    <ButtonItem layout="below" onClick={showSupporterTierDetails}
-                                                bottomSeparator={'none'} highlightOnFocus={false}>
-                                        Unlock now
-                                    </ButtonItem>
-                                </Field>
-                            }
-                        </PanelSectionRow>
+                        <SupporterTierStatus details={supporterTier} 
+                                             requestTokenFn={requestToken}
+                                             verifyTokenFn={verifyToken}
+                                             refreshLicenseFn={refreshLicense} />
                         {isVirtualDisplayMode &&
                             <QrButton icon={<LuHelpCircle/>}
                                       url={"https://github.com/wheaney/decky-XRGaming#virtual-display-help"}
