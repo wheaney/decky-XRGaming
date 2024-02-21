@@ -3,7 +3,7 @@ set -e
 
 pacman -S --noconfirm git jq
 
-git clone https://github.com/SteamDeckHomebrew/decky-plugin-database.git
+git clone https://github.com/wheaney/decky-plugin-database.git
 
 pushd decky-plugin-database
 git submodule update --init plugins/decky-XRGaming
