@@ -1,6 +1,6 @@
 {
   "name": "decky-XRGaming",
-  "version": "0.8.6",
+  "version": "0.8.6.1",
   "description": "Virtual display and head-tracking modes for the XREAL Air glasses",
   "scripts": {
     "build": "shx rm -rf dist && rollup -c",
