@@ -336,7 +336,7 @@ function SupporterTierRequestToken(props: SupporterTierStepProps) {
     }
 
     function isValidEmail(email: string) {
-        return /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(email)
+        return /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,})+$/.test(email)
     }
 
     return <PanelSection title={'Supporter Tier - Request Token'}>
