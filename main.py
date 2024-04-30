@@ -24,6 +24,8 @@ DONT_SHOW_AGAIN_SETTING_KEY = "dont_show_again"
 MANIFEST_CHECKSUM_KEY = "manifest_checksum"
 CONTROL_FLAGS = ['recenter_screen', 'recalibrate', 'sbs_mode', 'refresh_device_license']
 SBS_MODE_VALUES = ['unset', 'enable', 'disable']
+MANAGED_EXTERNAL_MODES = ['virtual_display', 'sideview', 'none']
+VR_LITE_OUTPUT_MODES = ['mouse', 'joystick']
 
 settings = SettingsManager(name="settings", settings_directory=decky_plugin.DECKY_PLUGIN_SETTINGS_DIR)
 settings.read()
@@ -44,30 +46,44 @@ def parse_float(value, default):
         return float(value)
     except ValueError:
         return default
+    
+def parse_string(value, default):
+    return value if value else default
 
+def parse_array(value, default):
+    return value.split(",") if value else default
 
+CONFIG_PARSER_INDEX = 0
+CONFIG_DEFAULT_VALUE_INDEX = 1
+CONFIG_ENTRIES = {
+    'disabled': [parse_boolean, True],
+    'output_mode': [parse_string, 'mouse'],
+    'external_mode': [parse_array, ['none']],
+    'mouse_sensitivity': [parse_int, 30],
+    'display_zoom': [parse_float, 1.0],
+    'look_ahead': [parse_int, 0],
+    'sbs_display_size': [parse_float, 1.0],
+    'sbs_display_distance': [parse_float, 1.0],
+    'sbs_content': [parse_boolean, False],
+    'sbs_mode_stretched': [parse_boolean, False],
+    'sideview_position': [parse_string, 'center'],
+    'sideview_display_size': [parse_float, 1.0],
+    'virtual_display_smooth_follow_enabled': [parse_boolean, False],
+    'sideview_smooth_follow_enabled': [parse_boolean, False]
+}
 
 class Plugin:
     def __init__(self):
         self.breezy_installed = False
         self.breezy_installing = False
-        
+    
     async def retrieve_config(self):
+        return self._retrieve_config(self)
+    
+    def _retrieve_config(self):
         config = {}
-        config['disabled'] = True
-        config['output_mode'] = 'mouse'
-        config['external_mode'] = 'none'
-        config['mouse_sensitivity'] = 20
-        config['display_zoom'] = 1.0
-        config['look_ahead'] = 0
-        config['sbs_display_size'] = 1.0
-        config['sbs_display_distance'] = 1.0
-        config['sbs_content'] = False
-        config['sbs_mode_stretched'] = False
-        config['sideview_position'] = 'center'
-        config['sideview_display_size'] = 1.0
-        config['virtual_display_smooth_follow_enabled'] = False
-        config['sideview_smooth_follow_enabled'] = False
+        for key, value in CONFIG_ENTRIES.items():
+            config[key] = value[CONFIG_DEFAULT_VALUE_INDEX]
 
         try:
             with open(CONFIG_FILE_PATH, 'r') as f:
@@ -77,28 +93,33 @@ class Plugin:
                             continue
 
                         key, value = line.strip().split('=')
-                        if key in ['disabled', 'sbs_mode_stretched', 'sbs_content',
-                                   'virtual_display_smooth_follow_enabled', 'sideview_smooth_follow_enabled']:
-                            config[key] = parse_boolean(value, config[key])
-                        elif key in ['mouse_sensitivity', 'look_ahead']:
-                            config[key] = parse_int(value, config[key])
-                        elif key in ['external_zoom', 'display_zoom', 'sbs_display_distance', 'sbs_display_size', 'sideview_display_size']:
-                            if key in ['external_zoom', 'display_zoom']:
-                                key = 'display_zoom'
-                            config[key] = parse_float(value, config[key])
-                        else:
-                            config[key] = value
+                        if key in CONFIG_ENTRIES:
+                            parser = CONFIG_ENTRIES[key][CONFIG_PARSER_INDEX]
+                            default_val = CONFIG_ENTRIES[key][CONFIG_DEFAULT_VALUE_INDEX]
+                            config[key] = parser(value, default_val)
                     except Exception as e:
                         decky_plugin.logger.error(f"Error parsing line {line}: {e}")
         except FileNotFoundError as e:
             decky_plugin.logger.error(f"Config file not found {e}")
             return config
+        
+        config['ui_view'] = self.build_ui_view(self, config)
 
         return config
-
+    
     async def write_config(self, config):
         try:
             output = ""
+
+            # Since the UI doesn't refresh the config before it updates, the external_mode can get out of sync with 
+            # what's on disk. To avoid losing external_mode values, we retrieve the previous configs to preserve
+            # any non-managed external modes.
+            old_config = self._retrieve_config(self)
+
+            # remove the UI's "view" data, translate back to config values, and merge them in
+            view = config.pop('ui_view', None)
+            config.update(self.headset_mode_to_config(self, view['headset_mode'], view['is_joystick_mode'], old_config['external_mode']))
+
             for key, value in config.items():
                 if key != "updated":
                     if isinstance(value, bool):
@@ -119,8 +140,65 @@ class Plugin:
             # Atomically replace the old config file with the new one
             os.replace(temp_file, CONFIG_FILE_PATH)
             os.chmod(CONFIG_FILE_PATH, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP | stat.S_IROTH | stat.S_IWOTH)
+
+            config['ui_view'] = self.build_ui_view(self, config)
+
+            return config
         except Exception as e:
             decky_plugin.logger.error(f"Error writing config {e}")
+            raise e
+
+    # like a SQL "view," these are computed values that are commonly used in the UI
+    def build_ui_view(self, config):
+        view = {}
+        view['headset_mode'] = self.config_to_headset_mode(self, config)
+        view['is_joystick_mode'] = config['output_mode'] == 'joystick'
+        return view
+
+    def filter_to_other_external_modes(self, external_modes):
+        return [mode for mode in external_modes if mode not in MANAGED_EXTERNAL_MODES]
+    
+    def headset_mode_to_config(self, headset_mode, joystick_mode, old_external_modes):
+        new_external_modes = self.filter_to_other_external_modes(self, old_external_modes)
+
+        config = {}
+        if headset_mode == "virtual_display":
+            # TODO - only allow when mode when managed until the driver can support multiple external_mode values
+            # new_external_modes.append("virtual_display")
+            new_external_modes = ["virtual_display"]
+            config['output_mode'] = "external_only"
+            config['disabled'] = False
+        elif headset_mode == "vr_lite":
+            config['output_mode'] = "joystick" if joystick_mode else "mouse"
+            config['disabled'] = False
+        elif headset_mode == "sideview":
+            # TODO - only allow when mode when managed until the driver can support multiple external_mode values
+            # new_external_modes.append("sideview")
+            new_external_modes = ["sideview"]
+            config['output_mode'] = "external_only"
+            config['disabled'] = False
+        else:
+            config['output_mode'] = "external_only"
+
+        has_external_mode = len(new_external_modes) > 0
+        if not has_external_mode:
+            new_external_modes.append("none")
+        config['external_mode'] = new_external_modes
+
+        return config
+    
+    def config_to_headset_mode(self, config):
+        if not config or config['disabled']:
+            return "disabled"
+        
+        if config['output_mode'] in VR_LITE_OUTPUT_MODES:
+            return "vr_lite"
+
+        managed_mode = next((mode for mode in MANAGED_EXTERNAL_MODES if mode in config['external_mode']), None)
+        if managed_mode and managed_mode != "none":
+            return managed_mode
+        
+        return "disabled"
 
     async def write_control_flags(self, control_flags):
         try:

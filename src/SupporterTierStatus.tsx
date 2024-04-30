@@ -69,7 +69,8 @@ export function SupporterTierStatus({details, requestTokenFn, verifyTokenFn, ref
     const showSupporterTierDetails = () => showSupporterTierDetailsFn(details, requestTokenFn, verifyTokenFn, refreshLicenseFn);
     return (
         <PanelSectionRow>
-            {details.trialTimeRemaining && <Field
+            {details.trialTimeRemaining && 
+                <Field
                     icon={null}
                     label={null}
                     childrenLayout={undefined}

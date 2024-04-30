@@ -1,16 +1,25 @@
 
 
 export type FeatureStatus = "off" | "trial" | "on"
+export type FeatureTierPeriodType = "monthly" | "yearly" | "lifetime";
+export type TierPeriodFundsNeeded = { [type in FeatureTierPeriodType]?: number }
 
 export interface LicenseFeature {
     status: FeatureStatus;
     endDate?: number;
-    fundsToRenew?: boolean;
 }
 
+// TODO - utilize fundsNeededByPeriod instead of fundsToRenew
 export interface LicenseTier {
     active: boolean;
     endDate?: number;
+    period?: FeatureTierPeriodType;
+
+    // this tells us how much funds are needed to renew the tier (if it's not lifetime and is currently active), or upgrade
+    // if it's not the active tier (or a step down)
+    fundsNeededByPeriod?: TierPeriodFundsNeeded;
+
+    // deprecated fields, check fundsNeededByPeriod instead
     fundsToRenew?: boolean;
     fundsNeededUSD?: number;
     lifetimeFundsNeededUSD?: number;

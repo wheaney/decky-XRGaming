@@ -36,7 +36,7 @@ import { SupporterTierFeatureLabel } from "./SupporterTierFeatureLabel";
 interface Config {
     disabled: boolean;
     output_mode: OutputMode;
-    external_mode: ExternalMode;
+    external_mode: ExternalMode[];
     mouse_sensitivity: number;
     display_zoom: number;
     look_ahead: number;
@@ -48,6 +48,10 @@ interface Config {
     sideview_display_size: number;
     virtual_display_smooth_follow_enabled: boolean;
     sideview_smooth_follow_enabled: boolean;
+    ui_view: {
+        headset_mode: HeadsetModeOption;
+        is_joystick_mode: boolean;
+    }
 }
 
 interface DriverState {
@@ -74,15 +78,16 @@ type DirtyControlFlags = {
 } & Partial<ControlFlags>
 
 type InstallationStatus = "checking" | "inProgress" | "installed";
-type OutputMode = "mouse" | "joystick" | "external_only"
-type ExternalMode = 'virtual_display' | 'sideview' | 'none'
-type HeadsetModeOption = "virtual_display" | "vr_lite" | "sideview" | "disabled"
-type CalibrationSetup = "AUTOMATIC" | "INTERACTIVE"
-type CalibrationState = "NOT_CALIBRATED" | "CALIBRATING" | "CALIBRATED" | "WAITING_ON_USER"
-type SbsModeControl = "unset" | "enable" | "disable"
-type SideviewPosition = "center" | "top_left" | "top_right" | "bottom_left" | "bottom_right"
-const SideviewPositions: SideviewPosition[] = ["center", "top_left", "top_right", "bottom_left", "bottom_right"]
-const DirtyControlFlagsExpireMilliseconds = 3000
+type OutputMode = "mouse" | "joystick" | "external_only";
+type ExternalMode = 'virtual_display' | 'sideview' | 'none';
+type HeadsetModeOption = "virtual_display" | "vr_lite" | "sideview" | "disabled";
+type CalibrationSetup = "AUTOMATIC" | "INTERACTIVE";
+type CalibrationState = "NOT_CALIBRATED" | "CALIBRATING" | "CALIBRATED" | "WAITING_ON_USER";
+type SbsModeControl = "unset" | "enable" | "disable";
+type SideviewPosition = "center" | "top_left" | "top_right" | "bottom_left" | "bottom_right";
+const ManagedExternalModes: ExternalMode[] = ['virtual_display', 'sideview', 'none'];
+const SideviewPositions: SideviewPosition[] = ["center", "top_left", "top_right", "bottom_left", "bottom_right"];
+const DirtyControlFlagsExpireMilliseconds = 3000;
 
 const HeadsetModeDescriptions: {[key in HeadsetModeOption]: string} = {
     "virtual_display": "Virtual display is only available in-game.",
@@ -99,25 +104,6 @@ const SideviewPositionDescriptions: {[key in SideviewPosition]: string} = {
     "bottom_left": "Bottom\u00a0left",
     "bottom_right": "Bottom\u00a0right"
 };
-
-function headsetModeToConfig(headsetMode: HeadsetModeOption, joystickMode: boolean): Partial<Config> {
-    switch (headsetMode) {
-        case "virtual_display":
-            return { disabled: false, output_mode: "external_only", external_mode: "virtual_display" }
-        case "vr_lite":
-            return { disabled: false, output_mode: joystickMode ? "joystick" : "mouse", external_mode: "none" }
-        case "sideview":
-            return { disabled: false, output_mode: "external_only", external_mode: "sideview" }
-        case "disabled":
-            return { disabled: true, external_mode: "none" }
-    }
-}
-
-function configToHeadsetMode(config?: Config): HeadsetModeOption {
-    if (!config || config.disabled || config.output_mode == "external_only" && config.external_mode == 'none') return "disabled"
-    if (config.output_mode == "external_only" && config.external_mode != 'none') return config.external_mode
-    return "vr_lite"
-}
 
 const HeadsetModeConfirmationTimeoutMs = 1000
 
@@ -186,7 +172,6 @@ const LookAheadNotchLabels: NotchLabel[] = [
 ];
 
 const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
-
     const [config, setConfig] = useState<Config>();
     const [isJoystickMode, setJoystickMode] = useState<boolean>(false);
     const [driverState, setDriverState] = useState<DriverState>();
@@ -260,10 +245,12 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
     }
 
     async function writeConfig(newConfig: Config) {
-        const res = await serverAPI.callPluginMethod<{ config: Config }, void>("write_config", { config: newConfig });
+        const res = await serverAPI.callPluginMethod<{ config: Config }, Config>("write_config", { config: newConfig });
         if (!res.success) {
             setError(res.result);
             await refreshConfig();
+        } else {
+            setConfig(res.result);
         }
     }
 
@@ -361,7 +348,10 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                 driverState.connected_device_model, () => {
                 updateConfig({
                     ...config,
-                    ...headsetModeToConfig(stableHeadsetMode, isJoystickMode)
+                    ui_view: {
+                        headset_mode: stableHeadsetMode,
+                        is_joystick_mode: isJoystickMode
+                    }
                 }).catch(e => setError(e))
             }, dontShowAgainKeys, setDontShowAgain);
         }
@@ -371,14 +361,17 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
 
     const deviceConnected = !!driverState?.connected_device_brand && !!driverState?.connected_device_model
     const deviceName = deviceConnected ? `${driverState?.connected_device_brand} ${driverState?.connected_device_model}` : "No device connected"
-    const headsetMode: HeadsetModeOption = dirtyHeadsetMode ?? configToHeadsetMode(config)
-    const isDisabled = !deviceConnected || headsetMode == "disabled"
-    const isVirtualDisplayMode = !isDisabled && headsetMode == "virtual_display"
-    const isSideviewMode = !isDisabled && headsetMode == "sideview"
-    const isVrLiteMode = !isDisabled && headsetMode == "vr_lite"
+    const headsetMode: HeadsetModeOption = dirtyHeadsetMode ?? config?.ui_view.headset_mode ?? "disabled"
+    const isDisabled = !deviceConnected || headsetMode === "disabled"
+    const isVirtualDisplayMode = !isDisabled && headsetMode === "virtual_display"
+    const isSideviewMode = !isDisabled && headsetMode === "sideview"
+    const isVrLiteMode = !isDisabled && headsetMode === "vr_lite"
+    const otherExternalModes = (config?.external_mode ?? []).filter(mode => !ManagedExternalModes.includes(mode));
+    const isOtherMode = deviceConnected && isDisabled && !(config?.disabled ?? true) && otherExternalModes.length > 0;
+    const isOtherModeDisabled = deviceConnected && isDisabled && (config?.disabled ?? true) && otherExternalModes.length > 0;
     let sbsModeEnabled = driverState?.sbs_mode_enabled ?? false
     if (dirtyControlFlags?.sbs_mode && dirtyControlFlags?.sbs_mode !== 'unset') sbsModeEnabled = dirtyControlFlags.sbs_mode === 'enable'
-    const calibrating = dirtyControlFlags.recalibrate || driverState?.calibration_state == "CALIBRATING";
+    const calibrating = dirtyControlFlags.recalibrate || driverState?.calibration_state === "CALIBRATING";
     const supporterTier = supporterTierDetails(driverState?.device_license);
 
     const smoothFollowFeature = featureDetails(driverState?.device_license, "smooth_follow");
@@ -420,7 +413,10 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                 if (config) {
                     updateConfig({
                         ...config,
-                        ...headsetModeToConfig(headsetMode, joystickMode)
+                        ui_view: {
+                            headset_mode: "vr_lite",
+                            is_joystick_mode: joystickMode
+                        }
                     }).catch(e => setError(e))
                 }
                 setJoystickMode(joystickMode)
@@ -505,6 +501,39 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                                          onChange={(newMode) => setDirtyHeadsetMode(HeadsetModeOptions[newMode])}
                             />
                         </PanelSectionRow>}
+                        {isOtherMode && <Fragment>
+                            <PanelSectionRow>
+                                <Field padding={'none'} childrenContainerWidth={'max'}>
+                                    An external application may be using your headset data: <b>{otherExternalModes.join(", ")}</b>.
+                                </Field>
+                            </PanelSectionRow>
+                            <PanelSectionRow>
+                                <ButtonItem description={"Disables external access to headset data"}
+                                            layout="below"
+                                            onClick={() => writeConfig({ 
+                                                ...config, 
+                                                disabled: true
+                                            })} >
+                                    Disable data broadcast
+                                </ButtonItem>
+                            </PanelSectionRow>
+                        </Fragment> || isOtherModeDisabled && <Fragment>
+                            <PanelSectionRow>
+                                <Field padding={'none'} childrenContainerWidth={'max'}>
+                                    An external application may be trying to use your headset data: <b>{otherExternalModes.join(", ")}</b>.
+                                </Field>
+                            </PanelSectionRow>
+                            <PanelSectionRow>
+                                <ButtonItem description={"Allows for external access to headset data"}
+                                            layout="below"
+                                            onClick={() => writeConfig({ 
+                                                ...config, 
+                                                disabled: false
+                                            })} >
+                                    Enable data broadcast
+                                </ButtonItem>
+                            </PanelSectionRow>
+                        </Fragment>}
                         {!isDisabled && isVrLiteMode && isJoystickMode && joystickModeButton}
                         {!isDisabled && isVrLiteMode && !isJoystickMode && <PanelSectionRow>
                             <SliderField value={config.mouse_sensitivity}
