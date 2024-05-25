@@ -260,7 +260,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
     }
 
     async function setDontShowAgain(key: string) {
-        const res = await serverAPI.callPluginMethod<{ key: string }, void>("set_dont_show_again", { key });
+        const res = await serverAPI.callPluginMethod<{ key: string }, boolean>("set_dont_show_again", { key });
         if (res.success) {
             setDontShowAgainKeys([...dontShowAgainKeys, key]);
         } else {
@@ -269,7 +269,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
     }
 
     async function resetDontShowAgain() {
-        const res = await serverAPI.callPluginMethod<{}, void>("reset_dont_show_again", {});
+        const res = await serverAPI.callPluginMethod<{}, boolean>("reset_dont_show_again", {});
         if (res.success) {
             setDontShowAgainKeys([]);
         } else {
@@ -278,7 +278,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
     }
 
     async function requestToken(email: string) {
-        const res = await serverAPI.callPluginMethod<{ email: string }, void>("request_token", { email });
+        const res = await serverAPI.callPluginMethod<{ email: string }, boolean>("request_token", { email });
         if (!res.success) {
             throw Error(res.result);
         } else {
@@ -287,7 +287,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
     }
 
     async function verifyToken(token: string) {
-        const res = await serverAPI.callPluginMethod<{ token: string }, void>("verify_token", { token });
+        const res = await serverAPI.callPluginMethod<{ token: string }, boolean>("verify_token", { token });
         if (!res.success) {
             throw Error(res.result);
         } else {
@@ -357,7 +357,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
         }
     }, [stableHeadsetMode])
 
-    const showSuporterTierDetailsFn = useShowSupporterTierDetails();
+    const showSupporterTierDetailsFn = useShowSupporterTierDetails();
 
     const deviceConnected = !!driverState?.connected_device_brand && !!driverState?.connected_device_model
     const deviceName = deviceConnected ? `${driverState?.connected_device_brand} ${driverState?.connected_device_model}` : "No device connected"
@@ -388,7 +388,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                 (!driverState?.sbs_mode_enabled && "Adjust display distance. View 3D content.")}
             onChange={(sbs_mode_enabled) => {
                 if (sbs_mode_enabled && !sbsFeature.enabled) {
-                    showSuporterTierDetailsFn(supporterTier, requestToken, verifyToken, refreshLicense);
+                    showSupporterTierDetailsFn(supporterTier, requestToken, verifyToken, refreshLicense);
                 } else {
                     onChangeTutorial(`sbs_mode_enabled_${sbs_mode_enabled}`, driverState!.connected_device_brand,
                         driverState!.connected_device_model, () => {
@@ -581,7 +581,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                                     description={"Display movements are more elastic"}
                                     onChange={(sideview_smooth_follow_enabled) => {
                                         if (!smoothFollowFeature.enabled) {
-                                            showSuporterTierDetailsFn(supporterTier, requestToken, verifyToken, refreshLicense);
+                                            showSupporterTierDetailsFn(supporterTier, requestToken, verifyToken, refreshLicense);
                                         } else if (config) {
                                             updateConfig({
                                                 ...config,
@@ -621,7 +621,7 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
                                     description={"Recenter under certain conditions"}
                                     onChange={(virtual_display_smooth_follow_enabled) => {
                                         if (!smoothFollowFeature.enabled) {
-                                            showSuporterTierDetailsFn(supporterTier, requestToken, verifyToken, refreshLicense);
+                                            showSupporterTierDetailsFn(supporterTier, requestToken, verifyToken, refreshLicense);
                                         } else if (config) {
                                             updateConfig({
                                                 ...config,

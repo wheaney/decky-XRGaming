@@ -24,7 +24,7 @@ tmpdir=$(mktemp -d)
 # Create plugin directory structure
 mkdir -p "$tmpdir/$pluginname/$pluginname"
 cp -r dist "$tmpdir/$pluginname/$pluginname"
-cp package.json plugin.json main.py README.md LICENSE* "$tmpdir/$pluginname/$pluginname"
+cp -r package.json plugin.json main.py README.md LICENSE defaults/* "$tmpdir/$pluginname/$pluginname"
 
 # Copy binaries if provided
 if [ ${#binaryPaths[@]} -gt 0 ]; then
