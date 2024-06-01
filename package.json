@@ -1,7 +1,7 @@
 {
   "name": "decky-XRGaming",
-  "version": "0.8.10",
-  "description": "Virtual display and head-tracking modes for the XREAL Air glasses",
+  "version": "0.9-rayneo",
+  "description": "Virtual display and head-tracking modes for XR glasses",
   "scripts": {
     "build": "shx rm -rf dist && rollup -c",
     "watch": "rollup -c -w",
@@ -20,7 +20,7 @@
     "ar",
     "vr",
     "xreal",
-    "xreal-air"
+    "viture"
   ],
   "author": "Wayne Heaney",
   "license": "GPL-3.0-or-later",
@@ -59,13 +59,13 @@
   "custom_remote_binary": [
     {
       "name": "breezy_vulkan_setup",
-      "url": "https://github.com/wheaney/breezy-desktop/releases/download/v0.8.10/breezy_vulkan_setup",
+      "url": "https://github.com/wheaney/breezy-desktop/releases/download/v0.9-rayneo/breezy_vulkan_setup",
       "sha256hash": "26affe86fbc809a3e750aa3a1d161878c57ac5875369964ab9312b60db4882f7"
     },
     {
       "name": "breezyVulkan.tar.gz",
-      "url": "https://github.com/wheaney/breezy-desktop/releases/download/v0.8.10/breezyVulkan.tar.gz",
-      "sha256hash": "b04ee68ada9ac00f98bc66b82d4c966eaebe694010fffedd15d3045b2edfb7ec"
+      "url": "https://github.com/wheaney/breezy-desktop/releases/download/v0.9-rayneo/breezyVulkan.tar.gz",
+      "sha256hash": "beae171f47b0672e45421f4e5a325701c263be0fad3690954cedfd073ffca757"
     }
   ]
 }
