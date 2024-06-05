@@ -1,6 +1,6 @@
 {
   "name": "decky-XRGaming",
-  "version": "0.9-rayneo-2",
+  "version": "0.9-rayneo-3",
   "description": "Virtual display and head-tracking modes for XR glasses",
   "scripts": {
     "build": "shx rm -rf dist && rollup -c",
@@ -59,13 +59,13 @@
   "custom_remote_binary": [
     {
       "name": "breezy_vulkan_setup",
-      "url": "https://github.com/wheaney/breezy-desktop/releases/download/v0.9-rayneo-2/breezy_vulkan_setup",
+      "url": "https://github.com/wheaney/breezy-desktop/releases/download/v0.9-rayneo-3/breezy_vulkan_setup",
       "sha256hash": "26affe86fbc809a3e750aa3a1d161878c57ac5875369964ab9312b60db4882f7"
     },
     {
       "name": "breezyVulkan.tar.gz",
-      "url": "https://github.com/wheaney/breezy-desktop/releases/download/v0.9-rayneo-2/breezyVulkan.tar.gz",
-      "sha256hash": "c5e5b4cbd6ee4fc76120d3da09b2cb4fa6f5ba5f6f18c3614f79e0b64c88a1c3"
+      "url": "https://github.com/wheaney/breezy-desktop/releases/download/v0.9-rayneo-3/breezyVulkan.tar.gz",
+      "sha256hash": "ac363e1f0515c9be6c66ac660b67b2df3c675b6a12679d511b16c0bd07a6bfc7"
     }
   ]
 }
