@@ -3,7 +3,7 @@
 
 [![Chat](https://img.shields.io/badge/chat-on%20discord-7289da.svg)](https://discord.gg/aJT72wKpXn)
 
-This plugin provides virtual display and head-tracking modes for the XREAL Air 1, 2, 2 Pro and VITURE One glasses by installing [Breezy Desktop's Vulkan implementation](https://github.com/wheaney/breezy-desktop). It also provides a UI for easily changing common configurations. All without leaving Game Mode.
+This plugin provides virtual display and head-tracking modes for the [supported XR glasses](https://github.com/wheaney/XRLinuxDriver#supported-devices) by installing [Breezy Desktop's Vulkan implementation](https://github.com/wheaney/breezy-desktop). It also provides a UI for easily changing common configurations. All without leaving Game Mode.
 
 For the moment, virtual display support only works for Vulkan games. See what's [in the works](#upcoming-features).
 
@@ -42,18 +42,7 @@ From the plugin sidebar, you can control the following:
 * Advanced Settings / **Recalibrate headset** button. If you're experiencing drift, noisiness, or a twisting/swaying of the screen when you move, you can use this button or multi-tap to try re-calibrating your headset. See ["I don't like where the screen was placed, or it has drifted from where it was."](#i-dont-like-where-the-screen-was-placed-or-it-has-drifted-from-where-it-was) for more details.
 
 ## Supported devices
-Check below to see if your device is supported. **Note: be sure you're on the latest firmware for your device.**
-
-| Brand    | Model             | Status            | Recommended?       | Firmware updates                                                                         | Notes                                                                                                                                   |
-| -------- | ----------------- | ----------------- | ------------------ | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| VITURE   | One               | **Live** | :heavy_check_mark: | [Official update site](https://static.viture.com/dfu-util/). Requires Chrome on Windows/Mac. | Official collaboration. [Closed source SDK available](https://www.viture.com/developer/viture-one-sdk-for-linux).                       |
-| VITURE   | One Lite, Pro     | **Ready** (v0.8.10) | :heavy_check_mark: | same as above | same as above                       |
-| XREAL    | Air 1, 2, 2 Pro   | **Live**          | :x:                | [Officlal update site](https://www.xreal.com/support/update/). Requires Chrome.          | Unwilling to collaborate. [Unofficial, open-source SDK](https://gitlab.com/TheJackiMonster/nrealAirLinuxDriver). Exhibits drift, noise. |
-| Rokid    | Max               | *In development*  |                    |                                                                                          | Official collaboration. SDK situation unknown.                                                                                          |
-| TCL/RayNeo | NXTWEAR S/S+; Air 2 | *In development*        |                    |                                                                                          |                                                                                                                                          |
-| Lenovo   | Legion Glasses    | Need POC**        |                    |                                                                                          |                                                                                                                                          |
-
-** If you're a rep from this company or know one, please reach out via any of [these channels](#stay-in-touch).
+See [XRLinuxDriver's supported devices](https://github.com/wheaney/XRLinuxDriver#supported-devices).
 
 ## Virtual display help
 
