@@ -66,10 +66,10 @@ Right now there's no surefire way to tell since this mode only supports Vulkan g
 
 ### Why isn't it working?
 Virtual display mode only works under certain conditions. Double-check the following:
-* Are you **using the XREAL/NREAL Air or VITURE One (non-Lite) glasses**? XREAL Air 1, 2, and 2 Pro and VITURE One models *are* supported, but VITURE One Lite and XREAL Light are *not*, nor are models from other brands, but soon this will include a wider range of devices. See the [upcoming features](#upcoming-features) section.
+* Are you **using supported glasses**? Most XREAL, VITURE, RayNeo, and TCL brand devices are supported. For more details, see the [supported devices table](https://github.com/wheaney/XRLinuxDriver#supported-devices). 
 * Are your **glasses plugged into your Steam Deck**? Are they **displaying content when games aren't running**? 
   * Sometimes the display on the glasses will turn off as the battery level goes down. You can verify this by hitting the `Steam` or `...` buttons, since the Game Mode menus display no matter where the virtual screen is. If the glasses have powered down, try lowering your TDP wattage setting in the Performance panel to get more play time.
-* Is your device **[on the latest firmware](#supported-devices)**? Does the XR Gaming sidebar show your **device is "connected"**?
+* Is your device **on the latest firmware**? See the [supported devices table](https://github.com/wheaney/XRLinuxDriver#supported-devices) for updating your firmware. Does the XR Gaming sidebar show your **device is "connected"**?
 * Have you **selected the "Virtual display" headset mode** in the plugin settings? Mouse, joystick, and disabled settings will all disable the virtual display.
 * Are you **playing a Vulkan game**? Currently only Vulkan is supported.
 * Is your **game running locally** (not streaming over Moonlight, Steam Link, etc...)? Remote gaming is probably a no-go for now.
