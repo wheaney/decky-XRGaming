@@ -164,7 +164,12 @@ Follow mode has the same constraints as Virtual display mode. See [Why isn't it 
 
 ## Supporter Tier
 
-Breezy Vulkan's Supporter Tier features are enhancments to core functionality, offered as a way to reward those who have [supported the project](https://ko-fi.com/wheaney). Core features -- like Virtual Display mode, VR-Lite mouse/joystick modes, and Follow mode's display positioning/resizing settings -- will always remain available to everyone regardless of supporter status. Here's the pricing structure:
+Breezy Vulkan's Supporter Tier features are enhancments to core functionality, offered as a way to reward those who have [supported the project](https://ko-fi.com/wheaney). Core features -- like Virtual Display mode, VR-Lite mouse/joystick modes, and Follow mode's display positioning/resizing settings -- will always remain available to everyone regardless of supporter status. 
+
+Features currently offered:
+* Smooth Follow (in Follow mode)
+* Automatic Recentering (in Virtual Display mode)
+* Side-by-side support (in Virtual Display mode)
 
 | Payment period | Price              | Upgrade window \*                     |
 | -------------- | ------------------ | ------------------------------------- |
@@ -174,12 +179,6 @@ Breezy Vulkan's Supporter Tier features are enhancments to core functionality, o
 \* If you pay for a plan and decide to upgrade to a longer-term plan, you may pay the difference within this window.
 
 If you have enough funds, your access will renew automatically within 7 days of expiration so you never experience an unexpected outage. Your device is never required to be online to continue using Supporter Tier features when enabled, but if your access expires while offline (even if you have enough funds), the features will be disabled until the next time your device goes online and the license can be refreshed. Be sure to check for expiration warnings prior to travel.
-
-Features currently offered:
-* Smooth Follow (in Follow mode)
-* Automatic Recentering (in Virtual Display mode)
-* Side-by-side support (in Virtual Display mode)
-```
 
 ## Upcoming features
 
