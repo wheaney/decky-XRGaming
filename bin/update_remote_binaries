@@ -23,7 +23,7 @@ tmpdir=$(mktemp -d)
 version=$1
 echo "Using breezy version: ${version}"
 
-binaryUrl="https://github.com/wheaney/breezy-desktop/releases/download/${version}/breezyVulkan.tar.gz"
+binaryUrl="https://github.com/wheaney/breezy-desktop/releases/download/${version}/breezyVulkan-x86_64.tar.gz"
 setupUrl="https://github.com/wheaney/breezy-desktop/releases/download/${version}/breezy_vulkan_setup"
 echo "Using binary url: ${binaryUrl}"
 echo "Using setup url: ${setupUrl}"

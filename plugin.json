@@ -3,8 +3,8 @@
   "author": "Wayne Heaney",
   "flags": ["root"],
   "publish": {
-    "tags": ["xreal", "viture", "xr", "ar", "vr", "root"],
-    "description": "Virtual display, VR-Lite, and Sideview modes for supported XR glasses",
+    "tags": ["xreal", "viture", "rayneo", "xr", "ar", "vr", "root"],
+    "description": "Virtual display, VR-Lite, and Follow modes for supported XR glasses",
     "image": "https://raw.githubusercontent.com/wheaney/decky-XRGaming/main/assets/store_image.png"
   }
 }

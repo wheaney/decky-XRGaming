@@ -20,7 +20,7 @@ settings = SettingsManager(name="settings", settings_directory=decky_plugin.DECK
 settings.read()
 
 ipc = XRDriverIPC(logger = decky_plugin.logger, 
-                  user_home = decky_plugin.DECKY_USER_HOME)
+                  config_home = os.path.join(decky_plugin.DECKY_USER_HOME, ".config"))
 
 class Plugin:
     def __init__(self):
@@ -70,7 +70,7 @@ class Plugin:
 
     async def is_driver_running(self):
         try:
-            output = subprocess.check_output(['systemctl', 'is-active', 'xreal-air-driver'], stderr=subprocess.STDOUT)
+            output = subprocess.check_output(['systemctl', 'is-active', 'xr-driver'], stderr=subprocess.STDOUT)
             return output.strip() == b'active'
         except subprocess.CalledProcessError as exc:
             if exc.output.strip() != b'inactive':
@@ -89,7 +89,7 @@ class Plugin:
             if (await self.get_breezy_manifest_checksum(self)) != settings.getSetting(MANIFEST_CHECKSUM_KEY):
                 return False
 
-            output = subprocess.check_output([decky_plugin.DECKY_USER_HOME + "/.local/bin/breezy_vulkan/verify_installation"], stderr=subprocess.STDOUT)
+            output = subprocess.check_output([decky_plugin.DECKY_USER_HOME + "/.local/bin/breezy_vulkan_verify"], stderr=subprocess.STDOUT)
             success = output.strip() == b"Verification succeeded"
             if not success:
                 decky_plugin.logger.error(f"Error verifying breezy installation {output}")
@@ -100,7 +100,7 @@ class Plugin:
 
     async def get_breezy_manifest_checksum(self):
         try:
-            output = subprocess.check_output(["sha256sum", decky_plugin.DECKY_USER_HOME + "/.local/bin/breezy_vulkan/manifest"], stderr=subprocess.STDOUT)
+            output = subprocess.check_output(["sha256sum", decky_plugin.DECKY_USER_HOME + "/.local/share/breezy_vulkan/manifest"], stderr=subprocess.STDOUT)
 
             # convert to a non-byte string, then split on spaces
             return output.strip().decode("utf-8").split(" ")[0]
@@ -116,7 +116,7 @@ class Plugin:
         env_copy["USER"] = decky_plugin.DECKY_USER
 
         setup_script_path = os.path.dirname(__file__) + "/bin/breezy_vulkan_setup"
-        binary_path = os.path.dirname(__file__) + "/bin/breezyVulkan.tar.gz"
+        binary_path = os.path.dirname(__file__) + "/bin/breezyVulkan-x86_64.tar.gz"
         attempt = 0
         while attempt < 3:
             try:
@@ -173,8 +173,8 @@ class Plugin:
         env_copy["USER"] = decky_plugin.DECKY_USER
 
         try:
-            subprocess.check_output([decky_plugin.DECKY_USER_HOME + "/bin/breezy_vulkan_uninstall"], stderr=subprocess.STDOUT, env=env_copy)
-            subprocess.check_output([decky_plugin.DECKY_USER_HOME + "/bin/xreal_driver_uninstall"], stderr=subprocess.STDOUT, env=env_copy)
+            subprocess.check_output([decky_plugin.DECKY_USER_HOME + "/.local/bin/breezy_vulkan_uninstall"], stderr=subprocess.STDOUT, env=env_copy)
+            subprocess.check_output([decky_plugin.DECKY_USER_HOME + "/.local/bin/xr_driver_uninstall"], stderr=subprocess.STDOUT, env=env_copy)
             settings.setSetting(INSTALLED_VERSION_SETTING_KEY, None)
             return True
         except subprocess.CalledProcessError as exc:
