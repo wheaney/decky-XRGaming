@@ -378,14 +378,23 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
     const sbsFeature = featureDetails(driverState?.device_license, "sbs");
 
     const sbsFirmwareUpdateNeeded = !driverState?.sbs_mode_supported && driverState?.firmware_update_recommended;
+    let sbsDescription = "";
+    if (sbsFirmwareUpdateNeeded) {
+        sbsDescription = "Update your glasses' firmware to enable side-by-side mode.";
+    } else if (!driverState?.sbs_mode_supported) {
+        sbsDescription = "Your glasses do not currently support side-by-side mode.";
+    } else if (!driverState?.sbs_mode_enabled) {
+        sbsDescription = "Adjust display distance. View 3D content.";
+    }
+    const sbsLabel = "Enable side-by-side mode";
     const enableSbsButton = driverState && <PanelSectionRow>
         <ToggleField
             checked={sbsModeEnabled}
             disabled={!driverState?.sbs_mode_enabled && !driverState?.sbs_mode_supported}
-            label={<SupporterTierFeatureLabel label="Enable side-by-side mode" 
-                                              feature={sbsFeature} />}
-            description={sbsFirmwareUpdateNeeded ? "Update your glasses' firmware to enable side-by-side mode." :
-                (!driverState?.sbs_mode_enabled && "Adjust display distance. View 3D content.")}
+            label={driverState?.sbs_mode_supported && 
+                <SupporterTierFeatureLabel label={sbsLabel} feature={sbsFeature} /> ||
+                sbsLabel}
+            description={sbsDescription}
             onChange={(sbs_mode_enabled) => {
                 if (sbs_mode_enabled && !sbsFeature.enabled) {
                     showSupporterTierDetailsFn(supporterTier, requestToken, verifyToken, refreshLicense);
