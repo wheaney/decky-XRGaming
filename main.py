@@ -70,7 +70,7 @@ class Plugin:
 
     async def is_driver_running(self):
         try:
-            output = subprocess.check_output(['systemctl', 'is-active', 'xr-driver'], stderr=subprocess.STDOUT)
+            output = subprocess.check_output(['su', '-l', '-c', 'XDG_RUNTIME_DIR=/run/user/1000 systemctl --user is-active xr-driver', decky_plugin.DECKY_USER], stderr=subprocess.STDOUT)
             return output.strip() == b'active'
         except subprocess.CalledProcessError as exc:
             if exc.output.strip() != b'inactive':
