@@ -76,6 +76,7 @@ Virtual display mode only works under certain conditions. Double-check the follo
 * Is your **screen not fixed somewhere else** in the room (e.g. due to changing positions or screen drift)? Maybe try re-centering your screen (see below).
 * Is the game running in Steam and **not through an app installed via Flatpak**? Heroic launcher's Flatpak install, for example, may require extra setup or may not work at all.
   * Try your games before writing them off, as many launchers still work.
+* Are you using **SteamOS on a Steam Deck in Game Mode**? If you're using decky on another OS (e.g. Bazzite) or hardware, or in Desktop Mode, you'll need to set the environment variable as described in the [Breezy Vulkan manual setup](https://github.com/wheaney/breezy-desktop#manual-installation).
 
 ### How can I optimize my setup for the best experience?
 Since there will always be a delay between your head movements and rendering of the display, the virtual display mode uses "look-ahead" logic to try to figure out where your head *will be* when the next frame is rendered. The longer it takes to get a frame rendered in your glasses, the bigger the look-ahead will need to be, which means: lower accuracy of predictions (which will cause the screen to briefly shift away from its fixed position) and higher sensitivity to movements (which will produce more shaking). So our goal is to get that latency between collecting movement data and rendering a frame with that data as low as possible. To put it another way: we want to reduce input lag.
