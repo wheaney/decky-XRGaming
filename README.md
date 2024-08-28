@@ -183,12 +183,8 @@ If you have enough funds, your access will renew automatically within 7 days of 
 
 ## Upcoming features
 
-So much more is already in the works for this plugin! If you're enjoying it and any of the upcoming features sound appealing, or if you have a feature request, please consider [becoming a supporter](https://ko-fi.com/wheaney).
-
-Upcoming features:
-* Increased device support (Rokid, etc...).
-* Virtual display for all of Game Mode, not just Vulkan games.
-* General Linux virtual display support for productivity.
+Here's what else is in the works for this plugin:
+* "All of game mode" support to apply 3DoF features to everything in Game Mode, including Steam and non-Vulkan games
 * 6DoF support
 * Monado support
 
