@@ -1,4 +1,4 @@
-import { gamepadDialogClasses } from "decky-frontend-lib";
+import { gamepadDialogClasses } from "@decky/ui";
 import { Fragment } from "react";
 import { BiSolidLock } from "react-icons/bi";
 import { LicenseFeatureDetails } from "./license";

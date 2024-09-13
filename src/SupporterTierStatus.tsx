@@ -1,4 +1,4 @@
-import { ButtonItem, Field, PanelSectionRow, gamepadDialogClasses, showModal } from "decky-frontend-lib";
+import { ButtonItem, Field, PanelSectionRow, gamepadDialogClasses, showModal } from "@decky/ui";
 import { License, secondsRemaining, timeRemainingText, trialTimeRemaining } from "./license";
 import { LuTimer } from "react-icons/lu";
 import { RefreshLicenseResponse, SupporterTierModal } from "./SupporterTierModal";
