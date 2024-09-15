@@ -2,7 +2,7 @@ import {
     ModalRoot,
     PanelSection,
     gamepadDialogClasses, TextField, Spinner, DialogButtonPrimary, DialogButtonSecondary, Focusable, Navigation
-} from 'decky-frontend-lib';
+} from '@decky/ui';
 import {FC, MutableRefObject, useEffect, useState} from "react";
 import {QRCodeSVG} from "qrcode.react";
 

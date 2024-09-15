@@ -5,13 +5,12 @@ import {
     NotchLabel,
     PanelSection,
     PanelSectionRow,
-    ServerAPI,
-    ServerResponse,
     SliderField,
     Spinner,
     staticClasses,
     ToggleField
-} from "decky-frontend-lib";
+} from "@decky/ui";
+import {call} from "@decky/api";
 // @ts-ignore
 import React, {
     Fragment,
@@ -171,7 +170,7 @@ const LookAheadNotchLabels: NotchLabel[] = [
     }
 ];
 
-const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
+const Content: VFC = () => {
     const [config, setConfig] = useState<Config>();
     const [isJoystickMode, setJoystickMode] = useState<boolean>(false);
     const [driverState, setDriverState] = useState<DriverState>();
@@ -183,29 +182,23 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
     const [dirtyHeadsetMode, stableHeadsetMode, setDirtyHeadsetMode] = useStableState<HeadsetModeOption | undefined>(undefined, HeadsetModeConfirmationTimeoutMs);
 
     async function refreshConfig() {
-        const configRes: ServerResponse<Config> = await serverAPI.callPluginMethod<{}, Config>("retrieve_config", {});
-        if (configRes.success) {
-            setConfig(configRes.result);
-            if (configRes.result.output_mode == "joystick") setJoystickMode(true);
-        } else {
-            setError(configRes.result);
+        try {
+            const configRes = await call<[], Config>("retrieve_config");
+            setConfig(configRes);
+            if (configRes.output_mode == "joystick") setJoystickMode(true);
+        } catch (e) {
+            setError((e as Error).message);
         }
     }
 
     async function retrieveDriverState(): Promise<DriverState> {
-        const driverStateRes: ServerResponse<DriverState> = await serverAPI.callPluginMethod<{}, DriverState>("retrieve_driver_state", {});
-        if (driverStateRes.success) {
-            return driverStateRes.result;
-        } else {
-            throw Error(driverStateRes.result);
-        }
+        return call<[], DriverState>("retrieve_driver_state");
     }
 
     // have this function call itself every second to keep the UI up to date
     async function refreshDriverState() {
         try {
-            const driverState = await retrieveDriverState();
-            setDriverState(driverState);
+            setDriverState(await retrieveDriverState());
         } catch (e) {
             setError((e as Error).message);
         }
@@ -216,82 +209,79 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
     }
 
     async function refreshDontShowAgainKeys() {
-        const dontShowAgainKeysRes: ServerResponse<string[]> = await serverAPI.callPluginMethod<{}, string[]>("retrieve_dont_show_again_keys", {});
-        if (dontShowAgainKeysRes.success) {
-            setDontShowAgainKeys(dontShowAgainKeysRes.result);
-        } else {
-            setError(dontShowAgainKeysRes.result);
+        try {
+            setDontShowAgainKeys(await call<[], string[]>("retrieve_dont_show_again_keys"));
+        } catch (e) {
+            setError((e as Error).message);
         }
     }
 
     async function checkInstallation() {
         setInstallationStatus("inProgress");
-        const installedRes: ServerResponse<boolean> = await serverAPI.callPluginMethod<{}, boolean>("is_breezy_installed_and_running", {});
-        if (installedRes.success) {
-            if (installedRes.result) {
-                setInstallationStatus("installed")
-            } else {
+        try {
+            if (!await call<[], boolean>("is_breezy_installed_and_running")) {
                 setInstallationStatus("inProgress")
-                const installBreezyRes = await serverAPI.callPluginMethod<{}, boolean>("install_breezy", {});
-                if (installBreezyRes.success && installBreezyRes.result)
-                    setInstallationStatus("installed")
-                else
-                    setError("There was an error during setup. Try restarting your Steam Deck. " +
-                        "If the error persists, please file an issue in the decky-XRGaming GitHub repository.")
+                if (!await call<[], boolean>("install_breezy")) {
+                    throw Error("There was an error during setup. Try restarting your Steam Deck. If " +
+                                "the error persists, please file an issue in the decky-XRGaming GitHub " + 
+                                "repository.");
+                }
             }
-        } else {
-            setError(installedRes.result);
+            setInstallationStatus("installed");
+        } catch (e) {
+            setError((e as Error).message);
         }
     }
 
     async function writeConfig(newConfig: Config) {
-        const res = await serverAPI.callPluginMethod<{ config: Config }, Config>("write_config", { config: newConfig });
-        if (!res.success) {
-            setError(res.result);
-            await refreshConfig();
-        } else {
-            setConfig(res.result);
+        try {
+            setConfig(await call<[ config: Config ], Config>("write_config", newConfig));
+        } catch (e) {
+            setError((e as Error).message);
+            return refreshConfig();
         }
     }
 
     async function writeControlFlags(flags: Partial<ControlFlags>) {
-        const res = await serverAPI.callPluginMethod<{ control_flags: Partial<ControlFlags>}, void>("write_control_flags", { control_flags: flags });
-        res.success ? setDirtyControlFlags({...flags, last_updated: Date.now()}) : setError(res.result);
+        try {
+            await call<[ control_flags: Partial<ControlFlags> ], void>("write_control_flags", flags);
+            setDirtyControlFlags({...flags, last_updated: Date.now()})
+        } catch (e) {
+            setError((e as Error).message);
+        }
     }
 
     async function setDontShowAgain(key: string) {
-        const res = await serverAPI.callPluginMethod<{ key: string }, boolean>("set_dont_show_again", { key });
-        if (res.success) {
+        try {
+            await call<[ key: string ], boolean>("set_dont_show_again", key);
             setDontShowAgainKeys([...dontShowAgainKeys, key]);
-        } else {
-            setError(res.result);
+        } catch (e) {
+            setError((e as Error).message);
         }
     }
 
     async function resetDontShowAgain() {
-        const res = await serverAPI.callPluginMethod<{}, boolean>("reset_dont_show_again", {});
-        if (res.success) {
+        try {
+            await call<[], boolean>("reset_dont_show_again");
             setDontShowAgainKeys([]);
-        } else {
-            setError(res.result);
+        } catch (e) {
+            setError((e as Error).message);
         }
     }
 
     async function requestToken(email: string) {
-        const res = await serverAPI.callPluginMethod<{ email: string }, boolean>("request_token", { email });
-        if (!res.success) {
-            throw Error(res.result);
-        } else {
-            return res.result
+        try {
+            call<[ email: string ], boolean>("request_token", email);
+        } catch (e) {
+            setError((e as Error).message);
         }
     }
 
     async function verifyToken(token: string) {
-        const res = await serverAPI.callPluginMethod<{ token: string }, boolean>("verify_token", { token });
-        if (!res.success) {
-            throw Error(res.result);
-        } else {
-            return res.result
+        try {
+            call<[ token: string ], boolean>("verify_token", token);
+        } catch (e) {
+            setError((e as Error).message);
         }
     }
 
@@ -480,24 +470,28 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
     return (
         <Fragment>
             {error && <PanelSection>
-                <PanelSectionRow style={{backgroundColor: "pink", borderColor: "red", color: "red"}}>
-                    <BiMessageError/>{error}
+                <PanelSectionRow>
+                    <div style={{backgroundColor: "pink", borderColor: "red", color: "red"}}>
+                        <BiMessageError/>{error}
+                    </div>
                 </PanelSectionRow>
             </PanelSection>}
             {!error && <Fragment>
                 {installationStatus == "installed" && driverState && config &&
                     <PanelSection>
-                        <PanelSectionRow style={{fontSize: 'medium', textAlign: 'center'}}>
+                        <PanelSectionRow>
                             <Field padding={'none'} childrenContainerWidth={'max'}>
-                                <span style={{color: deviceConnected ? 'white' : 'gray'}}>
-                                    {deviceName}
-                                </span>
-                                {deviceConnected && <span style={{marginLeft: 5, color: 'green'}}>
-                                    connected
-                                </span>}
-                                <span style={{marginLeft: 7, color: deviceConnected ? 'green' : 'red', position: 'relative', top: '3px'}}>
-                                    {deviceConnected ? <PiPlugsConnected /> : <TbPlugConnectedX />}
-                                </span>
+                                <div  style={{fontSize: 'medium', textAlign: 'center'}}>
+                                    <span style={{color: deviceConnected ? 'white' : 'gray'}}>
+                                        {deviceName}
+                                    </span>
+                                    {deviceConnected && <span style={{marginLeft: 5, color: 'green'}}>
+                                        connected
+                                    </span>}
+                                    <span style={{marginLeft: 7, color: deviceConnected ? 'green' : 'red', position: 'relative', top: '3px'}}>
+                                        {deviceConnected ? <PiPlugsConnected /> : <TbPlugConnectedX />}
+                                    </span>
+                                </div>
                             </Field>
                         </PanelSectionRow>
                         {deviceConnected && <PanelSectionRow>
@@ -787,10 +781,10 @@ const Content: VFC<{ serverAPI: ServerAPI }> = ({serverAPI}) => {
     );
 };
 
-export default definePlugin((serverApi: ServerAPI) => {
+export default definePlugin(() => {
     return {
         title: <div className={staticClasses.Title}>XR Gaming</div>,
-        content: <Content serverAPI={serverApi}/>,
+        content: <Content />,
         icon: <FaGlasses/>
     };
 });

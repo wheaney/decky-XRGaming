@@ -1,5 +1,5 @@
 import React, {Fragment} from "react";
-import {ConfirmModal, Focusable, PanelSection, showModal} from "decky-frontend-lib";
+import {ConfirmModal, Focusable, PanelSection, showModal} from "@decky/ui";
 import commonDisplayResolutionVideo from "../assets/tutorials/common/display-resolution.webp";
 import commonGamePropertiesVideo from "../assets/tutorials/common/game-properties-resolution.webp";
 import vdSidebarPerformanceVideo from "../assets/tutorials/virtual_display/sidebar-performance.webp";

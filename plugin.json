@@ -2,6 +2,7 @@
   "name": "XR Gaming",
   "author": "Wayne Heaney",
   "flags": ["root"],
+  "api_version": 1,
   "publish": {
     "tags": ["xreal", "viture", "rayneo", "tcl", "rokid", "xr", "ar", "vr", "root"],
     "description": "Virtual display, VR-Lite, and Follow modes for supported XR glasses",

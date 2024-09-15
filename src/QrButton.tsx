@@ -4,7 +4,7 @@ import {
     Field,
     Focusable,
     Navigation,
-} from 'decky-frontend-lib';
+} from '@decky/ui';
 import { FC, ReactNode } from 'react';
 import showQrModal from "./showQrModal";
 
@@ -17,6 +17,7 @@ const QrButton: FC<{
     icon: ReactNode;
     url: string;
     followLink?: boolean;
+    children: ReactNode;
 }> = ({ icon, children, url, followLink }) => {
     const clickAction = followLink ? () => navLink(url) : () => showQrModal(url);
     return <PanelSectionRow>
