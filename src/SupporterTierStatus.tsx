@@ -88,7 +88,8 @@ export function SupporterTierStatus({details, requestTokenFn, verifyTokenFn, ref
                             <LuTimer style={{position: 'relative', top: '1px', marginRight: '2px'}} />In trial
                         </span><br/>
                         {details.trialTimeRemainingText && <span className={gamepadDialogClasses.FieldDescription}>
-                            Trial ends in {details.trialTimeRemainingText}
+                            Trial ends in {details.trialTimeRemainingText}<br/>
+                            (only tagged <i>Supporter Tier</i> features will be locked)
                         </span>}
                     </div>
                     <ButtonItem layout="below" onClick={showSupporterTierDetails}

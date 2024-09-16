@@ -1,6 +1,7 @@
 import {
     ButtonItem,
-    definePlugin, DropdownItem,
+    definePlugin, 
+    DropdownItem,
     Field,
     NotchLabel,
     PanelSection,
@@ -34,6 +35,7 @@ import { SupporterTierFeatureLabel } from "./SupporterTierFeatureLabel";
 
 interface Config {
     disabled: boolean;
+    gamescope_reshade_wayland_disabled: boolean;
     output_mode: OutputMode;
     external_mode: ExternalMode[];
     mouse_sensitivity: number;
@@ -47,6 +49,8 @@ interface Config {
     sideview_display_size: number;
     virtual_display_smooth_follow_enabled: boolean;
     sideview_smooth_follow_enabled: boolean;
+    sideview_follow_threshold: number;
+    curved_display: boolean;
     ui_view: {
         headset_mode: HeadsetModeOption;
         is_joystick_mode: boolean;
@@ -62,6 +66,7 @@ interface DriverState {
     sbs_mode_enabled: boolean;
     sbs_mode_supported: boolean;
     firmware_update_recommended: boolean;
+    is_gamescope_reshade_ipc_connected: boolean;
     device_license: License;
 }
 
@@ -136,7 +141,7 @@ const DisplayZoomNotchLabels: NotchLabel[] = [
     },
     {
         label: "Biggest",
-        notchIndex: 7
+        notchIndex: 8
     }
 ];
 
@@ -151,7 +156,7 @@ const DisplayDisanceNotchLabels: NotchLabel[] = [
     },
     {
         label: "Farthest",
-        notchIndex: 7
+        notchIndex: 8
     }
 ];
 
@@ -334,7 +339,7 @@ const Content: VFC = () => {
     // this effect will be triggered after headsetMode has been stable for a certain period of time
     useEffect(() => {
         if (stableHeadsetMode && config && driverState) {
-            onChangeTutorial(`headset_mode_${stableHeadsetMode}`, driverState.connected_device_brand,
+            onChangeTutorial(`headset_mode_${stableHeadsetMode}${isVulkanOnlyMode ? '_vulkan_only' : ''}`, driverState.connected_device_brand,
                 driverState.connected_device_model, () => {
                 updateConfig({
                     ...config,
@@ -355,16 +360,19 @@ const Content: VFC = () => {
     const isDisabled = !deviceConnected || headsetMode === "disabled"
     const isVirtualDisplayMode = !isDisabled && headsetMode === "virtual_display"
     const isSideviewMode = !isDisabled && headsetMode === "sideview"
+    const isShaderMode = isVirtualDisplayMode || isSideviewMode;
     const isVrLiteMode = !isDisabled && headsetMode === "vr_lite"
     const otherExternalModes = (config?.external_mode ?? []).filter(mode => !ManagedExternalModes.includes(mode));
     const isOtherMode = deviceConnected && isDisabled && !(config?.disabled ?? true) && otherExternalModes.length > 0;
     const isOtherModeDisabled = deviceConnected && isDisabled && (config?.disabled ?? true) && otherExternalModes.length > 0;
-    let sbsModeEnabled = driverState?.sbs_mode_enabled ?? false
-    if (dirtyControlFlags?.sbs_mode && dirtyControlFlags?.sbs_mode !== 'unset') sbsModeEnabled = dirtyControlFlags.sbs_mode === 'enable'
+    let sbsModeEnabled = driverState?.sbs_mode_enabled ?? false;
+    if (dirtyControlFlags?.sbs_mode && dirtyControlFlags?.sbs_mode !== 'unset') sbsModeEnabled = dirtyControlFlags.sbs_mode === 'enable';
+    const isVulkanOnlyMode = !driverState?.is_gamescope_reshade_ipc_connected;
     const calibrating = dirtyControlFlags.recalibrate || driverState?.calibration_state === "CALIBRATING";
     const supporterTier = supporterTierDetails(driverState?.device_license);
 
     const smoothFollowFeature = featureDetails(driverState?.device_license, "smooth_follow");
+    const smoothFollowEnabled = (config?.sideview_smooth_follow_enabled && smoothFollowFeature.enabled) ?? false;
     const sbsFeature = featureDetails(driverState?.device_license, "sbs");
 
     const sbsFirmwareUpdateNeeded = !driverState?.sbs_mode_supported && driverState?.firmware_update_recommended;
@@ -389,7 +397,7 @@ const Content: VFC = () => {
                 if (sbs_mode_enabled && !sbsFeature.enabled) {
                     showSupporterTierDetailsFn(supporterTier, requestToken, verifyToken, refreshLicense);
                 } else {
-                    onChangeTutorial(`sbs_mode_enabled_${sbs_mode_enabled}`, driverState!.connected_device_brand,
+                    onChangeTutorial(`sbs_mode_enabled_${sbs_mode_enabled}${isVulkanOnlyMode ? '_vulkan_only' : ''}`, driverState!.connected_device_brand,
                         driverState!.connected_device_model, () => {
                             writeControlFlags(
                                 {
@@ -400,6 +408,26 @@ const Content: VFC = () => {
                     )
                 }
             }}
+        />
+    </PanelSectionRow>;
+
+    const sbsDisplayDistanceSlider = <PanelSectionRow>
+        <SliderField value={config?.sbs_display_distance ?? 1.0}
+                    min={0.1} max={2.5}
+                    notchCount={9}
+                    notchLabels={DisplayDisanceNotchLabels}
+                    label={"Display distance"}
+                    description={"Adjust perceived display depth for eye comfort."}
+                    step={0.01}
+                    editableValue={true}
+                    onChange={(sbs_display_distance) => {
+                        if (config) {
+                            updateConfig({
+                                ...config,
+                                sbs_display_distance
+                            }).catch(e => setError(e))
+                        }
+                    }}
         />
     </PanelSectionRow>;
 
@@ -422,9 +450,25 @@ const Content: VFC = () => {
             }}/>
     </PanelSectionRow>;
 
+    const curvedDisplayButton = <PanelSectionRow>
+        <ToggleField
+            checked={config?.curved_display ?? false}
+            label={"Curved display"}
+            description={"Wrap the display around your field of view."}
+            onChange={(curved_display) => {
+                if (config) {
+                    updateConfig({
+                        ...config,
+                        curved_display
+                    }).catch(e => setError(e))
+                }
+            }}/>
+    </PanelSectionRow>;
+
     const advancedSettings = [
         isVrLiteMode && !isJoystickMode && joystickModeButton,
-        isVirtualDisplayMode && !driverState?.sbs_mode_enabled && enableSbsButton,
+        isShaderMode && !driverState?.sbs_mode_enabled && enableSbsButton,
+        isVirtualDisplayMode && !driverState?.sbs_mode_enabled && !config?.curved_display && curvedDisplayButton,
         config && isVirtualDisplayMode && <PanelSectionRow>
             <SliderField value={config.look_ahead}
                          min={0} max={45} notchTicksVisible={true}
@@ -453,7 +497,21 @@ const Content: VFC = () => {
                 }
             </ButtonItem>
         </PanelSectionRow>,
-        isVirtualDisplayMode && dontShowAgainKeys.length && <PanelSectionRow>
+        isShaderMode && <PanelSectionRow>
+            <ToggleField
+                checked={config?.gamescope_reshade_wayland_disabled ?? false}
+                label={"Disable gamescope integration"}
+                description={"XR effects will only apply to Vulkan games"}
+                onChange={(disabled) => {
+                    if (config) {
+                        updateConfig({
+                            ...config,
+                            gamescope_reshade_wayland_disabled: disabled
+                        }).catch(e => setError(e))
+                    }
+                }}/>
+        </PanelSectionRow>,
+        isShaderMode && dontShowAgainKeys.length && <PanelSectionRow>
             <ButtonItem description={"Clear your \"Don't show again\" settings."} layout="below" onClick={() => resetDontShowAgain()}>
                 Show all guides
             </ButtonItem>
@@ -503,6 +561,16 @@ const Content: VFC = () => {
                                          notchCount={HeadsetModeOptions.length}
                                          onChange={(newMode) => setDirtyHeadsetMode(HeadsetModeOptions[newMode])}
                             />
+                        </PanelSectionRow>}
+                        {isShaderMode && isVulkanOnlyMode && <PanelSectionRow>
+                            <Field padding={'none'} childrenContainerWidth={'max'}>
+                                <div style={{textAlign: 'center'}}>
+                                    <span style={{color: "#946d00", fontWeight: "bold"}}>
+                                        Vulkan-only mode
+                                    </span><br/>
+                                    XR effects will only apply in-game
+                                </div>
+                            </Field>
                         </PanelSectionRow>}
                         {isOtherMode && <Fragment>
                             <PanelSectionRow>
@@ -578,7 +646,7 @@ const Content: VFC = () => {
                             </PanelSectionRow>
                             <PanelSectionRow>
                                 <ToggleField
-                                    checked={config.sideview_smooth_follow_enabled && smoothFollowFeature.enabled}
+                                    checked={smoothFollowEnabled}
                                     label={<SupporterTierFeatureLabel label="Smooth follow" 
                                                                       feature={smoothFollowFeature} />}
                                     description={"Display movements are more elastic"}
@@ -593,17 +661,52 @@ const Content: VFC = () => {
                                         }
                                     }}/>
                             </PanelSectionRow>
+                            {smoothFollowEnabled && <PanelSectionRow>
+                                <SliderField value={config.sideview_follow_threshold}
+                                             min={0.5} max={45}
+                                             notchCount={10}
+                                             notchTicksVisible={false}
+                                             label={"Smooth follow threshold"}
+                                             description={"How closely the display follows you"}
+                                             notchLabels={[
+                                                {label: "0.5", notchIndex: 0, value: 0.5},
+                                                {label: "5", notchIndex: 1, value: 5},
+                                                {label: "10", notchIndex: 2, value: 10},
+                                                {label: "15", notchIndex: 3, value: 15},
+                                                {label: "20", notchIndex: 4, value: 20},
+                                                {label: "25", notchIndex: 5, value: 25},
+                                                {label: "30", notchIndex: 6, value: 30},
+                                                {label: "35", notchIndex: 7, value: 35},
+                                                {label: "40", notchIndex: 8, value: 40},
+                                                {label: "45", notchIndex: 9, value: 45}
+                                             ]}
+                                             step={0.5}
+                                             editableValue={true}
+                                             onChange={(sideview_follow_threshold) => {
+                                                 if (config) {
+                                                     updateConfig({
+                                                         ...config,
+                                                         sideview_follow_threshold
+                                                     }).catch(e => setError(e))
+                                                 }
+                                             }}
+                                />
+                            </PanelSectionRow>}
                             <PanelSectionRow>
                                 <SliderField value={config.sideview_display_size}
-                                             min={0.2} max={1.0}
-                                             notchCount={2}
-                                             notchTicksVisible={false}
+                                             min={0.1} max={smoothFollowEnabled ? 2.5 : 1.0}
+                                             notchCount={smoothFollowEnabled ? 9 : 2}
+                                             notchTicksVisible={smoothFollowEnabled}
+                                             editableValue={smoothFollowEnabled}
                                              label={"Display size"}
-                                             notchLabels={[
-                                                 {label: "Smallest", notchIndex: 0},
-                                                 {label: "Biggest", notchIndex: 1},
-                                             ]}
-                                             step={0.05}
+                                             notchLabels={smoothFollowEnabled ? 
+                                                DisplayZoomNotchLabels : 
+                                                [
+                                                    {label: "Smallest", notchIndex: 0},
+                                                    {label: "Biggest", notchIndex: 1},
+                                                ]
+                                             }
+                                             step={0.01}
                                              onChange={(sideview_display_size) => {
                                                  if (config) {
                                                      updateConfig({
@@ -614,6 +717,7 @@ const Content: VFC = () => {
                                              }}
                                 />
                             </PanelSectionRow>
+                            {driverState?.sbs_mode_enabled && sbsDisplayDistanceSlider}
                         </Fragment>}
                         {isVirtualDisplayMode && <Fragment>
                             <PanelSectionRow>
@@ -635,12 +739,12 @@ const Content: VFC = () => {
                             </PanelSectionRow>
                             <PanelSectionRow>
                                 <SliderField value={sbsModeEnabled ? config.sbs_display_size : config.display_zoom}
-                                             min={0.1} max={2.2}
-                                             notchCount={8}
+                                             min={0.1} max={2.5}
+                                             notchCount={9}
                                              notchLabels={DisplayZoomNotchLabels}
                                              label={"Display size"}
                                              description={sbsModeEnabled && "Display distance setting also affects perceived display size."}
-                                             step={0.05}
+                                             step={0.01}
                                              editableValue={true}
                                              onChange={(zoom) => {
                                                  if (config) {
@@ -655,25 +759,7 @@ const Content: VFC = () => {
                                              }}
                                 />
                             </PanelSectionRow>
-                            {driverState?.sbs_mode_enabled && <PanelSectionRow>
-                                <SliderField value={config.sbs_display_distance}
-                                             min={0.1} max={2.2}
-                                             notchCount={8}
-                                             notchLabels={DisplayDisanceNotchLabels}
-                                             label={"Display distance"}
-                                             description={"Adjust perceived display depth for eye comfort."}
-                                             step={0.05}
-                                             editableValue={true}
-                                             onChange={(sbs_display_distance) => {
-                                                 if (config) {
-                                                     updateConfig({
-                                                         ...config,
-                                                         sbs_display_distance
-                                                     }).catch(e => setError(e))
-                                                 }
-                                             }}
-                                />
-                            </PanelSectionRow>}
+                            {driverState?.sbs_mode_enabled && sbsDisplayDistanceSlider}
                             <PanelSectionRow>
                                 <ButtonItem disabled={calibrating || dirtyControlFlags.recenter_screen}
                                             description={!calibrating && !dirtyControlFlags.recenter_screen ? "Or double-tap your headset." : undefined}
@@ -686,12 +772,13 @@ const Content: VFC = () => {
                                 </ButtonItem>
                             </PanelSectionRow>
                         </Fragment>}
+                        {isVirtualDisplayMode && (driverState?.sbs_mode_enabled || config?.curved_display) && curvedDisplayButton}
                         {
                             // Always show this button if SBS is enabled, so that the user can disable it through the UI.
                             // Once disabled, it will disappear entirely if not in virtual display mode.
                             driverState?.sbs_mode_enabled && enableSbsButton
                         }
-                        {isVirtualDisplayMode && driverState?.sbs_mode_enabled && <Fragment>
+                        {driverState?.sbs_mode_enabled && isVulkanOnlyMode && <Fragment>
                             <PanelSectionRow>
                                 <ToggleField
                                     checked={config.sbs_mode_stretched}

@@ -142,6 +142,10 @@ class Plugin:
 
     # Asyncio-compatible long-running code, executed in a task when the plugin is loaded
     async def _main(self):
+        self.write_control_flags({
+            "request_features": ["sbs", "smooth_follow"]
+        })
+        
         self.breezy_installing = True
         self.breezy_installed = await self.is_breezy_installed()
 
