@@ -59,13 +59,13 @@
   "custom_remote_binary": [
     {
       "name": "breezy_vulkan_setup",
-      "url": "https://github.com/wheaney/breezy-desktop/releases/download/v1.0.3-decky/breezy_vulkan_setup",
+      "url": "https://github.com/wheaney/breezy-desktop/releases/download/v1.0.4-decky/breezy_vulkan_setup",
       "sha256hash": "6f5a5b3b6f920e88b295f07717a7e1a8a53f1d0090f8cb56aff56f8c4e701b5b"
     },
     {
       "name": "breezyVulkan-x86_64.tar.gz",
-      "url": "https://github.com/wheaney/breezy-desktop/releases/download/v1.0.3-decky/breezyVulkan-x86_64.tar.gz",
-      "sha256hash": "8bb8d3e8c85f525a04864ba0ba63d3fa31af43caf3939fac7abd53e7d1ad5c4b"
+      "url": "https://github.com/wheaney/breezy-desktop/releases/download/v1.0.4-decky/breezyVulkan-x86_64.tar.gz",
+      "sha256hash": "84ac2bf2b1900e0af8745c9746f758585136ccea12a09fd09a921a7b9f131291"
     }
   ]
 }

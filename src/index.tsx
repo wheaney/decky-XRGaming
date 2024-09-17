@@ -491,7 +491,7 @@ const Content: VFC = () => {
     const advancedSettings = [
         isVrLiteMode && !isJoystickMode && joystickModeButton,
         isShaderMode && !driverState?.sbs_mode_enabled && enableSbsButton,
-        isVirtualDisplayMode && !driverState?.sbs_mode_enabled && !config?.curved_display && curvedDisplayButton,
+        isShaderMode && !driverState?.sbs_mode_enabled && !config?.curved_display && curvedDisplayButton,
         config && isVirtualDisplayMode && <PanelSectionRow>
             <SliderField value={config.look_ahead}
                          min={0} max={45} notchTicksVisible={true}
@@ -788,7 +788,7 @@ const Content: VFC = () => {
                                 }
                             </ButtonItem>
                         </PanelSectionRow>}
-                        {isVirtualDisplayMode && (driverState?.sbs_mode_enabled || config?.curved_display) && curvedDisplayButton}
+                        {isShaderMode && (driverState?.sbs_mode_enabled || config?.curved_display) && curvedDisplayButton}
                         {
                             // Always show this button if SBS is enabled, so that the user can disable it through the UI.
                             // Once disabled, it will disappear entirely if not in virtual display mode.
