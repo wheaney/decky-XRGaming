@@ -175,6 +175,28 @@ const LookAheadNotchLabels: NotchLabel[] = [
     }
 ];
 
+const FollowThresholdUpperNotchLabels: NotchLabel[] = [
+    {label: "0.5", notchIndex: 0, value: 0.5},
+    {label: "5", notchIndex: 1, value: 5},
+    {label: "10", notchIndex: 2, value: 10},
+    {label: "15", notchIndex: 3, value: 15},
+    {label: "20", notchIndex: 4, value: 20},
+    {label: "25", notchIndex: 5, value: 25},
+    {label: "30", notchIndex: 6, value: 30},
+    {label: "35", notchIndex: 7, value: 35},
+    {label: "40", notchIndex: 8, value: 40},
+    {label: "45", notchIndex: 9, value: 45}
+];
+const WidescreenFollowThresholdUpperNotchLabels: NotchLabel[] = [
+    {label: "-20", notchIndex: 0, value: -20},
+    {label: "-10", notchIndex: 1, value: -10},
+    {label: "0", notchIndex: 2, value: 0},
+    {label: "10", notchIndex: 3, value: 10},
+    {label: "20", notchIndex: 4, value: 20},
+    {label: "30", notchIndex: 5, value: 30},
+    {label: "40", notchIndex: 6, value: 40}
+];
+
 const Content: VFC = () => {
     const [config, setConfig] = useState<Config>();
     const [isJoystickMode, setJoystickMode] = useState<boolean>(false);
@@ -368,6 +390,7 @@ const Content: VFC = () => {
     let sbsModeEnabled = driverState?.sbs_mode_enabled ?? false;
     if (dirtyControlFlags?.sbs_mode && dirtyControlFlags?.sbs_mode !== 'unset') sbsModeEnabled = dirtyControlFlags.sbs_mode === 'enable';
     const isVulkanOnlyMode = !driverState?.is_gamescope_reshade_ipc_connected;
+    const isWidescreen = driverState?.sbs_mode_enabled && !isVulkanOnlyMode; // gamescope SBS mode is always widescreen
     const calibrating = dirtyControlFlags.recalibrate || driverState?.calibration_state === "CALIBRATING";
     const supporterTier = supporterTierDetails(driverState?.device_license);
 
@@ -662,24 +685,17 @@ const Content: VFC = () => {
                                     }}/>
                             </PanelSectionRow>
                             {smoothFollowEnabled && <PanelSectionRow>
-                                <SliderField value={config.sideview_follow_threshold}
-                                             min={0.5} max={45}
-                                             notchCount={10}
+                                <SliderField value={Math.max(isWidescreen ? -20 : 0.5, config.sideview_follow_threshold)}
+                                             min={isWidescreen ? -20 : 0.5} max={isWidescreen ? 40 : 45}
+                                             notchCount={isWidescreen ? 
+                                                WidescreenFollowThresholdUpperNotchLabels.length : 
+                                                FollowThresholdUpperNotchLabels.length}
                                              notchTicksVisible={false}
                                              label={"Smooth follow threshold"}
                                              description={"How closely the display follows you"}
-                                             notchLabels={[
-                                                {label: "0.5", notchIndex: 0, value: 0.5},
-                                                {label: "5", notchIndex: 1, value: 5},
-                                                {label: "10", notchIndex: 2, value: 10},
-                                                {label: "15", notchIndex: 3, value: 15},
-                                                {label: "20", notchIndex: 4, value: 20},
-                                                {label: "25", notchIndex: 5, value: 25},
-                                                {label: "30", notchIndex: 6, value: 30},
-                                                {label: "35", notchIndex: 7, value: 35},
-                                                {label: "40", notchIndex: 8, value: 40},
-                                                {label: "45", notchIndex: 9, value: 45}
-                                             ]}
+                                             notchLabels={isWidescreen ? 
+                                                WidescreenFollowThresholdUpperNotchLabels : 
+                                                FollowThresholdUpperNotchLabels}
                                              step={0.5}
                                              editableValue={true}
                                              onChange={(sideview_follow_threshold) => {
@@ -760,26 +776,26 @@ const Content: VFC = () => {
                                 />
                             </PanelSectionRow>
                             {driverState?.sbs_mode_enabled && sbsDisplayDistanceSlider}
-                            <PanelSectionRow>
-                                <ButtonItem disabled={calibrating || dirtyControlFlags.recenter_screen}
-                                            description={!calibrating && !dirtyControlFlags.recenter_screen ? "Or double-tap your headset." : undefined}
-                                            layout="below"
-                                            onClick={() => writeControlFlags({recenter_screen: true})} >
-                                    {calibrating ?
-                                        <span><Spinner style={{height: '16px', marginRight: 10}} />Calibrating headset</span> :
-                                        "Recenter display"
-                                    }
-                                </ButtonItem>
-                            </PanelSectionRow>
                         </Fragment>}
+                        {(isVirtualDisplayMode || isSideviewMode && smoothFollowEnabled) && <PanelSectionRow>
+                            <ButtonItem disabled={calibrating || dirtyControlFlags.recenter_screen}
+                                        description={!calibrating && !dirtyControlFlags.recenter_screen ? "Or double-tap your headset." : undefined}
+                                        layout="below"
+                                        onClick={() => writeControlFlags({recenter_screen: true})} >
+                                {calibrating ?
+                                    <span><Spinner style={{height: '16px', marginRight: 10}} />Calibrating headset</span> :
+                                    "Recenter display"
+                                }
+                            </ButtonItem>
+                        </PanelSectionRow>}
                         {isVirtualDisplayMode && (driverState?.sbs_mode_enabled || config?.curved_display) && curvedDisplayButton}
                         {
                             // Always show this button if SBS is enabled, so that the user can disable it through the UI.
                             // Once disabled, it will disappear entirely if not in virtual display mode.
                             driverState?.sbs_mode_enabled && enableSbsButton
                         }
-                        {driverState?.sbs_mode_enabled && isVulkanOnlyMode && <Fragment>
-                            <PanelSectionRow>
+                        {driverState?.sbs_mode_enabled && <Fragment>
+                            {isVulkanOnlyMode && <PanelSectionRow>
                                 <ToggleField
                                     checked={config.sbs_mode_stretched}
                                     label={"Content is stretched"}
@@ -792,7 +808,7 @@ const Content: VFC = () => {
                                             }).catch(e => setError(e))
                                         }
                                     }}/>
-                            </PanelSectionRow>
+                            </PanelSectionRow>}
                             <PanelSectionRow>
                                 <ToggleField
                                     checked={config.sbs_content}
