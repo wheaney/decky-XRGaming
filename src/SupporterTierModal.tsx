@@ -56,8 +56,8 @@ export interface RefreshLicenseResponse extends SupportTierModalDetails {
 }
 
 interface SupporterTierModalProps extends SupportTierModalDetails {
-    requestTokenFn: (email: string) => Promise<any>;
-    verifyTokenFn: (token: string) => Promise<any>;
+    requestTokenFn: (email: string) => Promise<boolean>;
+    verifyTokenFn: (token: string) => Promise<boolean>;
     refreshLicenseFn: () => Promise<RefreshLicenseResponse>;
     supporterTierModalCloseRef: MutableRefObject<(() => void) | undefined>;
 }

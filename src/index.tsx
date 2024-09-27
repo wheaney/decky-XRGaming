@@ -296,20 +296,24 @@ const Content: VFC = () => {
         }
     }
 
-    async function requestToken(email: string) {
+    async function requestToken(email: string): Promise<boolean> {
         try {
-            call<[ email: string ], boolean>("request_token", email);
+            return call<[ email: string ], boolean>("request_token", email);
         } catch (e) {
             setError((e as Error).message);
         }
+
+        return false;
     }
 
-    async function verifyToken(token: string) {
+    async function verifyToken(token: string): Promise<boolean> {
         try {
-            call<[ token: string ], boolean>("verify_token", token);
+            return call<[ token: string ], boolean>("verify_token", token);
         } catch (e) {
             setError((e as Error).message);
         }
+
+        return false;
     }
 
     async function refreshLicense(): Promise<RefreshLicenseResponse> {
