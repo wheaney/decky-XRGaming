@@ -170,7 +170,7 @@ Breezy Vulkan's Supporter Tier features are enhancments to core functionality, o
 Features currently offered:
 * Smooth Follow (in Follow mode)
 * Automatic Recentering (in Virtual Display mode)
-* Side-by-side support (in Virtual Display mode)
+* Side-by-side support
 
 | Payment period | Price              | Upgrade window \*                     |
 | -------------- | ------------------ | ------------------------------------- |
