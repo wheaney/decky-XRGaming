@@ -61,8 +61,13 @@ interface DriverState {
     heartbeat: number;
     connected_device_brand: string;
     connected_device_model: string;
-    calibration_setup: CalibrationSetup;
-    calibration_state: CalibrationState;
+    magnet_supported: boolean;
+    magnet_calibrating: boolean;
+    magnet_calibration_type: MagnetCalibrationType;
+    gyro_calibrating: boolean;
+    accel_calibrating: boolean;
+    using_magnet: boolean;
+    magnet_stale: boolean;
     sbs_mode_enabled: boolean;
     sbs_mode_supported: boolean;
     firmware_update_recommended: boolean;
@@ -85,8 +90,7 @@ type InstallationStatus = "checking" | "inProgress" | "installed";
 type OutputMode = "mouse" | "joystick" | "external_only";
 type ExternalMode = 'virtual_display' | 'sideview' | 'none';
 type HeadsetModeOption = "virtual_display" | "vr_lite" | "sideview" | "disabled";
-type CalibrationSetup = "AUTOMATIC" | "INTERACTIVE";
-type CalibrationState = "NOT_CALIBRATED" | "CALIBRATING" | "CALIBRATED" | "WAITING_ON_USER";
+type MagnetCalibrationType = "UNSUPPORTED" | "NONE" | "FIGURE_EIGHT";
 type SbsModeControl = "unset" | "enable" | "disable";
 type SideviewPosition = "center" | "top_left" | "top_right" | "bottom_left" | "bottom_right";
 const ManagedExternalModes: ExternalMode[] = ['virtual_display', 'sideview', 'none'];
@@ -328,6 +332,7 @@ const Content: VFC = () => {
                     const remaining = latestState?.device_license?.tiers?.supporter?.fundsToRenew ? Infinity : secondsRemaining(latestState?.device_license?.tiers?.supporter?.endDate);
                     const remainingText = timeRemainingText(remaining);
                     resolve({
+                        licensePresent: !!latestState?.device_license,
                         confirmedToken: latestState?.device_license?.confirmedToken,
                         timeRemainingText: remainingText,
                         fundsNeeded: latestState?.device_license?.tiers?.supporter?.fundsNeededUSD,
@@ -395,7 +400,10 @@ const Content: VFC = () => {
     if (dirtyControlFlags?.sbs_mode && dirtyControlFlags?.sbs_mode !== 'unset') sbsModeEnabled = dirtyControlFlags.sbs_mode === 'enable';
     const isVulkanOnlyMode = !driverState?.is_gamescope_reshade_ipc_connected;
     const isWidescreen = driverState?.sbs_mode_enabled && !isVulkanOnlyMode; // gamescope SBS mode is always widescreen
-    const calibrating = dirtyControlFlags.recalibrate || driverState?.calibration_state === "CALIBRATING";
+    const calibrating = dirtyControlFlags.recalibrate || 
+                        driverState?.magnet_calibrating ||
+                        driverState?.gyro_calibrating ||
+                        driverState?.accel_calibrating;
     const supporterTier = supporterTierDetails(driverState?.device_license);
 
     const smoothFollowFeature = featureDetails(driverState?.device_license, "smooth_follow");
@@ -477,25 +485,9 @@ const Content: VFC = () => {
             }}/>
     </PanelSectionRow>;
 
-    const curvedDisplayButton = <PanelSectionRow>
-        <ToggleField
-            checked={config?.curved_display ?? false}
-            label={"Curved display"}
-            description={"Wrap the display around your field of view."}
-            onChange={(curved_display) => {
-                if (config) {
-                    updateConfig({
-                        ...config,
-                        curved_display
-                    }).catch(e => setError(e))
-                }
-            }}/>
-    </PanelSectionRow>;
-
     const advancedSettings = [
         isVrLiteMode && !isJoystickMode && joystickModeButton,
         isShaderMode && !driverState?.sbs_mode_enabled && enableSbsButton,
-        isShaderMode && !driverState?.sbs_mode_enabled && !config?.curved_display && curvedDisplayButton,
         config && isVirtualDisplayMode && <PanelSectionRow>
             <SliderField value={config.look_ahead}
                          min={0} max={45} notchTicksVisible={true}
@@ -792,7 +784,20 @@ const Content: VFC = () => {
                                 }
                             </ButtonItem>
                         </PanelSectionRow>}
-                        {isShaderMode && (driverState?.sbs_mode_enabled || config?.curved_display) && curvedDisplayButton}
+                        {isShaderMode && <PanelSectionRow>
+                            <ToggleField
+                                checked={config?.curved_display ?? false}
+                                label={"Curved display"}
+                                description={"Wrap the display around your field of view."}
+                                onChange={(curved_display) => {
+                                    if (config) {
+                                        updateConfig({
+                                            ...config,
+                                            curved_display
+                                        }).catch(e => setError(e))
+                                    }
+                                }}/>
+                        </PanelSectionRow>}
                         {
                             // Always show this button if SBS is enabled, so that the user can disable it through the UI.
                             // Once disabled, it will disappear entirely if not in virtual display mode.
@@ -831,6 +836,17 @@ const Content: VFC = () => {
                                     }}/>
                             </PanelSectionRow>
                         </Fragment>}
+                        {!isDisabled && <PanelSectionRow>
+                            <ButtonItem disabled={driverState?.magnet_calibrating}
+                                        description={!calibrating ? "Or triple-tap your headset." : undefined}
+                                        layout="below"
+                                        onClick={() => writeControlFlags({recalibrate: true})} >
+                                {calibrating ?
+                                    <span><Spinner style={{height: '16px', marginRight: 10}} />Calibrating headset</span> :
+                                    "Recalibrate headset"
+                                }
+                            </ButtonItem>
+                        </PanelSectionRow>}
                         {!isDisabled && <Fragment>
                             {!showAdvanced && advancedButtonVisible && <PanelSectionRow>
                                 <ButtonItem layout="below" onClick={() => setShowAdvanced(true)} >

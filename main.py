@@ -16,7 +16,8 @@ settings = SettingsManager(name="settings", settings_directory=decky.DECKY_PLUGI
 settings.read()
 
 ipc = XRDriverIPC(logger = decky.logger, 
-                  config_home = os.path.join(decky.DECKY_USER_HOME, ".config"))
+                  config_home = os.path.join(decky.DECKY_USER_HOME, ".config"),
+                  output_modes = ['virtual_display', 'sideview'])
 
 class Plugin:
     def __init__(self):

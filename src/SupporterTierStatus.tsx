@@ -7,6 +7,7 @@ import { BsFillSuitHeartFill } from "react-icons/bs";
 import { BiSolidLock } from "react-icons/bi";
 
 export interface SupporterTierDetails {
+    licensePresent: boolean;
     active: boolean;
     confirmedToken: boolean;
     fundsNeeded?: number;
@@ -23,6 +24,7 @@ export function supporterTierDetails(license?: License): SupporterTierDetails {
     const lifetime = active && license?.tiers?.supporter?.endDate === undefined;
 
     return {
+        licensePresent: !!license,
         active: active,
         confirmedToken: license?.confirmedToken ?? false,
         fundsNeeded: license?.tiers?.supporter?.fundsNeededUSD,

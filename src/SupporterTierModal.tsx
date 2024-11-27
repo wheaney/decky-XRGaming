@@ -7,6 +7,7 @@ import {FC, MutableRefObject, useEffect, useState} from "react";
 import {QRCodeSVG} from "qrcode.react";
 
 enum SupporterTierView {
+    NoLicense,
     Enroll,
     Renew,
     Donate,
@@ -45,6 +46,7 @@ function SupporterTierFeaturesList() {
 }
 
 interface SupportTierModalDetails {
+    licensePresent: boolean;
     confirmedToken?: boolean;
     timeRemainingText?: string;
     fundsNeeded?: number;
@@ -87,6 +89,57 @@ function SupporterTierAboutEnrollBlurb(props: SupporterTierAboutBlurbProps) {
             Donate just ${props.fundsNeeded} USD to get Supporter Tier access for 12 months, 
             or ${props.lifetimeFundsNeeded} USD for lifetime access.
     </p>
+}
+
+function getView(props: SupportTierModalDetails) {
+    if (!props.licensePresent) return SupporterTierView.NoLicense;
+
+    if (props.confirmedToken && props.timeRemainingText) {
+        return SupporterTierView.Renew;
+    } else {
+        return SupporterTierView.Enroll;
+    }
+}
+
+function SupporterTierNoLicense(props: SupporterTierStepProps) {
+    const [isFetchingLicense, setFetchingLicense] = useState(false);
+
+    function fetchLicense() {
+        (async () => {
+            setFetchingLicense(true);
+            const res = await props.refreshLicenseFn();
+            if (res.isRenewed) {
+                props.supporterTierModalCloseRef.current?.();
+            } else if (res.licensePresent) {
+                props.changeViewFn(getView(res));
+            }
+            setFetchingLicense(false);
+        })().catch(() => setFetchingLicense(false));
+    }
+
+    return <PanelSection title={'Supporter Tier - Device offline'}>
+        <p style={{textAlign: 'center'}}>
+            Your device needs to be connected to the internet to retrieve your Supporter Tier status.
+        </p>
+        <Focusable
+            style={{
+                paddingTop: '25px',
+                display: 'flex',
+                flexDirection: 'row-reverse',
+                justifyContent: 'space-between',
+                gap: '50px'
+            }}
+            flow-children={"horizontal"}
+        >
+            <DialogButtonPrimary  onClick={fetchLicense} disabled={isFetchingLicense}>
+                {isFetchingLicense && <span>
+                    <Spinner style={{height: '16px', marginRight: 10}}/>
+                    Retrieving license
+                </span> ||
+                "I'm online now"}
+            </DialogButtonPrimary>
+        </Focusable>
+    </PanelSection>
 }
 
 interface SupporterTierAboutProps extends SupporterTierStepProps {
@@ -378,9 +431,7 @@ function SupporterTierRequestToken(props: SupporterTierStepProps) {
 }
 
 export function SupporterTierModal(props: SupporterTierModalProps) {
-    const {confirmedToken, timeRemainingText} = props;
-    const [view, setView] =
-        useState(confirmedToken && timeRemainingText ? SupporterTierView.Renew : SupporterTierView.Enroll);
+    const [view, setView] = useState(getView(props));
     const stepProps: SupporterTierStepProps = {
         ...props,
         changeViewFn: setView
@@ -388,6 +439,9 @@ export function SupporterTierModal(props: SupporterTierModalProps) {
 
     let View: FC<SupporterTierStepProps>;
     switch (view) {
+        case SupporterTierView.NoLicense:
+            View = SupporterTierNoLicense;
+            break;
         case SupporterTierView.Renew:
             View = SupporterTierRenew;
             break;
