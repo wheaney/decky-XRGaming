@@ -1,3 +1,4 @@
 [submodule "defaults/PyXRLinuxDriverIPC"]
 	path = defaults/PyXRLinuxDriverIPC
 	url = https://github.com/wheaney/PyXRLinuxDriverIPC.git
+	branch = v1.1
