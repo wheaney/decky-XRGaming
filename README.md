@@ -5,13 +5,15 @@
 
 This plugin provides virtual display and head-tracking modes for the [supported XR glasses](https://github.com/wheaney/XRLinuxDriver#supported-devices) by installing [Breezy Desktop's Vulkan implementation](https://github.com/wheaney/breezy-desktop). It also provides a UI for easily changing common configurations. All without leaving Game Mode.
 
-For the moment, virtual display support only works for Vulkan games. See what's [in the works](#upcoming-features).
-
 ![XR Gaming Plugin](./assets/store_image.png)
 
-## How it works
+## Installation
 
-This plugin installs and keeps you up-to-date with the latest version of Breezy. Going into the plugin settings allows you to disable Breezy or configure its behavior.
+Installation requires a Steam Deck, SteamOS device, or device running a SteamOS-compatible fork like Bazzite. If you're on a PC or device running a non-SteamOS-compatible OS, you can still install [Breezy Vulkan](https://github.com/wheaney/breezy-desktop#breezy-vulkan) manually, but this lacks the nicer controls provided by the plugin.
+
+1. Install [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader) on your Steam Deck.
+2. Open the decky store from the `...` sidebar menu, via the tab with the  `plug icon`, and lastly hitting the `storefront` icon near the top.
+3. Find "XR Gaming" and install it.
 
 ## Decky Controls
 
@@ -59,10 +61,7 @@ See [XRLinuxDriver's supported devices](https://github.com/wheaney/XRLinuxDriver
 ### What does virtual display mode do?
 Typically, when you plug your glasses directly into the Steam Deck, you get a screen that stretches to fill your glasses entirely. And since that image is always centered in your lenses, no matter how you move your head, it will always remain centered in your vision. This forces you to look around the screen using only eye movements, which can be tiring on the eyes, and blurring on the edges of the screen means you can't always easily read content that's not near the center.
 
-Virtual display mode is intended to mimic how we play games in real life: we place a TV screen or monitor in front of us, and then we're free to look around naturally with a combination of head and eye movements. When you enable this mode and launch into a Vulkan game, a screen will be placed in front of you like always, but now it will stay where you put it and you're free to look around how you naturally would.
-
-### Will my game work?
-Right now there's no surefire way to tell since this mode only supports Vulkan games, some libraries like **dxvk** make it possible for non-Vulkan games to go through Vulkan, it can be difficult to find a definitive list of all games running on Vulkan, and some apps like Heroic launcher may prevent a game that would otherwise work in theory from working in practice. [This issue](https://github.com/wheaney/decky-XRGaming/issues/6) proposes a solution that would allow people to run the plugin without glasses connected and tell if it will work. Add a thumbs-up to the issue if you would find that useful.
+Virtual display mode is intended to mimic how we play games in real life: we place a TV screen or monitor in front of us, and then we're free to look around naturally with a combination of head and eye movements. When you enable this mode, a screen will be placed in front of you like always, but now it will stay where you put it and you're free to look around how you naturally would.
 
 ### Why isn't it working?
 Virtual display mode only works under certain conditions. Double-check the following:
@@ -71,12 +70,8 @@ Virtual display mode only works under certain conditions. Double-check the follo
   * Sometimes the display on the glasses will turn off as the battery level goes down. You can verify this by hitting the `Steam` or `...` buttons, since the Game Mode menus display no matter where the virtual screen is. If the glasses have powered down, try lowering your TDP wattage setting in the Performance panel to get more play time.
 * Is your device **on the latest firmware**? See the [supported devices table](https://github.com/wheaney/XRLinuxDriver#supported-devices) for updating your firmware. Does the XR Gaming sidebar show your **device is "connected"**?
 * Have you **selected the "Virtual display" headset mode** in the plugin settings? Mouse, joystick, and disabled settings will all disable the virtual display.
-* Are you **playing a Vulkan game**? Currently only Vulkan is supported.
-* Is your **game running locally** (not streaming over Moonlight, Steam Link, etc...)? Remote gaming is probably a no-go for now.
 * Is your **screen not fixed somewhere else** in the room (e.g. due to changing positions or screen drift)? Maybe try re-centering your screen (see below).
-* Is the game running in Steam and **not through an app installed via Flatpak**? Heroic launcher's Flatpak install, for example, may require extra setup or may not work at all.
-  * Try your games before writing them off, as many launchers still work.
-* Are you using **SteamOS on a Steam Deck in Game Mode**? If you're using decky on another OS (e.g. Bazzite) or hardware, or in Desktop Mode, you'll need to set the environment variable as described in the [Breezy Vulkan manual setup](https://github.com/wheaney/breezy-desktop#manual-installation).
+* Are you in **Vulkan-only mode**? If so, the visual effects will only apply over games that run on Vulkan.
 
 ### How can I optimize my setup for the best experience?
 Since there will always be a delay between your head movements and rendering of the display, the virtual display mode uses "look-ahead" logic to try to figure out where your head *will be* when the next frame is rendered. The longer it takes to get a frame rendered in your glasses, the bigger the look-ahead will need to be, which means: lower accuracy of predictions (which will cause the screen to briefly shift away from its fixed position) and higher sensitivity to movements (which will produce more shaking). So our goal is to get that latency between collecting movement data and rendering a frame with that data as low as possible. To put it another way: we want to reduce input lag.
@@ -184,8 +179,8 @@ If you have enough funds, your access will renew automatically within 7 days of 
 ## Upcoming features
 
 Here's what else is in the works for this plugin:
-* "All of game mode" support to apply 3DoF features to everything in Game Mode, including Steam and non-Vulkan games
-* 6DoF support
+* OpenTrack support
+* 6DoF support? Possibly via OpenTrack's NeuralNet functionality?
 * Monado support
 
 ## Stay in touch
@@ -195,10 +190,6 @@ To keep up on the latest news, discuss, get help, report bugs, etc... you can fo
 ## Uninstalling
 
 If you wish to completely remove the installation, run the following: `sudo ~/bin/breezy_vulkan_uninstall`. For Steam Deck users, you can uninstall the plugin via the Decky interface.
-
-## Decky Loader
-
-This plugin requires [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader), and is available for free on the Decky store.
 
 ## Data Privacy Notice
 
