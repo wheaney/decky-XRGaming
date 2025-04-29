@@ -110,6 +110,7 @@ class Plugin:
 
         # Set the USER environment variable for this command
         env_copy = os.environ.copy()
+        del env_copy["LD_LIBRARY_PATH"]
         env_copy["USER"] = decky.DECKY_USER
 
         setup_script_path = os.path.dirname(__file__) + "/bin/breezy_vulkan_setup"
@@ -171,6 +172,7 @@ class Plugin:
 
         # Set the USER environment variable for this command
         env_copy = os.environ.copy()
+        del env_copy["LD_LIBRARY_PATH"]
         env_copy["USER"] = decky.DECKY_USER
 
         try:
