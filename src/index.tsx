@@ -61,13 +61,8 @@ interface DriverState {
     heartbeat: number;
     connected_device_brand: string;
     connected_device_model: string;
-    magnet_supported: boolean;
-    magnet_calibrating: boolean;
-    magnet_calibration_type: MagnetCalibrationType;
-    gyro_calibrating: boolean;
-    accel_calibrating: boolean;
-    using_magnet: boolean;
-    magnet_stale: boolean;
+    calibration_setup: CalibrationSetup;
+    calibration_state: CalibrationState;
     sbs_mode_enabled: boolean;
     sbs_mode_supported: boolean;
     firmware_update_recommended: boolean;
@@ -78,8 +73,6 @@ interface DriverState {
 interface ControlFlags {
     recenter_screen: boolean;
     recalibrate: boolean;
-    calibrate_magnet: boolean;
-    disable_magnet: boolean;
     sbs_mode: SbsModeControl;
     refresh_device_license: boolean
 }
@@ -92,11 +85,8 @@ type InstallationStatus = "checking" | "inProgress" | "installed";
 type OutputMode = "mouse" | "joystick" | "external_only";
 type ExternalMode = 'virtual_display' | 'sideview' | 'none';
 type HeadsetModeOption = "virtual_display" | "vr_lite" | "sideview" | "disabled";
-enum MagnetCalibrationType {
-    UNSUPPORTED = "UNSUPPORTED",
-    NONE = "NONE",
-    FIGURE_EIGHT = "FIGURE_EIGHT"
-}
+type CalibrationSetup = "AUTOMATIC" | "INTERACTIVE";
+type CalibrationState = "NOT_CALIBRATED" | "CALIBRATING" | "CALIBRATED" | "WAITING_ON_USER";
 type SbsModeControl = "unset" | "enable" | "disable";
 type SideviewPosition = "center" | "top_left" | "top_right" | "bottom_left" | "bottom_right";
 const ManagedExternalModes: ExternalMode[] = ['virtual_display', 'sideview', 'none'];
@@ -406,11 +396,7 @@ const Content: VFC = () => {
     if (dirtyControlFlags?.sbs_mode && dirtyControlFlags?.sbs_mode !== 'unset') sbsModeEnabled = dirtyControlFlags.sbs_mode === 'enable';
     const isVulkanOnlyMode = !driverState?.is_gamescope_reshade_ipc_connected;
     const isWidescreen = driverState?.sbs_mode_enabled && !isVulkanOnlyMode; // gamescope SBS mode is always widescreen
-    const calibrating = dirtyControlFlags.recalibrate || 
-                        driverState?.magnet_calibrating ||
-                        driverState?.gyro_calibrating ||
-                        driverState?.accel_calibrating;
-    const calibratingMagnet = dirtyControlFlags.calibrate_magnet || driverState?.magnet_calibrating;
+    const calibrating = dirtyControlFlags.recalibrate || driverState?.calibration_state === "CALIBRATING";
     const supporterTier = supporterTierDetails(driverState?.device_license);
 
     const smoothFollowFeature = featureDetails(driverState?.device_license, "smooth_follow");
@@ -843,19 +829,6 @@ const Content: VFC = () => {
                                     }}/>
                             </PanelSectionRow>
                         </Fragment>}
-                        {!isDisabled && driverState?.magnet_supported && 
-                            driverState?.magnet_calibration_type === MagnetCalibrationType.FIGURE_EIGHT && <PanelSectionRow>
-                            <ButtonItem disabled={driverState?.magnet_calibrating}
-                                        layout="below"
-                                        onClick={() => writeControlFlags({calibrate_magnet: true})} >
-                                {calibratingMagnet ?
-                                    <span><Spinner style={{height: '16px', marginRight: 10}} />Calibrating magnetometer</span> :
-                                    ((driverState?.using_magnet || driverState.magnet_stale) ? 
-                                        "Recalibrate magnetometer" : 
-                                        "Calibrate magnetometer")
-                                }
-                            </ButtonItem>
-                        </PanelSectionRow>}
                         {!isDisabled && <Fragment>
                             {!showAdvanced && advancedButtonVisible && <PanelSectionRow>
                                 <ButtonItem layout="below" onClick={() => setShowAdvanced(true)} >
