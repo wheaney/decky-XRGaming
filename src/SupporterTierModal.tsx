@@ -1,7 +1,13 @@
 import {
     ModalRoot,
     PanelSection,
-    gamepadDialogClasses, TextField, Spinner, DialogButtonPrimary, DialogButtonSecondary, Focusable, Navigation
+    gamepadDialogClasses, 
+    TextField, 
+    Spinner, 
+    DialogButtonPrimary, 
+    DialogButtonSecondary, 
+    Focusable, 
+    Navigation
 } from '@decky/ui';
 import {FC, MutableRefObject, useEffect, useState} from "react";
 import {QRCodeSVG} from "qrcode.react";
@@ -86,7 +92,7 @@ function SupporterTierAboutEnrollBlurb(props: SupporterTierAboutBlurbProps) {
         {props.timeRemainingText && <span>
                 Your <b>Supporter Tier</b> trial ends in {props.timeRemainingText}.
             </span>} 
-            Donate just ${props.fundsNeeded} USD to get Supporter Tier access for 12 months, 
+            Donate ${props.fundsNeeded} USD to get Supporter Tier access for 12 months, 
             or ${props.lifetimeFundsNeeded} USD for lifetime access.
     </p>
 }
@@ -150,6 +156,7 @@ interface SupporterTierAboutProps extends SupporterTierStepProps {
 
 function SupporterTierAbout(props: SupporterTierAboutProps) {
     const [isFetchingLicense, setFetchingLicense] = useState(false);
+    const [showTryNewToken, setShowTryNewToken] = useState(false);
     const [timeRemainingText, setTimeRemainingText] = useState(props.timeRemainingText);
     const [fundsNeeded, setFundsNeeded] = useState(props.fundsNeeded);
     const [lifetimeFundsNeeded, setLifetimeFundsNeeded] = useState(props.lifetimeFundsNeeded);
@@ -164,6 +171,7 @@ function SupporterTierAbout(props: SupporterTierAboutProps) {
                 setTimeRemainingText(res.timeRemainingText);
                 setFundsNeeded(res.fundsNeeded);
                 setLifetimeFundsNeeded(res.lifetimeFundsNeeded);
+                setShowTryNewToken(true);
             }
             setFetchingLicense(false);
         })().catch(() => setFetchingLicense(false));
@@ -184,14 +192,17 @@ function SupporterTierAbout(props: SupporterTierAboutProps) {
             }}
             flow-children={"horizontal"}
         >
-            <DialogButtonPrimary onClick={() => props.changeViewFn(SupporterTierView.Donate)}>{props.primaryButtonLabel}</DialogButtonPrimary>
+            <DialogButtonPrimary onClick={() => props.changeViewFn(SupporterTierView.Donate)} disabled={isFetchingLicense}>{props.primaryButtonLabel}</DialogButtonPrimary>
+            {showTryNewToken && <DialogButtonSecondary onClick={() => props.changeViewFn(SupporterTierView.VerifyToken)} disabled={isFetchingLicense}>
+                Try a new token
+            </DialogButtonSecondary> ||
             <DialogButtonSecondary onClick={alreadyDonatedOnClick} disabled={isFetchingLicense}>
                 {isFetchingLicense && <span>
                     <Spinner style={{height: '16px', marginRight: 10}}/>
                     Refreshing license
                 </span> ||
                 "I've already donated"}
-            </DialogButtonSecondary>
+            </DialogButtonSecondary>}
         </Focusable>
     </PanelSection>
 }
@@ -300,7 +311,8 @@ function SupporterTierVerifyToken(props: SupporterTierStepProps) {
                         await props.refreshLicenseFn();
                         setTimeout(() => props.supporterTierModalCloseRef.current?.(), 3000);
                     } else {
-                        setFieldError(`Token "${token}" is invalid or was requested from another device`)
+                        setFieldError('Token "' + token + '" is invalid, was requested from another device, ' + 
+                            'or the server couldn\'t be reached. Please make sure your device is online, or request a new token.');
                         setToken('');
                     }
                 } catch (e) {

@@ -51,6 +51,10 @@ interface Config {
     sideview_smooth_follow_enabled: boolean;
     sideview_follow_threshold: number;
     curved_display: boolean;
+    multi_tap_enabled: boolean;
+    smooth_follow_track_roll: boolean;
+    smooth_follow_track_pitch: boolean;
+    smooth_follow_track_yaw: boolean;
     ui_view: {
         headset_mode: HeadsetModeOption;
         is_joystick_mode: boolean;
@@ -480,14 +484,61 @@ const Content: VFC = () => {
 
     const advancedSettings = [
         isVrLiteMode && !isJoystickMode && joystickModeButton,
+        isSideviewMode && <Fragment>
+            <PanelSectionRow>
+                <ToggleField
+                    checked={config?.smooth_follow_track_yaw ?? true}
+                    label={"Horizontal follow"}
+                    description={"Smooth follow will track horizontal movements."}
+                    onChange={(smooth_follow_track_yaw) => {
+                        if (config) {
+                            updateConfig({
+                                ...config,
+                                smooth_follow_track_yaw
+                            }).catch(e => setError(e))
+                        }
+                    }}
+                />
+            </PanelSectionRow>
+            <PanelSectionRow>
+                <ToggleField
+                    checked={config?.smooth_follow_track_pitch ?? true}
+                    label={"Vertical follow"}
+                    description={"Smooth follow will track vertical movements."}
+                    onChange={(smooth_follow_track_pitch) => {
+                        if (config) {
+                            updateConfig({
+                                ...config,
+                                smooth_follow_track_pitch
+                            }).catch(e => setError(e))
+                        }
+                    }}
+                />
+            </PanelSectionRow>
+            <PanelSectionRow>
+                <ToggleField
+                    checked={config?.smooth_follow_track_roll ?? false}
+                    label={"Tilt/roll follow"}
+                    description={"Smooth follow will track roll/tilt movements."}
+                    onChange={(smooth_follow_track_roll) => {
+                        if (config) {
+                            updateConfig({
+                                ...config,
+                                smooth_follow_track_roll
+                            }).catch(e => setError(e))
+                        }
+                    }}
+                />
+            </PanelSectionRow>
+        </Fragment>,
         isShaderMode && !driverState?.sbs_mode_enabled && enableSbsButton,
-        config && isVirtualDisplayMode && <PanelSectionRow>
-            <SliderField value={config.look_ahead}
+        isVirtualDisplayMode && <PanelSectionRow>
+            <SliderField value={config?.look_ahead ?? 0}
                          min={0} max={45} notchTicksVisible={true}
                          notchCount={10} notchLabels={LookAheadNotchLabels}
                          step={3}
                          label={"Movement look-ahead"}
-                         description={config.look_ahead > 0 ? "Use Default unless screen is noticeably ahead or behind your movements. May introduce jitter at higher values." : undefined}
+                         description={(config?.look_ahead ?? 0) > 0 ? "Use Default unless screen is noticeably ahead or behind your movements. May introduce jitter at higher values." : undefined}
                          onChange={(look_ahead) => {
                              if (config) {
                                  updateConfig({
@@ -499,8 +550,23 @@ const Content: VFC = () => {
             />
         </PanelSectionRow>,
         <PanelSectionRow>
+            <ToggleField
+                checked={config?.multi_tap_enabled ?? false}
+                label={"Multi-tap enabled"}
+                description={"Enable double-tap to recenter and triple-tap to recalibrate."}
+                onChange={(multi_tap_enabled) => {
+                    if (config) {
+                        updateConfig({
+                            ...config,
+                            multi_tap_enabled
+                        }).catch(e => setError(e))
+                    }
+                }}
+            />
+        </PanelSectionRow>,
+        <PanelSectionRow>
             <ButtonItem disabled={calibrating}
-                        description={!calibrating ? "Or triple-tap your headset." : undefined}
+                        description={config?.multi_tap_enabled ? "Or triple-tap your headset." : undefined}
                         layout="below"
                         onClick={() => writeControlFlags({recalibrate: true})} >
                 {calibrating ?
@@ -521,7 +587,8 @@ const Content: VFC = () => {
                             gamescope_reshade_wayland_disabled: disabled
                         }).catch(e => setError(e))
                     }
-                }}/>
+                }}
+            />
         </PanelSectionRow>,
         isShaderMode && dontShowAgainKeys.length && <PanelSectionRow>
             <ButtonItem description={"Clear your \"Don't show again\" settings."} layout="below" onClick={() => resetDontShowAgain()}>
@@ -768,7 +835,7 @@ const Content: VFC = () => {
                         </Fragment>}
                         {(isVirtualDisplayMode || isSideviewMode && smoothFollowEnabled) && <PanelSectionRow>
                             <ButtonItem disabled={calibrating || dirtyControlFlags.recenter_screen}
-                                        description={!calibrating && !dirtyControlFlags.recenter_screen ? "Or double-tap your headset." : undefined}
+                                        description={!dirtyControlFlags.recenter_screen && config?.multi_tap_enabled ? "Or double-tap your headset." : undefined}
                                         layout="below"
                                         onClick={() => writeControlFlags({recenter_screen: true})} >
                                 {calibrating ?
