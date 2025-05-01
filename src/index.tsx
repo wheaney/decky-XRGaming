@@ -38,6 +38,8 @@ interface Config {
     gamescope_reshade_wayland_disabled: boolean;
     output_mode: OutputMode;
     external_mode: ExternalMode[];
+    vr_lite_invert_x: boolean;
+    vr_lite_invert_y: boolean;
     mouse_sensitivity: number;
     display_zoom: number;
     look_ahead: number;
@@ -697,6 +699,36 @@ const Content: VFC = () => {
                                                  }).catch(e => setError(e))
                                              }
                                          }}
+                            />
+                        </PanelSectionRow>}
+                        {!isDisabled && isVrLiteMode && <PanelSectionRow>
+                            <ToggleField
+                                checked={config?.vr_lite_invert_x ?? false}
+                                label={"Invert X-axis"}
+                                description={"Inverts X-axis movements in VR-Lite mode."}
+                                onChange={(vr_lite_invert_x) => {
+                                    if (config) {
+                                        updateConfig({
+                                            ...config,
+                                            vr_lite_invert_x
+                                        }).catch(e => setError(e))
+                                    }
+                                }}
+                            />
+                        </PanelSectionRow>}
+                        {!isDisabled && isVrLiteMode && <PanelSectionRow>
+                            <ToggleField
+                                checked={config?.vr_lite_invert_y ?? false}
+                                label={"Invert Y-axis"}
+                                description={"Inverts Y-axis movements in VR-Lite mode."}
+                                onChange={(vr_lite_invert_y) => {
+                                    if (config) {
+                                        updateConfig({
+                                            ...config,
+                                            vr_lite_invert_y
+                                        }).catch(e => setError(e))
+                                    }
+                                }}
                             />
                         </PanelSectionRow>}
                         {isSideviewMode && <Fragment>

@@ -1,6 +1,6 @@
 {
   "name": "decky-XRGaming",
-  "version": "1.1.1",
+  "version": "1.1.0",
   "description": "Virtual display and head-tracking modes for XR glasses",
   "type": "module",
   "scripts": {
@@ -56,7 +56,8 @@
       ]
     }
   },
-  "custom_remote_binary": [
+  "remote_binary_bundling": true,
+  "remote_binary": [
     {
       "name": "breezy_vulkan_setup",
       "url": "https://github.com/wheaney/breezy-desktop/releases/download/v1.0.4-decky/breezy_vulkan_setup",
