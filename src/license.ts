@@ -74,7 +74,6 @@ export function featureEnabled(license: License | undefined, featureName: string
 }
 
 export function trialTimeRemaining(license?: License): number | undefined {
-    // TODO - test this
     const features = Object.keys(license?.features ?? {}).filter(feature => {
         if (!SupporterTierFeatureNames.includes(feature)) return false;
 
