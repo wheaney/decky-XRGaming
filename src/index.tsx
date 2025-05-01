@@ -38,6 +38,8 @@ interface Config {
     gamescope_reshade_wayland_disabled: boolean;
     output_mode: OutputMode;
     external_mode: ExternalMode[];
+    vr_lite_invert_x: boolean;
+    vr_lite_invert_y: boolean;
     mouse_sensitivity: number;
     display_zoom: number;
     look_ahead: number;
@@ -51,6 +53,10 @@ interface Config {
     sideview_smooth_follow_enabled: boolean;
     sideview_follow_threshold: number;
     curved_display: boolean;
+    multi_tap_enabled: boolean;
+    smooth_follow_track_roll: boolean;
+    smooth_follow_track_pitch: boolean;
+    smooth_follow_track_yaw: boolean;
     ui_view: {
         headset_mode: HeadsetModeOption;
         is_joystick_mode: boolean;
@@ -328,6 +334,7 @@ const Content: VFC = () => {
                     const remaining = latestState?.device_license?.tiers?.supporter?.fundsToRenew ? Infinity : secondsRemaining(latestState?.device_license?.tiers?.supporter?.endDate);
                     const remainingText = timeRemainingText(remaining);
                     resolve({
+                        licensePresent: !!latestState?.device_license,
                         confirmedToken: latestState?.device_license?.confirmedToken,
                         timeRemainingText: remainingText,
                         fundsNeeded: latestState?.device_license?.tiers?.supporter?.fundsNeededUSD,
@@ -477,32 +484,63 @@ const Content: VFC = () => {
             }}/>
     </PanelSectionRow>;
 
-    const curvedDisplayButton = <PanelSectionRow>
-        <ToggleField
-            checked={config?.curved_display ?? false}
-            label={"Curved display"}
-            description={"Wrap the display around your field of view."}
-            onChange={(curved_display) => {
-                if (config) {
-                    updateConfig({
-                        ...config,
-                        curved_display
-                    }).catch(e => setError(e))
-                }
-            }}/>
-    </PanelSectionRow>;
-
     const advancedSettings = [
         isVrLiteMode && !isJoystickMode && joystickModeButton,
+        isSideviewMode && <Fragment>
+            <PanelSectionRow>
+                <ToggleField
+                    checked={config?.smooth_follow_track_yaw ?? true}
+                    label={"Horizontal follow"}
+                    description={"Smooth follow will track horizontal movements."}
+                    onChange={(smooth_follow_track_yaw) => {
+                        if (config) {
+                            updateConfig({
+                                ...config,
+                                smooth_follow_track_yaw
+                            }).catch(e => setError(e))
+                        }
+                    }}
+                />
+            </PanelSectionRow>
+            <PanelSectionRow>
+                <ToggleField
+                    checked={config?.smooth_follow_track_pitch ?? true}
+                    label={"Vertical follow"}
+                    description={"Smooth follow will track vertical movements."}
+                    onChange={(smooth_follow_track_pitch) => {
+                        if (config) {
+                            updateConfig({
+                                ...config,
+                                smooth_follow_track_pitch
+                            }).catch(e => setError(e))
+                        }
+                    }}
+                />
+            </PanelSectionRow>
+            <PanelSectionRow>
+                <ToggleField
+                    checked={config?.smooth_follow_track_roll ?? false}
+                    label={"Tilt/roll follow"}
+                    description={"Smooth follow will track roll/tilt movements."}
+                    onChange={(smooth_follow_track_roll) => {
+                        if (config) {
+                            updateConfig({
+                                ...config,
+                                smooth_follow_track_roll
+                            }).catch(e => setError(e))
+                        }
+                    }}
+                />
+            </PanelSectionRow>
+        </Fragment>,
         isShaderMode && !driverState?.sbs_mode_enabled && enableSbsButton,
-        isShaderMode && !driverState?.sbs_mode_enabled && !config?.curved_display && curvedDisplayButton,
-        config && isVirtualDisplayMode && <PanelSectionRow>
-            <SliderField value={config.look_ahead}
+        isVirtualDisplayMode && <PanelSectionRow>
+            <SliderField value={config?.look_ahead ?? 0}
                          min={0} max={45} notchTicksVisible={true}
                          notchCount={10} notchLabels={LookAheadNotchLabels}
                          step={3}
                          label={"Movement look-ahead"}
-                         description={config.look_ahead > 0 ? "Use Default unless screen is noticeably ahead or behind your movements. May introduce jitter at higher values." : undefined}
+                         description={(config?.look_ahead ?? 0) > 0 ? "Use Default unless screen is noticeably ahead or behind your movements. May introduce jitter at higher values." : undefined}
                          onChange={(look_ahead) => {
                              if (config) {
                                  updateConfig({
@@ -514,8 +552,23 @@ const Content: VFC = () => {
             />
         </PanelSectionRow>,
         <PanelSectionRow>
+            <ToggleField
+                checked={config?.multi_tap_enabled ?? false}
+                label={"Multi-tap enabled"}
+                description={"Enable double-tap to recenter and triple-tap to recalibrate."}
+                onChange={(multi_tap_enabled) => {
+                    if (config) {
+                        updateConfig({
+                            ...config,
+                            multi_tap_enabled
+                        }).catch(e => setError(e))
+                    }
+                }}
+            />
+        </PanelSectionRow>,
+        <PanelSectionRow>
             <ButtonItem disabled={calibrating}
-                        description={!calibrating ? "Or triple-tap your headset." : undefined}
+                        description={config?.multi_tap_enabled ? "Or triple-tap your headset." : undefined}
                         layout="below"
                         onClick={() => writeControlFlags({recalibrate: true})} >
                 {calibrating ?
@@ -536,7 +589,8 @@ const Content: VFC = () => {
                             gamescope_reshade_wayland_disabled: disabled
                         }).catch(e => setError(e))
                     }
-                }}/>
+                }}
+            />
         </PanelSectionRow>,
         isShaderMode && dontShowAgainKeys.length && <PanelSectionRow>
             <ButtonItem description={"Clear your \"Don't show again\" settings."} layout="below" onClick={() => resetDontShowAgain()}>
@@ -645,6 +699,36 @@ const Content: VFC = () => {
                                                  }).catch(e => setError(e))
                                              }
                                          }}
+                            />
+                        </PanelSectionRow>}
+                        {!isDisabled && isVrLiteMode && <PanelSectionRow>
+                            <ToggleField
+                                checked={config?.vr_lite_invert_x ?? false}
+                                label={"Invert X-axis"}
+                                description={"Inverts X-axis movements in VR-Lite mode."}
+                                onChange={(vr_lite_invert_x) => {
+                                    if (config) {
+                                        updateConfig({
+                                            ...config,
+                                            vr_lite_invert_x
+                                        }).catch(e => setError(e))
+                                    }
+                                }}
+                            />
+                        </PanelSectionRow>}
+                        {!isDisabled && isVrLiteMode && <PanelSectionRow>
+                            <ToggleField
+                                checked={config?.vr_lite_invert_y ?? false}
+                                label={"Invert Y-axis"}
+                                description={"Inverts Y-axis movements in VR-Lite mode."}
+                                onChange={(vr_lite_invert_y) => {
+                                    if (config) {
+                                        updateConfig({
+                                            ...config,
+                                            vr_lite_invert_y
+                                        }).catch(e => setError(e))
+                                    }
+                                }}
                             />
                         </PanelSectionRow>}
                         {isSideviewMode && <Fragment>
@@ -783,7 +867,7 @@ const Content: VFC = () => {
                         </Fragment>}
                         {(isVirtualDisplayMode || isSideviewMode && smoothFollowEnabled) && <PanelSectionRow>
                             <ButtonItem disabled={calibrating || dirtyControlFlags.recenter_screen}
-                                        description={!calibrating && !dirtyControlFlags.recenter_screen ? "Or double-tap your headset." : undefined}
+                                        description={!dirtyControlFlags.recenter_screen && config?.multi_tap_enabled ? "Or double-tap your headset." : undefined}
                                         layout="below"
                                         onClick={() => writeControlFlags({recenter_screen: true})} >
                                 {calibrating ?
@@ -792,7 +876,20 @@ const Content: VFC = () => {
                                 }
                             </ButtonItem>
                         </PanelSectionRow>}
-                        {isShaderMode && (driverState?.sbs_mode_enabled || config?.curved_display) && curvedDisplayButton}
+                        {isShaderMode && <PanelSectionRow>
+                            <ToggleField
+                                checked={config?.curved_display ?? false}
+                                label={"Curved display"}
+                                description={"Wrap the display around your field of view."}
+                                onChange={(curved_display) => {
+                                    if (config) {
+                                        updateConfig({
+                                            ...config,
+                                            curved_display
+                                        }).catch(e => setError(e))
+                                    }
+                                }}/>
+                        </PanelSectionRow>}
                         {
                             // Always show this button if SBS is enabled, so that the user can disable it through the UI.
                             // Once disabled, it will disappear entirely if not in virtual display mode.

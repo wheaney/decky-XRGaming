@@ -16,7 +16,8 @@ settings = SettingsManager(name="settings", settings_directory=decky.DECKY_PLUGI
 settings.read()
 
 ipc = XRDriverIPC(logger = decky.logger, 
-                  config_home = os.path.join(decky.DECKY_USER_HOME, ".config"))
+                  config_home = os.path.join(decky.DECKY_USER_HOME, ".config"),
+                  supported_output_modes = ['virtual_display', 'sideview'])
 
 class Plugin:
     def __init__(self):
@@ -109,6 +110,7 @@ class Plugin:
 
         # Set the USER environment variable for this command
         env_copy = os.environ.copy()
+        del env_copy["LD_LIBRARY_PATH"]
         env_copy["USER"] = decky.DECKY_USER
 
         setup_script_path = os.path.dirname(__file__) + "/bin/breezy_vulkan_setup"
@@ -170,6 +172,7 @@ class Plugin:
 
         # Set the USER environment variable for this command
         env_copy = os.environ.copy()
+        del env_copy["LD_LIBRARY_PATH"]
         env_copy["USER"] = decky.DECKY_USER
 
         try:

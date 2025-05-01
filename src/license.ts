@@ -1,6 +1,11 @@
 
 
-export type FeatureStatus = "off" | "trial" | "on"
+export enum FeatureStatus {
+    Off = "off",
+    Trial = "trial",
+    On = "on"
+}
+
 export type FeatureTierPeriodType = "monthly" | "yearly" | "lifetime";
 export type TierPeriodFundsNeeded = { [type in FeatureTierPeriodType]?: number }
 
@@ -8,6 +13,7 @@ export interface LicenseFeature {
     status: FeatureStatus;
     endDate?: number;
 }
+
 
 // TODO - utilize fundsNeededByPeriod instead of fundsToRenew
 export interface LicenseTier {
@@ -36,6 +42,8 @@ export interface License {
     };
 }
 
+export const SupporterTierFeatureNames = ["sbs", "smooth_follow"];
+
 export function toSec(date: number) {
     return date / 1000;
 }
@@ -62,11 +70,15 @@ export function featureEnabled(license: License | undefined, featureName: string
 
     const now = toSec(Date.now());
     const secondsRemaining = (feature.endDate ?? Infinity) - now;
-    return (feature?.status === "on" || feature?.status === "trial") && secondsRemaining > 0;
+    return (feature?.status === FeatureStatus.On || feature?.status === FeatureStatus.Trial) && secondsRemaining > 0;
 }
 
 export function trialTimeRemaining(license?: License): number | undefined {
-    const features = Object.keys(license?.features ?? {}).filter(feature => license?.features?.[feature].status === "trial");
+    const features = Object.keys(license?.features ?? {}).filter(feature => {
+        if (!SupporterTierFeatureNames.includes(feature)) return false;
+
+        return license?.features?.[feature].status === FeatureStatus.Trial;
+    });
     if (features.length === 0) return;
 
     const now = toSec(Date.now());
@@ -106,14 +118,14 @@ export function timeRemainingText(seconds?: number): string | undefined {
 export function featureSubtext(license: License | undefined, featureName: string): string | undefined {
     const now = toSec(Date.now());
     const feature = license?.features?.[featureName];
-    if ((feature?.status ?? "off") === "off") return "Supporter Tier feature";
+    if ((feature?.status ?? FeatureStatus.Off) === FeatureStatus.Off) return "Supporter Tier feature";
 
     const secondsRemaining = (feature?.endDate ?? Infinity) - now;
     if (secondsRemaining < 0) {
         switch (feature?.status) {
-            case "on":
+            case FeatureStatus.On:
                 return "Supporter Tier expired";
-            case "trial":
+            case FeatureStatus.Trial:
                 return "Trial period expired";
         }
         return;
@@ -122,17 +134,17 @@ export function featureSubtext(license: License | undefined, featureName: string
     const timeRemaining = timeRemainingText(secondsRemaining);
     if (timeRemaining) {
         switch (feature?.status) {
-            case "on":
+            case FeatureStatus.On:
                 return `Supporter Tier: ${timeRemaining} left`;
-            case "trial":
+            case FeatureStatus.Trial:
                 return `Trial feature: ${timeRemaining} left`;
         }
     }
 
     switch (feature?.status) {
-        case "on":
+        case FeatureStatus.On:
             return "Supporter Tier feature";
-        case "trial":
+        case FeatureStatus.Trial:
             return "Supporter Tier trial feature";
     }
     return;

@@ -1,12 +1,19 @@
 import {
     ModalRoot,
     PanelSection,
-    gamepadDialogClasses, TextField, Spinner, DialogButtonPrimary, DialogButtonSecondary, Focusable, Navigation
+    gamepadDialogClasses, 
+    TextField, 
+    Spinner, 
+    DialogButtonPrimary, 
+    DialogButtonSecondary, 
+    Focusable, 
+    Navigation
 } from '@decky/ui';
 import {FC, MutableRefObject, useEffect, useState} from "react";
 import {QRCodeSVG} from "qrcode.react";
 
 enum SupporterTierView {
+    NoLicense,
     Enroll,
     Renew,
     Donate,
@@ -45,6 +52,7 @@ function SupporterTierFeaturesList() {
 }
 
 interface SupportTierModalDetails {
+    licensePresent: boolean;
     confirmedToken?: boolean;
     timeRemainingText?: string;
     fundsNeeded?: number;
@@ -84,9 +92,60 @@ function SupporterTierAboutEnrollBlurb(props: SupporterTierAboutBlurbProps) {
         {props.timeRemainingText && <span>
                 Your <b>Supporter Tier</b> trial ends in {props.timeRemainingText}.
             </span>} 
-            Donate just ${props.fundsNeeded} USD to get Supporter Tier access for 12 months, 
+            Donate ${props.fundsNeeded} USD to get Supporter Tier access for 12 months, 
             or ${props.lifetimeFundsNeeded} USD for lifetime access.
     </p>
+}
+
+function getView(props: SupportTierModalDetails) {
+    if (!props.licensePresent) return SupporterTierView.NoLicense;
+
+    if (props.confirmedToken && props.timeRemainingText) {
+        return SupporterTierView.Renew;
+    } else {
+        return SupporterTierView.Enroll;
+    }
+}
+
+function SupporterTierNoLicense(props: SupporterTierStepProps) {
+    const [isFetchingLicense, setFetchingLicense] = useState(false);
+
+    function fetchLicense() {
+        (async () => {
+            setFetchingLicense(true);
+            const res = await props.refreshLicenseFn();
+            if (res.isRenewed) {
+                props.supporterTierModalCloseRef.current?.();
+            } else if (res.licensePresent) {
+                props.changeViewFn(getView(res));
+            }
+            setFetchingLicense(false);
+        })().catch(() => setFetchingLicense(false));
+    }
+
+    return <PanelSection title={'Supporter Tier - Device offline'}>
+        <p style={{textAlign: 'center'}}>
+            Your device needs to be connected to the internet to retrieve your Supporter Tier status.
+        </p>
+        <Focusable
+            style={{
+                paddingTop: '25px',
+                display: 'flex',
+                flexDirection: 'row-reverse',
+                justifyContent: 'space-between',
+                gap: '50px'
+            }}
+            flow-children={"horizontal"}
+        >
+            <DialogButtonPrimary  onClick={fetchLicense} disabled={isFetchingLicense}>
+                {isFetchingLicense && <span>
+                    <Spinner style={{height: '16px', marginRight: 10}}/>
+                    Retrieving license
+                </span> ||
+                "I'm online now"}
+            </DialogButtonPrimary>
+        </Focusable>
+    </PanelSection>
 }
 
 interface SupporterTierAboutProps extends SupporterTierStepProps {
@@ -97,6 +156,7 @@ interface SupporterTierAboutProps extends SupporterTierStepProps {
 
 function SupporterTierAbout(props: SupporterTierAboutProps) {
     const [isFetchingLicense, setFetchingLicense] = useState(false);
+    const [showTryNewToken, setShowTryNewToken] = useState(false);
     const [timeRemainingText, setTimeRemainingText] = useState(props.timeRemainingText);
     const [fundsNeeded, setFundsNeeded] = useState(props.fundsNeeded);
     const [lifetimeFundsNeeded, setLifetimeFundsNeeded] = useState(props.lifetimeFundsNeeded);
@@ -111,6 +171,7 @@ function SupporterTierAbout(props: SupporterTierAboutProps) {
                 setTimeRemainingText(res.timeRemainingText);
                 setFundsNeeded(res.fundsNeeded);
                 setLifetimeFundsNeeded(res.lifetimeFundsNeeded);
+                setShowTryNewToken(true);
             }
             setFetchingLicense(false);
         })().catch(() => setFetchingLicense(false));
@@ -131,14 +192,17 @@ function SupporterTierAbout(props: SupporterTierAboutProps) {
             }}
             flow-children={"horizontal"}
         >
-            <DialogButtonPrimary onClick={() => props.changeViewFn(SupporterTierView.Donate)}>{props.primaryButtonLabel}</DialogButtonPrimary>
+            <DialogButtonPrimary onClick={() => props.changeViewFn(SupporterTierView.Donate)} disabled={isFetchingLicense}>{props.primaryButtonLabel}</DialogButtonPrimary>
+            {showTryNewToken && <DialogButtonSecondary onClick={() => props.changeViewFn(SupporterTierView.VerifyToken)} disabled={isFetchingLicense}>
+                Try a new token
+            </DialogButtonSecondary> ||
             <DialogButtonSecondary onClick={alreadyDonatedOnClick} disabled={isFetchingLicense}>
                 {isFetchingLicense && <span>
                     <Spinner style={{height: '16px', marginRight: 10}}/>
                     Refreshing license
                 </span> ||
                 "I've already donated"}
-            </DialogButtonSecondary>
+            </DialogButtonSecondary>}
         </Focusable>
     </PanelSection>
 }
@@ -247,7 +311,8 @@ function SupporterTierVerifyToken(props: SupporterTierStepProps) {
                         await props.refreshLicenseFn();
                         setTimeout(() => props.supporterTierModalCloseRef.current?.(), 3000);
                     } else {
-                        setFieldError(`Token "${token}" is invalid or was requested from another device`)
+                        setFieldError('Token "' + token + '" is invalid, was requested from another device, ' + 
+                            'or the server couldn\'t be reached. Please make sure your device is online, or request a new token.');
                         setToken('');
                     }
                 } catch (e) {
@@ -378,9 +443,7 @@ function SupporterTierRequestToken(props: SupporterTierStepProps) {
 }
 
 export function SupporterTierModal(props: SupporterTierModalProps) {
-    const {confirmedToken, timeRemainingText} = props;
-    const [view, setView] =
-        useState(confirmedToken && timeRemainingText ? SupporterTierView.Renew : SupporterTierView.Enroll);
+    const [view, setView] = useState(getView(props));
     const stepProps: SupporterTierStepProps = {
         ...props,
         changeViewFn: setView
@@ -388,6 +451,9 @@ export function SupporterTierModal(props: SupporterTierModalProps) {
 
     let View: FC<SupporterTierStepProps>;
     switch (view) {
+        case SupporterTierView.NoLicense:
+            View = SupporterTierNoLicense;
+            break;
         case SupporterTierView.Renew:
             View = SupporterTierRenew;
             break;

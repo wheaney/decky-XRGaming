@@ -45,15 +45,15 @@ setupSha256=$(sha256sum "${tmpdir}/breezy_vulkan_setup" | cut -d ' ' -f 1)
 echo "Using binary sha256sum: ${binarySha256}"
 echo "Using setup sha256sum: ${setupSha256}"
 
-# insert the urls and sha256sums into the package.json at the paths like custom_remote_binary[0].url and custom_remote_binary[0].sha256hash
+# insert the urls and sha256sums into the package.json at the paths like remote_binary[0].url and remote_binary[0].sha256hash
 jq --arg binaryUrl "${binaryUrl}" \
    --arg binarySha256 "${binarySha256}" \
    --arg setupUrl "${setupUrl}" \
    --arg setupSha256 "${setupSha256}" \
-   '.custom_remote_binary[0].url = $setupUrl |
-      .custom_remote_binary[0].sha256hash = $setupSha256 |
-      .custom_remote_binary[1].url = $binaryUrl |
-    .custom_remote_binary[1].sha256hash = $binarySha256' \
+   '.remote_binary[0].url = $setupUrl |
+      .remote_binary[0].sha256hash = $setupSha256 |
+      .remote_binary[1].url = $binaryUrl |
+    .remote_binary[1].sha256hash = $binarySha256' \
     package.json > "${tmpdir}/package.json"
 
 cp "${tmpdir}/package.json" package.json
