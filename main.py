@@ -86,7 +86,7 @@ class Plugin:
             if (await self.get_breezy_manifest_checksum()) != settings.getSetting(MANIFEST_CHECKSUM_KEY):
                 return False
 
-            output = subprocess.check_output([decky.DECKY_USER_HOME + "/.local/bin/breezy_vulkan_verify"], stderr=subprocess.STDOUT)
+            output = subprocess.check_output(['su', '-l', '-c', 'XDG_RUNTIME_DIR=/run/user/1000 ' + decky.DECKY_USER_HOME + '/.local/bin/breezy_vulkan_verify', decky.DECKY_USER], stderr=subprocess.STDOUT)
             success = output.strip() == b"Verification succeeded"
             if not success:
                 decky.logger.error(f"Error verifying breezy installation {output}")
