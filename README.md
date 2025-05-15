@@ -189,7 +189,7 @@ To keep up on the latest news, discuss, get help, report bugs, etc... you can fo
 
 ## Uninstalling
 
-If you wish to completely remove the installation, run the following: `sudo ~/bin/breezy_vulkan_uninstall`. For Steam Deck users, you can uninstall the plugin via the Decky interface.
+If you wish to completely remove the installation, run the following: `sudo ~/.local/bin/breezy_vulkan_uninstall`. For Steam Deck users, you can uninstall the plugin via the Decky interface.
 
 ## Data Privacy Notice
 
