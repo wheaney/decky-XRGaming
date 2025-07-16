@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+
+# exit when any command fails
+set -e
+
+zip_path="$1"
+zip_name=$(basename "$zip_path")
+
+# the next 3 lines are needed if the zip file is downloaded from the github actions
+# as the resulting artifact contains a zip within a zip
+if [[ "--unzip" == "$2" ]]; then
+  tmpdir=$(mktemp -d)
+  unzip "$zip_path" -d "$tmpdir"
+  zip_path="$tmpdir/$zip_name"
+fi
+
+if [ -z "${DECK_IP}" ]; then
+  # The environment variable is not set, prompt the user for its value
+  read -p "Enter your Steam Deck's IP address: " deckip
+else
+  # The environment variable is set, assign its value to the variable
+  deckip="${DECK_IP}"
+fi
+
+# Prompt the user for the password
+read -s -p "Enter the password for deck@${deckip}: " password
+
+# Use sshpass and scp to copy the file
+output=$(sshpass -p "$password" scp -o PreferredAuthentications="password" "$zip_path" deck@"$deckip":/home/deck/Downloads)
+echo "$output"
+
+output=$(sshpass -p "$password" ssh -o PreferredAuthentications="password" deck@${deckip} "set -e; echo '${password}' | sudo -S chmod -R ug+rw /home/deck/homebrew/; mkdir -p /home/deck/homebrew/pluginloader; echo '${password}' | sudo -S rm -rf /home/deck/homebrew/plugins/$pluginname; echo '${password}' | sudo -S unzip /home/deck/Downloads/$zip_name -d /home/deck/homebrew/plugins; echo '${password}' | sudo -S systemctl restart plugin_loader")
+echo "$output"
+
+# Remove temporary directory
+rm -rf "$tmpdir"
+
+if [ $? -ne 0 ]; then
+    echo "An error occurred"
+    exit 1
+fi
+
+echo "Copied and installed!"
+
+# Clear the password variable
+unset password
