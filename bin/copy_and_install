@@ -3,6 +3,10 @@
 # exit when any command fails
 set -e
 
+workspaceFolder=$(pwd)
+workspaceFolderBasename="${workspaceFolder%/}"
+pluginname="${workspaceFolderBasename##*/}"
+
 zip_path="$1"
 zip_name=$(basename "$zip_path")
 
