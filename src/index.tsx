@@ -407,6 +407,7 @@ const Content: VFC = () => {
 
     const smoothFollowFeature = featureDetails(driverState?.device_license, "smooth_follow");
     const smoothFollowEnabled = (config?.sideview_smooth_follow_enabled && smoothFollowFeature.enabled) ?? false;
+    const is3DoFMode = isVirtualDisplayMode || isSideviewMode && smoothFollowEnabled;
     const sbsFeature = featureDetails(driverState?.device_license, "sbs");
 
     const sbsFirmwareUpdateNeeded = !driverState?.sbs_mode_supported && driverState?.firmware_update_recommended;
@@ -865,7 +866,7 @@ const Content: VFC = () => {
                             </PanelSectionRow>
                             {driverState?.sbs_mode_enabled && sbsDisplayDistanceSlider}
                         </Fragment>}
-                        {(isVirtualDisplayMode || isSideviewMode && smoothFollowEnabled) && <PanelSectionRow>
+                        {is3DoFMode && <PanelSectionRow>
                             <ButtonItem disabled={calibrating || dirtyControlFlags.recenter_screen}
                                         description={!dirtyControlFlags.recenter_screen && config?.multi_tap_enabled ? "Or double-tap your headset." : undefined}
                                         layout="below"
@@ -876,7 +877,7 @@ const Content: VFC = () => {
                                 }
                             </ButtonItem>
                         </PanelSectionRow>}
-                        {isShaderMode && <PanelSectionRow>
+                        {is3DoFMode && <PanelSectionRow>
                             <ToggleField
                                 checked={config?.curved_display ?? false}
                                 label={"Curved display"}
