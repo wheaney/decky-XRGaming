@@ -57,6 +57,8 @@ interface Config {
     smooth_follow_track_roll: boolean;
     smooth_follow_track_pitch: boolean;
     smooth_follow_track_yaw: boolean;
+    neck_saver_horizontal_multiplier: number;
+    neck_saver_vertical_multiplier: number;
     ui_view: {
         headset_mode: HeadsetModeOption;
         is_joystick_mode: boolean;
@@ -547,6 +549,36 @@ const Content: VFC = () => {
                                  updateConfig({
                                      ...config,
                                      look_ahead
+                                 }).catch(e => setError(e))
+                             }
+                         }}
+            />
+        </PanelSectionRow>,
+        <PanelSectionRow>
+            <SliderField value={config?.neck_saver_horizontal_multiplier ?? 1.0}
+                         min={1.0} max={2.5} step={0.1}
+                         label={"Neck-saver horizontal"}
+                         description={"Increase to amplify left/right neck movements."}
+                         onChange={(neck_saver_horizontal_multiplier) => {
+                             if (config) {
+                                 updateConfig({
+                                     ...config,
+                                     neck_saver_horizontal_multiplier
+                                 }).catch(e => setError(e))
+                             }
+                         }}
+            />
+        </PanelSectionRow>,
+        <PanelSectionRow>
+            <SliderField value={config?.neck_saver_vertical_multiplier ?? 1.0}
+                         min={1.0} max={2.5} step={0.1}
+                         label={"Neck-saver vertical"}
+                         description={"Increase to amplify up/down neck movements."}
+                         onChange={(neck_saver_vertical_multiplier) => {
+                             if (config) {
+                                 updateConfig({
+                                     ...config,
+                                     neck_saver_vertical_multiplier
                                  }).catch(e => setError(e))
                              }
                          }}
