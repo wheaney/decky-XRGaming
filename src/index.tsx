@@ -466,7 +466,7 @@ const Content: VFC = () => {
             }
             return prev;
         });
-    }, [config?.display_distance, config?.display_size])
+    }, [config?.display_distance, config?.display_size, driverState?.sbs_mode_enabled, driverState?.connected_device_pose_has_position]);
 
     const showSupporterTierDetailsFn = useShowSupporterTierDetails();
 
