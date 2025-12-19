@@ -274,7 +274,6 @@ const Content: VFC = () => {
     const [error, setError] = useState<string>();
     const [dontShowAgainKeys, setDontShowAgainKeys] = useState<string[]>([]);
     const [dirtyHeadsetMode, stableHeadsetMode, setDirtyHeadsetMode] = useStableState<HeadsetModeOption | undefined>(undefined, HeadsetModeConfirmationTimeoutMs);
-    const [displaySizeIntended, setDisplaySizeIntended] = useState<number>();
 
     async function refreshConfig() {
         try {
@@ -410,69 +409,13 @@ const Content: VFC = () => {
         })
     }
 
-    function getDisplayDistance(config?: Config, driverState?: DriverState): number {
-        if (driverState?.sbs_mode_enabled || driverState?.connected_device_pose_has_position) {
-            return config?.display_distance ?? 1.0;
-        }
-
-        return 1.0;
-    }
-
-    // these asynchronous calls should execute ONLY one time, hence the empty array as the second argument
-    useEffect(() => {
-        refreshConfig().catch((err) => setError(err));
-        checkInstallation().catch((err) => setError(err));
-        refreshDriverState().catch((err) => setError(err));
-        refreshDontShowAgainKeys().catch((err) => setError(err));
-    }, []);
-
-    useEffect(() => {
-        // clear the dirty control flags if they're reflected in the state, or stale
-        if (dirtyControlFlags.last_updated &&
-            (Date.now() - dirtyControlFlags.last_updated) > DirtyControlFlagsExpireMilliseconds ||
-            driverState && (
-                dirtyControlFlags.sbs_mode == 'enable' && driverState.sbs_mode_enabled ||
-                dirtyControlFlags.sbs_mode == 'disable' && !driverState.sbs_mode_enabled
-            )
-        ) {
-            setDirtyControlFlags({})
-        }
-    }, [driverState])
-
-    // this effect will be triggered after headsetMode has been stable for a certain period of time
-    useEffect(() => {
-        if (stableHeadsetMode && config && driverState) {
-            onChangeTutorial(`headset_mode_${stableHeadsetMode}${isVulkanOnlyMode ? '_vulkan_only' : ''}`, driverState.connected_device_brand,
-                driverState.connected_device_model, () => {
-                updateConfig({
-                    ...config,
-                    ui_view: {
-                        headset_mode: stableHeadsetMode,
-                        is_joystick_mode: isJoystickMode
-                    }
-                }).catch(e => setError(e))
-            }, dontShowAgainKeys, setDontShowAgain);
-        }
-    }, [stableHeadsetMode])
-
-    useEffect(() => {
-        if (!config) return;
-        const normalizedDistance = Math.max(getDisplayDistance(config, driverState), NormalizedSliderMin);
-        const storedSize = config.display_size ?? normalizedDistance;
-        const derivedIntended = clampValue(storedSize / normalizedDistance, NormalizedSliderMin, NormalizedSliderMax);
-        setDisplaySizeIntended((prev) => {
-            if (prev === undefined || Math.abs(prev - derivedIntended) > 0.0001) {
-                return derivedIntended;
-            }
-            return prev;
-        });
-    }, [config?.display_distance, config?.display_size, driverState?.sbs_mode_enabled, driverState?.connected_device_pose_has_position]);
-
     const showSupporterTierDetailsFn = useShowSupporterTierDetails();
 
+    const asyncDataLoaded = !!config && !!driverState;
     const deviceConnected = !!driverState?.connected_device_brand && !!driverState?.connected_device_model
     const deviceName = deviceConnected ? `${driverState?.connected_device_brand} ${driverState?.connected_device_model}` : "No device connected"
-    const headsetMode: HeadsetModeOption = dirtyHeadsetMode ?? config?.ui_view.headset_mode ?? "disabled"
+    const headsetModeConfig = config?.ui_view.headset_mode ?? "disabled"
+    const headsetMode: HeadsetModeOption = dirtyHeadsetMode ?? headsetModeConfig
     const isDisabled = !deviceConnected || headsetMode === "disabled"
     const isVirtualDisplayMode = !isDisabled && headsetMode === "virtual_display"
     const isSideviewMode = !isDisabled && headsetMode === "sideview"
@@ -488,7 +431,26 @@ const Content: VFC = () => {
     const calibrating = dirtyControlFlags.recalibrate || driverState?.calibration_state === "CALIBRATING";
     const supporterTier = supporterTierDetails(driverState?.device_license);
 
+    const smoothFollowFeature = featureDetails(driverState?.device_license, "smooth_follow");
+    const smoothFollowEnabled = (config?.sideview_smooth_follow_enabled && smoothFollowFeature.enabled) ?? false;
+    const sideviewDisplayMaxNormalized = smoothFollowEnabled ? NormalizedSliderMax : 1.0;
+    const is3DoFMode = isVirtualDisplayMode || isSideviewMode && smoothFollowEnabled;
+    const sbsFeature = featureDetails(driverState?.device_license, "sbs");
     const poseHasPosition = driverState?.connected_device_pose_has_position ?? false;
+
+    // we show the display distance slider as soon as the user selects the headset mode, even if it's still dirty
+    const showDisplayDistanceSlider = poseHasPosition && isVirtualDisplayMode || !!driverState?.sbs_mode_enabled && is3DoFMode;
+
+    // same as isVirtualDisplayMode, but only changes once the value is stored and actually affecting the behavior
+    const isVirtualDisplayModeConfig = deviceConnected && headsetModeConfig === "virtual_display"
+
+    // there are some cases where the display size is stored exactly as shown to the user, and other cases
+    // where we have to adjust it based on distance to get it to appear as the desired size
+    // e.g. a display at 1/4 the distance will appear 4x larger unless the size is adjusted down accordingly
+    const isSizeAdjustedByDistance = isVirtualDisplayModeConfig && (poseHasPosition || !!driverState?.sbs_mode_enabled);
+    const [wasSizeAdjustedByDistance, setWasSizeAdjustedByDistance] = useState<boolean>();
+    const displayDistance = showDisplayDistanceSlider ? (config?.display_distance ?? 1.0) : 1.0;
+
     const measurementUnits: MeasurementUnits = config?.measurement_units ?? "cm";
     const measurementUnitsLabel = measurementUnits === "cm" ? "cm" : "in";
     const measurementUnitsMenuLabel = measurementUnits === "cm" ? "Centimeters" : "Inches";
@@ -527,25 +489,82 @@ const Content: VFC = () => {
     const displayDistanceNotchLabels = distanceMeasurementLabels ?? DisplayDisanceNotchLabels;
     const displayDistanceLabel = poseHasPosition ? `Display distance (${measurementUnitsLabel})` : "Display distance";
     const displaySizeLabel = "Display size";
-    const showDisplayDistanceSlider = poseHasPosition || !!driverState?.sbs_mode_enabled;
-    const normalizedDisplayDistance = Math.max(getDisplayDistance(config, driverState), NormalizedSliderMin);
-    const storedDisplaySize = config?.display_size ?? normalizedDisplayDistance;
+    const normalizedDisplayDistance = Math.max(displayDistance, NormalizedSliderMin);
+    const storedDisplaySize = config?.display_size ?? 1.0;
     const derivedDisplaySizeIntended = clampValue(storedDisplaySize / normalizedDisplayDistance, NormalizedSliderMin, NormalizedSliderMax);
-    const effectiveDisplaySizeIntended = displaySizeIntended ?? derivedDisplaySizeIntended;
+    const [displaySizeIntended, setDisplaySizeIntended] = useState<number>(derivedDisplaySizeIntended);
     const displaySizeSliderValue = (maxNormalized: number) =>
-        clampValue(effectiveDisplaySizeIntended, NormalizedSliderMin, maxNormalized);
+        clampValue(displaySizeIntended, NormalizedSliderMin, maxNormalized);
     const displaySizeFromSlider = (sliderValue: number, distanceOverride?: number) => {
         const distance = Math.max(distanceOverride ?? normalizedDisplayDistance, NormalizedSliderMin);
-        return clampValue(sliderValue, NormalizedSliderMin, NormalizedSliderMax) * distance;
+        const sizeMultiplier = isSizeAdjustedByDistance ? distance : 1.0;
+        return clampValue(sliderValue, NormalizedSliderMin, NormalizedSliderMax) * sizeMultiplier;
     };
-
-    const smoothFollowFeature = featureDetails(driverState?.device_license, "smooth_follow");
-    const smoothFollowEnabled = (config?.sideview_smooth_follow_enabled && smoothFollowFeature.enabled) ?? false;
-    const sideviewDisplayMaxNormalized = smoothFollowEnabled ? NormalizedSliderMax : 1.0;
     const sideviewDisplayValue = displaySizeSliderValue(sideviewDisplayMaxNormalized);
     const virtualDisplaySizeValue = displaySizeSliderValue(NormalizedSliderMax);
-    const is3DoFMode = isVirtualDisplayMode || isSideviewMode && smoothFollowEnabled;
-    const sbsFeature = featureDetails(driverState?.device_license, "sbs");
+
+    // these asynchronous calls should execute ONLY one time, hence the empty array as the second argument
+    useEffect(() => {
+        refreshConfig().catch((err) => setError(err));
+        checkInstallation().catch((err) => setError(err));
+        refreshDriverState().catch((err) => setError(err));
+        refreshDontShowAgainKeys().catch((err) => setError(err));
+    }, []);
+
+    useEffect(() => {
+        if (asyncDataLoaded) {
+            writeConfig({
+                ...config,
+                display_size: displaySizeFromSlider(derivedDisplaySizeIntended, displayDistance)
+            }).catch(e => setError(e));
+            setDisplaySizeIntended(derivedDisplaySizeIntended);
+            setWasSizeAdjustedByDistance(isSizeAdjustedByDistance);
+        }
+    }, [asyncDataLoaded]);
+
+    useEffect(() => {
+        // clear the dirty control flags if they're reflected in the state, or stale
+        if (dirtyControlFlags.last_updated &&
+            (Date.now() - dirtyControlFlags.last_updated) > DirtyControlFlagsExpireMilliseconds ||
+            driverState && (
+                dirtyControlFlags.sbs_mode == 'enable' && driverState.sbs_mode_enabled ||
+                dirtyControlFlags.sbs_mode == 'disable' && !driverState.sbs_mode_enabled
+            )
+        ) {
+            setDirtyControlFlags({})
+        }
+    }, [driverState])
+
+    // this effect will be triggered after headsetMode has been stable for a certain period of time
+    useEffect(() => {
+        if (stableHeadsetMode && config && driverState) {
+            onChangeTutorial(`headset_mode_${stableHeadsetMode}${isVulkanOnlyMode ? '_vulkan_only' : ''}`, driverState.connected_device_brand,
+                driverState.connected_device_model, () => {
+                updateConfig({
+                    ...config,
+                    ui_view: {
+                        headset_mode: stableHeadsetMode,
+                        is_joystick_mode: isJoystickMode
+                    }
+                }).catch(e => setError(e))
+            }, dontShowAgainKeys, setDontShowAgain);
+        }
+    }, [stableHeadsetMode])
+
+    useEffect(() => {
+        if (!asyncDataLoaded) return;
+
+        if (wasSizeAdjustedByDistance !== undefined && isSizeAdjustedByDistance !== wasSizeAdjustedByDistance) {
+            // something has caused the visibility of display distance slider to change, so we need to change
+            // the stored display size value since it's derived from the user's intended size and distance
+            writeConfig({
+                ...config,
+                display_size: displaySizeFromSlider(displaySizeIntended, displayDistance)
+            }).catch(e => setError(e))
+
+            setWasSizeAdjustedByDistance(isSizeAdjustedByDistance);
+        }
+    }, [isSizeAdjustedByDistance]);
 
     const sbsFirmwareUpdateNeeded = !driverState?.sbs_mode_supported && driverState?.firmware_update_recommended;
     let sbsDescription = "";
@@ -584,7 +603,7 @@ const Content: VFC = () => {
     </PanelSectionRow>;
 
     const displayDistanceRange = measurementSliderRange(fullDistanceCm, measurementEnabledForDistance, NormalizedSliderMin, NormalizedSliderMax);
-    const displayDistanceSliderValue = sliderValueForMeasurement(getDisplayDistance(config, driverState), fullDistanceCm, measurementEnabledForDistance);
+    const displayDistanceSliderValue = sliderValueForMeasurement(displayDistance, fullDistanceCm, measurementEnabledForDistance);
     const displayDistanceSlider = <PanelSectionRow>
         <SliderField value={displayDistanceSliderValue}
                     min={displayDistanceRange?.min ?? NormalizedSliderMin}
@@ -601,11 +620,10 @@ const Content: VFC = () => {
                     onChange={(rawValue) => {
                         if (config) {
                             const display_distance = normalizedValueFromSlider(rawValue, fullDistanceCm, measurementEnabledForDistance, NormalizedSliderMax);
-                            const intendedValue = effectiveDisplaySizeIntended;
                             updateConfig({
                                 ...config,
                                 display_distance,
-                                display_size: displaySizeFromSlider(intendedValue, display_distance)
+                                display_size: displaySizeFromSlider(displaySizeIntended, display_distance)
                             }).catch(e => setError(e))
                         }
                     }}
