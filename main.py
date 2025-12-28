@@ -11,6 +11,7 @@ from PyXRLinuxDriverIPC.xrdriveripc import XRDriverIPC
 INSTALLED_VERSION_SETTING_KEY = "installed_from_plugin_version"
 DONT_SHOW_AGAIN_SETTING_KEY = "dont_show_again"
 MANIFEST_CHECKSUM_KEY = "manifest_checksum"
+MEASUREMENT_UNITS_SETTING_KEY = "measurement_units"
 
 settings = SettingsManager(name="settings", settings_directory=decky.DECKY_PLUGIN_SETTINGS_DIR)
 settings.read()
@@ -25,10 +26,29 @@ class Plugin:
         self.breezy_installing = False
     
     async def retrieve_config(self):
-        return ipc.retrieve_config()
+        try:
+            config = ipc.retrieve_config()
+            measurement_units = settings.getSetting(MEASUREMENT_UNITS_SETTING_KEY)
+            if measurement_units is not None:
+                config['measurement_units'] = measurement_units
+            return config
+        except Exception as e:
+            decky.logger.error(f"Error retrieving config {e}")
+            return None
     
     async def write_config(self, config):
-        return ipc.write_config(config)
+        try:
+            config_copy = config.copy()
+            if 'measurement_units' in config_copy:
+                measurement_units = config_copy['measurement_units']
+                del config_copy['measurement_units']
+                settings.setSetting(MEASUREMENT_UNITS_SETTING_KEY, measurement_units)
+            ipc.write_config(config_copy)
+
+            return config
+        except Exception as e:
+            decky.logger.error(f"Error writing config {e}")
+            return None
 
     async def write_control_flags(self, control_flags):
         ipc.write_control_flags(control_flags)
@@ -114,7 +134,7 @@ class Plugin:
         env_copy["USER"] = decky.DECKY_USER
 
         setup_script_path = os.path.dirname(__file__) + "/bin/breezy_vulkan_setup"
-        binary_path = os.path.dirname(__file__) + "/bin/breezyVulkan-x86_64.tar.gz"
+        binary_path = os.path.dirname(__file__) + "/bin/breezyVulkan-x86_64.steamos.tar.gz"
         attempt = 0
         while attempt < 3:
             try:

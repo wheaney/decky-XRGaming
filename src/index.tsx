@@ -41,14 +41,12 @@ interface Config {
     vr_lite_invert_x: boolean;
     vr_lite_invert_y: boolean;
     mouse_sensitivity: number;
-    display_zoom: number;
     look_ahead: number;
-    sbs_display_size: number;
-    sbs_display_distance: number;
+    display_size: number;
+    display_distance: number;
     sbs_content: boolean;
     sbs_mode_stretched: boolean;
     sideview_position: SideviewPosition;
-    sideview_display_size: number;
     virtual_display_smooth_follow_enabled: boolean;
     sideview_smooth_follow_enabled: boolean;
     sideview_follow_threshold: number;
@@ -62,13 +60,17 @@ interface Config {
     ui_view: {
         headset_mode: HeadsetModeOption;
         is_joystick_mode: boolean;
-    }
+    };
+    measurement_units?: MeasurementUnits;
 }
 
 interface DriverState {
     heartbeat: number;
     connected_device_brand: string;
     connected_device_model: string;
+    connected_device_full_distance_cm: number;
+    connected_device_full_size_cm: number;
+    connected_device_pose_has_position: boolean;
     calibration_setup: CalibrationSetup;
     calibration_state: CalibrationState;
     sbs_mode_enabled: boolean;
@@ -97,6 +99,7 @@ type CalibrationSetup = "AUTOMATIC" | "INTERACTIVE";
 type CalibrationState = "NOT_CALIBRATED" | "CALIBRATING" | "CALIBRATED" | "WAITING_ON_USER";
 type SbsModeControl = "unset" | "enable" | "disable";
 type SideviewPosition = "center" | "top_left" | "top_right" | "bottom_left" | "bottom_right";
+type MeasurementUnits = "cm" | "in";
 const ManagedExternalModes: ExternalMode[] = ['virtual_display', 'sideview', 'none'];
 const SideviewPositions: SideviewPosition[] = ["center", "top_left", "top_right", "bottom_left", "bottom_right"];
 const DirtyControlFlagsExpireMilliseconds = 3000;
@@ -138,7 +141,7 @@ const ModeNotchLabels: NotchLabel[] = [
     },
 ];
 
-const DisplayZoomNotchLabels: NotchLabel[] = [
+const DisplaySizeNotchLabels: NotchLabel[] = [
     {
         label: "Smallest",
         notchIndex: 0
@@ -151,6 +154,11 @@ const DisplayZoomNotchLabels: NotchLabel[] = [
         label: "Biggest",
         notchIndex: 8
     }
+];
+
+const SimpleDisplaySizeNotchLabels: NotchLabel[] = [
+    {label: "Smallest", notchIndex: 0},
+    {label: "Biggest", notchIndex: 1}
 ];
 
 const DisplayDisanceNotchLabels: NotchLabel[] = [
@@ -204,6 +212,57 @@ const WidescreenFollowThresholdUpperNotchLabels: NotchLabel[] = [
     {label: "30", notchIndex: 5, value: 30},
     {label: "40", notchIndex: 6, value: 40}
 ];
+
+const CentimetersPerInch = 2.54;
+const NormalizedSliderMin = 0.1;
+const NormalizedSliderMax = 2.5;
+const MeasurementUnitOptions: {label: string; data: MeasurementUnits}[] = [
+    {label: "Centimeters (cm)", data: "cm"},
+    {label: "Inches (in)", data: "in"}
+];
+
+const clampValue = (value: number, min: number, max: number): number => Math.min(Math.max(value, min), max);
+
+const sliderValueFromNotch = (min: number, max: number, notchCount: number, notchIndex: number): number => {
+    const steps = Math.max(notchCount - 1, 1);
+    const clampedIndex = clampValue(notchIndex, 0, steps);
+    const ratio = clampedIndex / steps;
+    return min + (max - min) * ratio;
+};
+
+const convertMeasurement = (valueCm: number, units: MeasurementUnits): number =>
+    units === "cm" ? valueCm : valueCm / CentimetersPerInch;
+
+const measurementToCentimeters = (value: number, units: MeasurementUnits): number =>
+    units === "cm" ? value : value * CentimetersPerInch;
+
+const formatMeasurement = (valueCm: number, units: MeasurementUnits): string => {
+    const converted = convertMeasurement(valueCm, units);
+    const decimals = units === "cm" ? 0 : 1;
+    return `${converted.toFixed(decimals)} ${units}`;
+};
+
+const buildMeasurementNotchLabels = (
+    fullValueCm: number | undefined,
+    units: MeasurementUnits,
+    sliderMin: number,
+    sliderMax: number,
+    notchCount: number,
+    notchIndices: number[]
+): NotchLabel[] | undefined => {
+    if (!fullValueCm || fullValueCm <= 0) {
+        return undefined;
+    }
+
+    return notchIndices.map((notchIndex) => {
+        const sliderValue = sliderValueFromNotch(sliderMin, sliderMax, notchCount, notchIndex);
+        const measurementValue = sliderValue * fullValueCm;
+        return {
+            notchIndex,
+            label: `${formatMeasurement(measurementValue, units)}`
+        };
+    });
+};
 
 const Content: VFC = () => {
     const [config, setConfig] = useState<Config>();
@@ -350,6 +409,100 @@ const Content: VFC = () => {
         })
     }
 
+    const showSupporterTierDetailsFn = useShowSupporterTierDetails();
+
+    const asyncDataLoaded = !!config && !!driverState;
+    const deviceConnected = !!driverState?.connected_device_brand && !!driverState?.connected_device_model
+    const deviceName = deviceConnected ? `${driverState?.connected_device_brand} ${driverState?.connected_device_model}` : "No device connected"
+    const headsetModeConfig = config?.ui_view.headset_mode ?? "disabled"
+    const headsetMode: HeadsetModeOption = dirtyHeadsetMode ?? headsetModeConfig
+    const isDisabled = !deviceConnected || headsetMode === "disabled"
+    const isVirtualDisplayMode = !isDisabled && headsetMode === "virtual_display"
+    const isSideviewMode = !isDisabled && headsetMode === "sideview"
+    const isShaderMode = isVirtualDisplayMode || isSideviewMode;
+    const isVrLiteMode = !isDisabled && headsetMode === "vr_lite"
+    const otherExternalModes = (config?.external_mode ?? []).filter(mode => !ManagedExternalModes.includes(mode));
+    const isOtherMode = deviceConnected && isDisabled && !(config?.disabled ?? true) && otherExternalModes.length > 0;
+    const isOtherModeDisabled = deviceConnected && isDisabled && (config?.disabled ?? true) && otherExternalModes.length > 0;
+    let sbsModeEnabled = driverState?.sbs_mode_enabled ?? false;
+    if (dirtyControlFlags?.sbs_mode && dirtyControlFlags?.sbs_mode !== 'unset') sbsModeEnabled = dirtyControlFlags.sbs_mode === 'enable';
+    const isVulkanOnlyMode = !driverState?.is_gamescope_reshade_ipc_connected;
+    const isWidescreen = driverState?.sbs_mode_enabled && !isVulkanOnlyMode; // gamescope SBS mode is always widescreen
+    const calibrating = dirtyControlFlags.recalibrate || driverState?.calibration_state === "CALIBRATING";
+    const supporterTier = supporterTierDetails(driverState?.device_license);
+
+    const smoothFollowFeature = featureDetails(driverState?.device_license, "smooth_follow");
+    const smoothFollowEnabled = (config?.sideview_smooth_follow_enabled && smoothFollowFeature.enabled) ?? false;
+    const sideviewDisplayMaxNormalized = smoothFollowEnabled ? NormalizedSliderMax : 1.0;
+    const is3DoFMode = isVirtualDisplayMode || isSideviewMode && smoothFollowEnabled;
+    const sbsFeature = featureDetails(driverState?.device_license, "sbs");
+    const poseHasPosition = driverState?.connected_device_pose_has_position ?? false;
+
+    // we show the display distance slider as soon as the user selects the headset mode, even if it's still dirty
+    const showDisplayDistanceSlider = poseHasPosition && isVirtualDisplayMode || !!driverState?.sbs_mode_enabled && is3DoFMode;
+
+    // same as isVirtualDisplayMode, but only changes once the value is stored and actually affecting the behavior
+    const isVirtualDisplayModeConfig = deviceConnected && headsetModeConfig === "virtual_display"
+
+    // there are some cases where the display size is stored exactly as shown to the user, and other cases
+    // where we have to adjust it based on distance to get it to appear as the desired size
+    // e.g. a display at 1/4 the distance will appear 4x larger unless the size is adjusted down accordingly
+    const isSizeAdjustedByDistance = isVirtualDisplayModeConfig && (poseHasPosition || !!driverState?.sbs_mode_enabled);
+    const [wasSizeAdjustedByDistance, setWasSizeAdjustedByDistance] = useState<boolean>();
+    const displayDistance = showDisplayDistanceSlider ? (config?.display_distance ?? 1.0) : 1.0;
+
+    const measurementUnits: MeasurementUnits = config?.measurement_units ?? "cm";
+    const measurementUnitsLabel = measurementUnits === "cm" ? "cm" : "in";
+    const measurementUnitsMenuLabel = measurementUnits === "cm" ? "Centimeters" : "Inches";
+    const measurementSliderStep = measurementUnits === "cm" ? 1.0 : 0.5;
+    const measurementDecimalPlaces = measurementUnits === "cm" ? 0 : 1;
+    const fullDistanceCm = driverState?.connected_device_full_distance_cm;
+    const measurementEnabledForDistance = poseHasPosition && !!fullDistanceCm && fullDistanceCm > 0;
+    const sliderValueForMeasurement = (normalizedValue: number, fullValueCm: number | undefined, measurementEnabled: boolean): number => {
+        if (!measurementEnabled || !fullValueCm) {
+            return normalizedValue;
+        }
+        const converted = convertMeasurement(normalizedValue * fullValueCm, measurementUnits);
+        return parseFloat(converted.toFixed(measurementDecimalPlaces));
+    };
+    const normalizedValueFromSlider = (sliderValue: number, fullValueCm: number | undefined, measurementEnabled: boolean, maxNormalized: number): number => {
+        if (!measurementEnabled || !fullValueCm) {
+            return sliderValue;
+        }
+        const normalized = measurementToCentimeters(sliderValue, measurementUnits) / fullValueCm;
+        return Math.min(Math.max(normalized, NormalizedSliderMin), maxNormalized);
+    };
+    const measurementSliderRange = (fullValueCm: number | undefined, measurementEnabled: boolean, minNormalized: number, maxNormalized: number) => {
+        if (!measurementEnabled || !fullValueCm) {
+            return undefined;
+        }
+        const minValue = convertMeasurement(minNormalized * fullValueCm, measurementUnits);
+        const maxValue = convertMeasurement(maxNormalized * fullValueCm, measurementUnits);
+        return {
+            min: parseFloat(minValue.toFixed(measurementDecimalPlaces)),
+            max: parseFloat(maxValue.toFixed(measurementDecimalPlaces))
+        };
+    };
+    const distanceMeasurementLabels = poseHasPosition ?
+        buildMeasurementNotchLabels(fullDistanceCm, measurementUnits, 0.1, 2.5, 9, [0, 3, 8]) :
+        undefined;
+    const displayDistanceNotchLabels = distanceMeasurementLabels ?? DisplayDisanceNotchLabels;
+    const displayDistanceLabel = poseHasPosition ? `Display distance (${measurementUnitsLabel})` : "Display distance";
+    const displaySizeLabel = "Display size";
+    const normalizedDisplayDistance = Math.max(displayDistance, NormalizedSliderMin);
+    const storedDisplaySize = config?.display_size ?? 1.0;
+    const derivedDisplaySizeIntended = clampValue(storedDisplaySize / normalizedDisplayDistance, NormalizedSliderMin, NormalizedSliderMax);
+    const [displaySizeIntended, setDisplaySizeIntended] = useState<number>(derivedDisplaySizeIntended);
+    const displaySizeSliderValue = (maxNormalized: number) =>
+        clampValue(displaySizeIntended, NormalizedSliderMin, maxNormalized);
+    const displaySizeFromSlider = (sliderValue: number, distanceOverride?: number) => {
+        const distance = Math.max(distanceOverride ?? normalizedDisplayDistance, NormalizedSliderMin);
+        const sizeMultiplier = isSizeAdjustedByDistance ? distance : 1.0;
+        return clampValue(sliderValue, NormalizedSliderMin, NormalizedSliderMax) * sizeMultiplier;
+    };
+    const sideviewDisplayValue = displaySizeSliderValue(sideviewDisplayMaxNormalized);
+    const virtualDisplaySizeValue = displaySizeSliderValue(NormalizedSliderMax);
+
     // these asynchronous calls should execute ONLY one time, hence the empty array as the second argument
     useEffect(() => {
         refreshConfig().catch((err) => setError(err));
@@ -357,6 +510,17 @@ const Content: VFC = () => {
         refreshDriverState().catch((err) => setError(err));
         refreshDontShowAgainKeys().catch((err) => setError(err));
     }, []);
+
+    useEffect(() => {
+        if (asyncDataLoaded) {
+            writeConfig({
+                ...config,
+                display_size: displaySizeFromSlider(derivedDisplaySizeIntended, displayDistance)
+            }).catch(e => setError(e));
+            setDisplaySizeIntended(derivedDisplaySizeIntended);
+            setWasSizeAdjustedByDistance(isSizeAdjustedByDistance);
+        }
+    }, [asyncDataLoaded]);
 
     useEffect(() => {
         // clear the dirty control flags if they're reflected in the state, or stale
@@ -387,30 +551,20 @@ const Content: VFC = () => {
         }
     }, [stableHeadsetMode])
 
-    const showSupporterTierDetailsFn = useShowSupporterTierDetails();
+    useEffect(() => {
+        if (!asyncDataLoaded) return;
 
-    const deviceConnected = !!driverState?.connected_device_brand && !!driverState?.connected_device_model
-    const deviceName = deviceConnected ? `${driverState?.connected_device_brand} ${driverState?.connected_device_model}` : "No device connected"
-    const headsetMode: HeadsetModeOption = dirtyHeadsetMode ?? config?.ui_view.headset_mode ?? "disabled"
-    const isDisabled = !deviceConnected || headsetMode === "disabled"
-    const isVirtualDisplayMode = !isDisabled && headsetMode === "virtual_display"
-    const isSideviewMode = !isDisabled && headsetMode === "sideview"
-    const isShaderMode = isVirtualDisplayMode || isSideviewMode;
-    const isVrLiteMode = !isDisabled && headsetMode === "vr_lite"
-    const otherExternalModes = (config?.external_mode ?? []).filter(mode => !ManagedExternalModes.includes(mode));
-    const isOtherMode = deviceConnected && isDisabled && !(config?.disabled ?? true) && otherExternalModes.length > 0;
-    const isOtherModeDisabled = deviceConnected && isDisabled && (config?.disabled ?? true) && otherExternalModes.length > 0;
-    let sbsModeEnabled = driverState?.sbs_mode_enabled ?? false;
-    if (dirtyControlFlags?.sbs_mode && dirtyControlFlags?.sbs_mode !== 'unset') sbsModeEnabled = dirtyControlFlags.sbs_mode === 'enable';
-    const isVulkanOnlyMode = !driverState?.is_gamescope_reshade_ipc_connected;
-    const isWidescreen = driverState?.sbs_mode_enabled && !isVulkanOnlyMode; // gamescope SBS mode is always widescreen
-    const calibrating = dirtyControlFlags.recalibrate || driverState?.calibration_state === "CALIBRATING";
-    const supporterTier = supporterTierDetails(driverState?.device_license);
+        if (wasSizeAdjustedByDistance !== undefined && isSizeAdjustedByDistance !== wasSizeAdjustedByDistance) {
+            // something has caused the visibility of display distance slider to change, so we need to change
+            // the stored display size value since it's derived from the user's intended size and distance
+            writeConfig({
+                ...config,
+                display_size: displaySizeFromSlider(displaySizeIntended, displayDistance)
+            }).catch(e => setError(e))
 
-    const smoothFollowFeature = featureDetails(driverState?.device_license, "smooth_follow");
-    const smoothFollowEnabled = (config?.sideview_smooth_follow_enabled && smoothFollowFeature.enabled) ?? false;
-    const is3DoFMode = isVirtualDisplayMode || isSideviewMode && smoothFollowEnabled;
-    const sbsFeature = featureDetails(driverState?.device_license, "sbs");
+            setWasSizeAdjustedByDistance(isSizeAdjustedByDistance);
+        }
+    }, [isSizeAdjustedByDistance]);
 
     const sbsFirmwareUpdateNeeded = !driverState?.sbs_mode_supported && driverState?.firmware_update_recommended;
     let sbsDescription = "";
@@ -448,20 +602,28 @@ const Content: VFC = () => {
         />
     </PanelSectionRow>;
 
-    const sbsDisplayDistanceSlider = <PanelSectionRow>
-        <SliderField value={config?.sbs_display_distance ?? 1.0}
-                    min={0.1} max={2.5}
+    const displayDistanceRange = measurementSliderRange(fullDistanceCm, measurementEnabledForDistance, NormalizedSliderMin, NormalizedSliderMax);
+    const displayDistanceSliderValue = sliderValueForMeasurement(displayDistance, fullDistanceCm, measurementEnabledForDistance);
+    const displayDistanceSlider = <PanelSectionRow>
+        <SliderField value={displayDistanceSliderValue}
+                    min={displayDistanceRange?.min ?? NormalizedSliderMin}
+                    max={displayDistanceRange?.max ?? NormalizedSliderMax}
                     notchCount={9}
-                    notchLabels={DisplayDisanceNotchLabels}
-                    label={"Display distance"}
-                    description={"Adjust perceived display depth for eye comfort."}
-                    step={0.01}
+                    notchLabels={displayDistanceNotchLabels}
+                    label={displayDistanceLabel}
+                    description={
+                        driverState?.sbs_mode_enabled && "Adjust perceived display depth for eye comfort." ||
+                        poseHasPosition && "Display distances are approximate."
+                    }
+                    step={measurementEnabledForDistance ? measurementSliderStep : 0.01}
                     editableValue={true}
-                    onChange={(sbs_display_distance) => {
+                    onChange={(rawValue) => {
                         if (config) {
+                            const display_distance = normalizedValueFromSlider(rawValue, fullDistanceCm, measurementEnabledForDistance, NormalizedSliderMax);
                             updateConfig({
                                 ...config,
-                                sbs_display_distance
+                                display_distance,
+                                display_size: displaySizeFromSlider(displaySizeIntended, display_distance)
                             }).catch(e => setError(e))
                         }
                     }}
@@ -488,6 +650,20 @@ const Content: VFC = () => {
     </PanelSectionRow>;
 
     const advancedSettings = [
+        poseHasPosition && <PanelSectionRow>
+            <DropdownItem
+                label={"Distance units"}
+                menuLabel={measurementUnitsMenuLabel}
+                selectedOption={measurementUnits}
+                rgOptions={MeasurementUnitOptions}
+                onChange={(selection) => {
+                    if (config) {
+                        const measurement_units = selection.data as MeasurementUnits;
+                        updateConfig({...config, measurement_units}).catch(e => setError(e));
+                    }
+                }}
+            />
+        </PanelSectionRow>,
         isVrLiteMode && !isJoystickMode && joystickModeButton,
         isSideviewMode && <Fragment>
             <PanelSectionRow>
@@ -774,14 +950,13 @@ const Content: VFC = () => {
                                               onChange={(selection) => {
                                                   if (config) {
                                                       const position = selection.data;
-                                                      let displaySize = config.sideview_display_size;
-                                                      if (position != "center" && displaySize == 1.0) {
-                                                          displaySize = 0.5;
-                                                      }
+                                                      const currentSliderValue = displaySizeSliderValue(sideviewDisplayMaxNormalized);
+                                                      const adjustedSliderValue = position != "center" && currentSliderValue === 1.0 ? 0.5 : currentSliderValue;
+                                                      setDisplaySizeIntended(adjustedSliderValue);
                                                       updateConfig({
                                                           ...config,
                                                           sideview_position: position,
-                                                          sideview_display_size: displaySize
+                                                          display_size: displaySizeFromSlider(adjustedSliderValue)
                                                       }).catch(e => setError(e))
                                                   }
                                               }}
@@ -830,31 +1005,31 @@ const Content: VFC = () => {
                                 />
                             </PanelSectionRow>}
                             <PanelSectionRow>
-                                <SliderField value={config.sideview_display_size}
-                                             min={0.1} max={smoothFollowEnabled ? 2.5 : 1.0}
+                                <SliderField value={sideviewDisplayValue}
+                                             min={NormalizedSliderMin}
+                                             max={sideviewDisplayMaxNormalized}
                                              notchCount={smoothFollowEnabled ? 9 : 2}
                                              notchTicksVisible={smoothFollowEnabled}
                                              editableValue={smoothFollowEnabled}
-                                             label={"Display size"}
-                                             notchLabels={smoothFollowEnabled ? 
-                                                DisplayZoomNotchLabels : 
-                                                [
-                                                    {label: "Smallest", notchIndex: 0},
-                                                    {label: "Biggest", notchIndex: 1},
-                                                ]
+                                             label={displaySizeLabel}
+                                             notchLabels={smoothFollowEnabled ?
+                                                DisplaySizeNotchLabels :
+                                                SimpleDisplaySizeNotchLabels
                                              }
                                              step={0.01}
-                                             onChange={(sideview_display_size) => {
+                                             onChange={(rawValue) => {
                                                  if (config) {
+                                                     const intendedValue = clampValue(rawValue, NormalizedSliderMin, sideviewDisplayMaxNormalized);
+                                                     setDisplaySizeIntended(intendedValue);
                                                      updateConfig({
                                                          ...config,
-                                                         sideview_display_size
+                                                         display_size: displaySizeFromSlider(intendedValue)
                                                      }).catch(e => setError(e))
                                                  }
                                              }}
                                 />
                             </PanelSectionRow>
-                            {driverState?.sbs_mode_enabled && sbsDisplayDistanceSlider}
+                            {showDisplayDistanceSlider && displayDistanceSlider}
                         </Fragment>}
                         {isVirtualDisplayMode && <Fragment>
                             <PanelSectionRow>
@@ -875,28 +1050,28 @@ const Content: VFC = () => {
                                     }}/>
                             </PanelSectionRow>
                             <PanelSectionRow>
-                                <SliderField value={sbsModeEnabled ? config.sbs_display_size : config.display_zoom}
-                                             min={0.1} max={2.5}
+                                <SliderField value={virtualDisplaySizeValue}
+                                             min={NormalizedSliderMin}
+                                             max={NormalizedSliderMax}
                                              notchCount={9}
-                                             notchLabels={DisplayZoomNotchLabels}
-                                             label={"Display size"}
+                                             notchLabels={DisplaySizeNotchLabels}
+                                             label={displaySizeLabel}
                                              description={sbsModeEnabled && "Display distance setting also affects perceived display size."}
                                              step={0.01}
                                              editableValue={true}
-                                             onChange={(zoom) => {
+                                             onChange={(rawValue) => {
                                                  if (config) {
-                                                     // Change different underlying properties depending on whether SBS is enabled.
-                                                     // This makes it "remember" the last value used for each mode.
+                                                     const intendedValue = clampValue(rawValue, NormalizedSliderMin, NormalizedSliderMax);
+                                                     setDisplaySizeIntended(intendedValue);
                                                      updateConfig({
                                                          ...config,
-                                                         display_zoom: sbsModeEnabled ? config.display_zoom : zoom,
-                                                         sbs_display_size: sbsModeEnabled ? zoom : config.sbs_display_size
+                                                         display_size: displaySizeFromSlider(intendedValue)
                                                      }).catch(e => setError(e))
                                                  }
                                              }}
                                 />
                             </PanelSectionRow>
-                            {driverState?.sbs_mode_enabled && sbsDisplayDistanceSlider}
+                            {showDisplayDistanceSlider && displayDistanceSlider}
                         </Fragment>}
                         {is3DoFMode && <PanelSectionRow>
                             <ButtonItem disabled={calibrating || dirtyControlFlags.recenter_screen}
