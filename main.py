@@ -134,7 +134,7 @@ class Plugin:
         env_copy["USER"] = decky.DECKY_USER
 
         setup_script_path = os.path.dirname(__file__) + "/bin/breezy_vulkan_setup"
-        binary_path = os.path.dirname(__file__) + "/bin/breezyVulkan-x86_64.tar.gz"
+        binary_path = os.path.dirname(__file__) + "/bin/breezyVulkan-x86_64.steamos.tar.gz"
         attempt = 0
         while attempt < 3:
             try:
