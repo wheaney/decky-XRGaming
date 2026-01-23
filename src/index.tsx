@@ -507,7 +507,8 @@ const Content: VFC = () => {
     const displaySizeLabel = "Display size";
     const normalizedDisplayDistance = Math.max(displayDistance, NormalizedSliderMin);
     const storedDisplaySize = config?.display_size ?? 1.0;
-    const derivedDisplaySizeIntended = clampValue(storedDisplaySize / normalizedDisplayDistance, NormalizedSliderMin, NormalizedSliderMax);
+    const sizeMultiplier = isSizeAdjustedByDistance ? normalizedDisplayDistance : 1.0;
+    const derivedDisplaySizeIntended = clampValue(storedDisplaySize / sizeMultiplier, NormalizedSliderMin, NormalizedSliderMax);
     const [displaySizeIntended, setDisplaySizeIntended] = useState<number>(derivedDisplaySizeIntended);
     const displaySizeSliderValue = (maxNormalized: number) =>
         clampValue(displaySizeIntended, NormalizedSliderMin, maxNormalized);
