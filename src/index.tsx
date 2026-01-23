@@ -57,6 +57,7 @@ interface Config {
     smooth_follow_track_yaw: boolean;
     neck_saver_horizontal_multiplier: number;
     neck_saver_vertical_multiplier: number;
+    dead_zone_threshold_deg: number;
     ui_view: {
         headset_mode: HeadsetModeOption;
         is_joystick_mode: boolean;
@@ -271,6 +272,7 @@ const Content: VFC = () => {
     const [dirtyControlFlags, setDirtyControlFlags] = useState<DirtyControlFlags>({});
     const [installationStatus, setInstallationStatus] = useState<InstallationStatus>("checking");
     const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
+    const [forceResettingDriver, setForceResettingDriver] = useState<boolean>(false);
     const [error, setError] = useState<string>();
     const [dontShowAgainKeys, setDontShowAgainKeys] = useState<string[]>([]);
     const [dirtyHeadsetMode, stableHeadsetMode, setDirtyHeadsetMode] = useStableState<HeadsetModeOption | undefined>(undefined, HeadsetModeConfirmationTimeoutMs);
@@ -409,6 +411,20 @@ const Content: VFC = () => {
         })
     }
 
+    async function forceResetDriver() {
+        setForceResettingDriver(true);
+        try {
+            const ok = await call<[], boolean>("force_reset_driver");
+            if (!ok) {
+                throw Error("Failed to restart xr-driver. Check plugin logs for details.");
+            }
+        } catch (e) {
+            setError((e as Error).message);
+        } finally {
+            setForceResettingDriver(false);
+        }
+    }
+
     const showSupporterTierDetailsFn = useShowSupporterTierDetails();
 
     const asyncDataLoaded = !!config && !!driverState;
@@ -439,7 +455,7 @@ const Content: VFC = () => {
     const poseHasPosition = driverState?.connected_device_pose_has_position ?? false;
 
     // we show the display distance slider as soon as the user selects the headset mode, even if it's still dirty
-    const showDisplayDistanceSlider = poseHasPosition && isVirtualDisplayMode || !!driverState?.sbs_mode_enabled && is3DoFMode;
+    const showDisplayDistanceSlider = is3DoFMode && (poseHasPosition || !!driverState?.sbs_mode_enabled);
 
     // same as isVirtualDisplayMode, but only changes once the value is stored and actually affecting the behavior
     const isVirtualDisplayModeConfig = deviceConnected && headsetModeConfig === "virtual_display"
@@ -758,6 +774,31 @@ const Content: VFC = () => {
                                  }).catch(e => setError(e))
                              }
                          }}
+            />
+        </PanelSectionRow>,
+        <PanelSectionRow>
+            <SliderField value={config?.dead_zone_threshold_deg ?? 0.0}
+                        min={0.0} max={5.0} step={0.1}
+                        notchTicksVisible={true}
+                        notchCount={6} notchLabels={[
+                            {label: "Disabled", notchIndex: 0},
+                            {label: "1.0", notchIndex: 1},
+                            {label: "2.0", notchIndex: 2},
+                            {label: "3.0", notchIndex: 3},
+                            {label: "4.0", notchIndex: 4},
+                            {label: "5.0", notchIndex: 5}
+                        ]}
+                        label={"Dead-zone threshold (degrees)"}
+                        description={"Stabilize movements below this angle."}
+                        editableValue={true}
+                        onChange={(dead_zone_threshold_deg) => {
+                            if (config) {
+                                updateConfig({
+                                    ...config,
+                                    dead_zone_threshold_deg
+                                }).catch(e => setError(e))
+                            }
+                        }}
             />
         </PanelSectionRow>,
         <PanelSectionRow>
@@ -1178,6 +1219,17 @@ const Content: VFC = () => {
                                 <span style={{color: 'white', fontWeight: 'bold'}}>Join the chat!</span>
                             </span>
                         </QrButton>
+                        <PanelSectionRow>
+                            <ButtonItem
+                                disabled={forceResettingDriver}
+                                layout="below"
+                                onClick={() => forceResetDriver()}>
+                                {forceResettingDriver ?
+                                    <span><Spinner style={{height: '16px', marginRight: 10}} />Restarting driver</span> :
+                                    "Force reset driver"
+                                }
+                            </ButtonItem>
+                        </PanelSectionRow>
                     </PanelSection> ||
                     <PanelSection>
                         <PanelSectionRow>

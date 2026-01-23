@@ -94,6 +94,9 @@ class Plugin:
                 decky.logger.error(f"Error checking driver status {exc.output}")
             return False
 
+    async def force_reset_driver(self):
+        return ipc.reset_driver(as_user=decky.DECKY_USER)
+
     async def is_breezy_installed(self):
         try:
             if not await self.is_driver_running():
