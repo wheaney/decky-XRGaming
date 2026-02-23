@@ -86,13 +86,8 @@ class Plugin:
         return self.breezy_installed and await self.is_driver_running()
 
     async def is_driver_running(self):
-        try:
-            output = subprocess.check_output(['su', '-l', '-c', 'XDG_RUNTIME_DIR=/run/user/1000 systemctl --user is-active xr-driver', decky.DECKY_USER], stderr=subprocess.STDOUT)
-            return output.strip() == b'active'
-        except subprocess.CalledProcessError as exc:
-            if exc.output.strip() != b'inactive':
-                decky.logger.error(f"Error checking driver status {exc.output}")
-            return False
+        # TODO call the new IPC function
+        return False
 
     async def force_reset_driver(self):
         return ipc.reset_driver(as_user=decky.DECKY_USER)
@@ -137,7 +132,7 @@ class Plugin:
         env_copy["USER"] = decky.DECKY_USER
 
         setup_script_path = os.path.dirname(__file__) + "/bin/breezy_vulkan_setup"
-        binary_path = os.path.dirname(__file__) + "/bin/breezyVulkan-x86_64.steamos.tar.gz"
+        binaries_dir = os.path.dirname(__file__) + "/bin/"
         attempt = 0
         while attempt < 3:
             try:
@@ -145,7 +140,7 @@ class Plugin:
                     setup_script_path,
                     "-v",
                     decky.DECKY_PLUGIN_VERSION.replace("-", "_"),
-                    binary_path
+                    binaries_dir
                 ], stderr=subprocess.STDOUT, env=env_copy)
                 if await self.is_driver_running():
                     settings.setSetting(INSTALLED_VERSION_SETTING_KEY, decky.DECKY_PLUGIN_VERSION)

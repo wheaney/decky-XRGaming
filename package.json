@@ -1,6 +1,6 @@
 {
   "name": "decky-XRGaming",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "description": "Virtual display and head-tracking modes for XR glasses",
   "type": "module",
   "scripts": {
@@ -60,13 +60,18 @@
   "remote_binary": [
     {
       "name": "breezy_vulkan_setup",
-      "url": "https://github.com/wheaney/breezy-desktop/releases/download/v2.6.4-decky/breezy_vulkan_setup",
-      "sha256hash": "fff1280dcac2b8025233cd438fd07b7239432c48b66cc5fd8bfeb9483a118eb4"
+      "url": "https://github.com/wheaney/breezy-desktop/releases/download/v2.8.7-decky/breezy_vulkan_setup",
+      "sha256hash": "0971538723e4a62c6a7f25dd6fb4f67f9fc5e463b5966782215b8c1ebd6510e0"
     },
     {
-      "name": "breezyVulkan-x86_64.steamos.tar.gz",
-      "url": "https://github.com/wheaney/breezy-desktop/releases/download/v2.6.4-decky/breezyVulkan-x86_64.steamos.tar.gz",
-      "sha256hash": "76a95a62bcb67440758998c57bdcc8bda197a06b3ad3cae1aca0e59ea7b661f1"
+      "name": "breezyVulkan-x86_64.tar.gz",
+      "url": "https://github.com/wheaney/breezy-desktop/releases/download/v2.8.7-decky/breezyVulkan-x86_64.tar.gz",
+      "sha256hash": "3a7bf0a5949374770ea1e653334c87642edf2f603b9bc7bc78f77375c181eef6"
+    },
+    {
+      "name": "breezyVulkan-libs-x86_64.tar.gz",
+      "url": "https://github.com/wheaney/breezy-desktop/releases/download/v2.8.7-decky/breezyVulkan-libs-x86_64.tar.gz",
+      "sha256hash": "029058d7ce994ffeed9b3b8346fa54ee8dd6b943de87a69370503d2053691204"
     }
   ]
 }

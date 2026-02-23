@@ -40,6 +40,7 @@ interface Config {
     external_mode: ExternalMode[];
     vr_lite_invert_x: boolean;
     vr_lite_invert_y: boolean;
+    opentrack_listener_enabled: boolean;
     mouse_sensitivity: number;
     look_ahead: number;
     display_size: number;
@@ -812,6 +813,21 @@ const Content: VFC = () => {
                         updateConfig({
                             ...config,
                             multi_tap_enabled
+                        }).catch(e => setError(e))
+                    }
+                }}
+            />
+        </PanelSectionRow>,
+        <PanelSectionRow>
+            <ToggleField
+                checked={config?.opentrack_listener_enabled ?? false}
+                label={"OpenTrack listener"}
+                description={"Listen for OpenTrack UDP data."}
+                onChange={(opentrack_listener_enabled) => {
+                    if (config) {
+                        updateConfig({
+                            ...config,
+                            opentrack_listener_enabled
                         }).catch(e => setError(e))
                     }
                 }}
