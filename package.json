@@ -60,18 +60,18 @@
   "remote_binary": [
     {
       "name": "breezy_vulkan_setup",
-      "url": "https://github.com/wheaney/breezy-desktop/releases/download/v2.8.8-decky/breezy_vulkan_setup",
+      "url": "https://github.com/wheaney/breezy-desktop/releases/download/v2.8.10-decky/breezy_vulkan_setup",
       "sha256hash": "0971538723e4a62c6a7f25dd6fb4f67f9fc5e463b5966782215b8c1ebd6510e0"
     },
     {
       "name": "breezyVulkan-x86_64.tar.gz",
-      "url": "https://github.com/wheaney/breezy-desktop/releases/download/v2.8.8-decky/breezyVulkan-x86_64.tar.gz",
-      "sha256hash": "c451512616edcba5bc9631dba7e616b2cc2a86326c7cfe54a4a452eb4dad8623"
+      "url": "https://github.com/wheaney/breezy-desktop/releases/download/v2.8.10-decky/breezyVulkan-x86_64.tar.gz",
+      "sha256hash": "58273cc0e7f1cb761ac29c6f82a728459d2ec1c09f3d5cffb235a25f98a9d041"
     },
     {
       "name": "breezyVulkan-libs-x86_64.tar.gz",
-      "url": "https://github.com/wheaney/breezy-desktop/releases/download/v2.8.8-decky/breezyVulkan-libs-x86_64.tar.gz",
-      "sha256hash": "d85ac118ef1c34f9980bf14185cb33202535d75205fd1531cea2353c74d2e923"
+      "url": "https://github.com/wheaney/breezy-desktop/releases/download/v2.8.10-decky/breezyVulkan-libs-x86_64.tar.gz",
+      "sha256hash": "b3253680e18ae066a18c0380613bdefe489793946bd51400ee5ccafdb497547f"
     }
   ]
 }
