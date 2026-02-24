@@ -86,8 +86,7 @@ class Plugin:
         return self.breezy_installed and await self.is_driver_running()
 
     async def is_driver_running(self):
-        # TODO call the new IPC function
-        return False
+        return ipc.is_driver_running(as_user=decky.DECKY_USER)
 
     async def force_reset_driver(self):
         return ipc.reset_driver(as_user=decky.DECKY_USER)
