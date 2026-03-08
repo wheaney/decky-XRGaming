@@ -844,7 +844,7 @@ const Content: VFC = () => {
                 }
             </ButtonItem>
         </PanelSectionRow>,
-        isShaderMode && <PanelSectionRow>
+        <PanelSectionRow>
             <ToggleField
                 checked={config?.gamescope_reshade_wayland_disabled ?? false}
                 label={"Disable gamescope integration"}
