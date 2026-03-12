@@ -132,6 +132,11 @@ class Plugin:
 
         setup_script_path = os.path.dirname(__file__) + "/bin/breezy_vulkan_setup"
         binaries_dir = os.path.dirname(__file__) + "/bin/"
+
+        if not os.path.isfile(setup_script_path):
+            decky.logger.error(f"Breezy setup script not found at {setup_script_path}")
+            return False
+        
         attempt = 0
         while attempt < 3:
             try:
@@ -145,6 +150,9 @@ class Plugin:
                     settings.setSetting(INSTALLED_VERSION_SETTING_KEY, decky.DECKY_PLUGIN_VERSION)
                     settings.setSetting(MANIFEST_CHECKSUM_KEY, await self.get_breezy_manifest_checksum())
                     return True
+            except FileNotFoundError as exc:
+                decky.logger.error(f"Breezy install failed because a required file was missing: {exc}")
+                return False
             except subprocess.CalledProcessError as exc:
                 decky.logger.error(f"Error running setup script: {exc.output}")
 
