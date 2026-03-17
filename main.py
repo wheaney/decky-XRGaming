@@ -12,6 +12,8 @@ INSTALLED_VERSION_SETTING_KEY = "installed_from_plugin_version"
 DONT_SHOW_AGAIN_SETTING_KEY = "dont_show_again"
 MANIFEST_CHECKSUM_KEY = "manifest_checksum"
 MEASUREMENT_UNITS_SETTING_KEY = "measurement_units"
+BREEZY_INSTALL_STARTED_AT_SETTING_KEY = "breezy_install_started_at"
+BREEZY_INSTALL_TIMEOUT_SECONDS = 15
 
 settings = SettingsManager(name="settings", settings_directory=decky.DECKY_PLUGIN_SETTINGS_DIR)
 settings.read()
@@ -23,7 +25,29 @@ ipc = XRDriverIPC(logger = decky.logger,
 class Plugin:
     def __init__(self):
         self.breezy_installed = False
-        self.breezy_installing = False
+
+    async def is_breezy_install_pending(self):
+        started_at = settings.getSetting(BREEZY_INSTALL_STARTED_AT_SETTING_KEY)
+        if started_at is None:
+            return False
+
+        try:
+            started_at = float(started_at)
+        except (TypeError, ValueError):
+            settings.setSetting(BREEZY_INSTALL_STARTED_AT_SETTING_KEY, None)
+            return False
+
+        if time.time() - started_at > BREEZY_INSTALL_TIMEOUT_SECONDS:
+            settings.setSetting(BREEZY_INSTALL_STARTED_AT_SETTING_KEY, None)
+            return False
+
+        return True
+
+    def mark_breezy_install_started(self):
+        settings.setSetting(BREEZY_INSTALL_STARTED_AT_SETTING_KEY, time.time())
+
+    def clear_breezy_install_started(self):
+        settings.setSetting(BREEZY_INSTALL_STARTED_AT_SETTING_KEY, None)
     
     async def retrieve_config(self):
         try:
@@ -78,12 +102,7 @@ class Plugin:
             return False
 
     async def is_breezy_installed_and_running(self):
-        waitSecs = 0
-        while self.breezy_installing and waitSecs < 3:
-            time.sleep(1)
-            waitSecs += 1
-
-        return self.breezy_installed and await self.is_driver_running()
+        return self.breezy_installed
 
     async def is_driver_running(self):
         return ipc.is_driver_running(as_user=decky.DECKY_USER)
@@ -91,23 +110,26 @@ class Plugin:
     async def force_reset_driver(self):
         return ipc.reset_driver(as_user=decky.DECKY_USER)
 
-    async def is_breezy_installed(self):
+    async def check_breezy_installed(self):
         try:
             if not await self.is_driver_running():
                 return False
 
             installed_from_plugin_version = settings.getSetting(INSTALLED_VERSION_SETTING_KEY)
             if not installed_from_plugin_version == decky.DECKY_PLUGIN_VERSION:
+                decky.logger.info(f"Breezy plugin version {decky.DECKY_PLUGIN_VERSION} does not match installed version {installed_from_plugin_version}")
                 return False
 
             if (await self.get_breezy_manifest_checksum()) != settings.getSetting(MANIFEST_CHECKSUM_KEY):
+                decky.logger.info("Breezy manifest checksum does not match expected value")
                 return False
 
             output = subprocess.check_output(['su', '-l', '-c', 'XDG_RUNTIME_DIR=/run/user/1000 ' + decky.DECKY_USER_HOME + '/.local/bin/breezy_vulkan_verify', decky.DECKY_USER], stderr=subprocess.STDOUT)
-            success = output.strip() == b"Verification succeeded"
-            if not success:
+            self.breezy_installed = output.strip() == b"Verification succeeded"
+            if not self.breezy_installed:
                 decky.logger.error(f"Error verifying breezy installation {output}")
-            return success
+            
+            return self.breezy_installed
         except subprocess.CalledProcessError as exc:
             decky.logger.error(f"Error checking driver installation {exc.output}")
             return False
@@ -137,6 +159,7 @@ class Plugin:
             decky.logger.error(f"Breezy setup script not found at {setup_script_path}")
             return False
         
+        self.mark_breezy_install_started()
         attempt = 0
         while attempt < 3:
             try:
@@ -146,13 +169,17 @@ class Plugin:
                     decky.DECKY_PLUGIN_VERSION.replace("-", "_"),
                     binaries_dir
                 ], stderr=subprocess.STDOUT, env=env_copy)
-                if await self.is_driver_running():
+
+                self.breezy_installed = await self.is_driver_running()
+                if self.breezy_installed:
                     settings.setSetting(INSTALLED_VERSION_SETTING_KEY, decky.DECKY_PLUGIN_VERSION)
                     settings.setSetting(MANIFEST_CHECKSUM_KEY, await self.get_breezy_manifest_checksum())
+                    self.clear_breezy_install_started()
                     return True
             except FileNotFoundError as exc:
+                # don't return, we still want to retry in case a file was still being downloaded
                 decky.logger.error(f"Breezy install failed because a required file was missing: {exc}")
-                return False
+                time.sleep(4) # overall sleep of 5 seconds with the sleep below
             except subprocess.CalledProcessError as exc:
                 decky.logger.error(f"Error running setup script: {exc.output}")
 
@@ -172,17 +199,16 @@ class Plugin:
         await self.write_control_flags({
             "request_features": ["sbs", "smooth_follow"]
         })
-        
-        self.breezy_installing = True
-        self.breezy_installed = await self.is_breezy_installed()
 
-        if self.breezy_installed:
-            self.breezy_installing = False
+        if await self.is_breezy_install_pending():
             return
-
-        self.breezy_installed = await self.install_breezy()
-        self.breezy_installing = False
-
+        
+        self.mark_breezy_install_started()
+        if await self.check_breezy_installed():
+            self.clear_breezy_install_started()
+            return
+        
+        await self.install_breezy()
 
     # Function called first during the unload process, utilize this to handle your plugin being removed
     async def _unload(self):
@@ -204,6 +230,9 @@ class Plugin:
             subprocess.check_output([decky.DECKY_USER_HOME + "/.local/bin/breezy_vulkan_uninstall"], stderr=subprocess.STDOUT, env=env_copy)
             subprocess.check_output([decky.DECKY_USER_HOME + "/.local/bin/xr_driver_uninstall"], stderr=subprocess.STDOUT, env=env_copy)
             settings.setSetting(INSTALLED_VERSION_SETTING_KEY, None)
+            settings.setSetting(MANIFEST_CHECKSUM_KEY, None)
+            self.clear_breezy_install_started()
+            self.breezy_installed = False
             return True
         except subprocess.CalledProcessError as exc:
             decky.logger.error(f"Error running uninstall script {exc.output}")
