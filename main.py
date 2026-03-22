@@ -13,7 +13,7 @@ DONT_SHOW_AGAIN_SETTING_KEY = "dont_show_again"
 MANIFEST_CHECKSUM_KEY = "manifest_checksum"
 MEASUREMENT_UNITS_SETTING_KEY = "measurement_units"
 BREEZY_INSTALL_STARTED_AT_SETTING_KEY = "breezy_install_started_at"
-BREEZY_INSTALL_TIMEOUT_SECONDS = 15
+BREEZY_INSTALL_TIMEOUT_SECONDS = 60
 
 settings = SettingsManager(name="settings", settings_directory=decky.DECKY_PLUGIN_SETTINGS_DIR)
 settings.read()

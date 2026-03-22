@@ -332,6 +332,10 @@ const Content: VFC = () => {
                 }
             }
             setInstallationStatus("installed");
+
+            // In case config remains empty from some unhandled error prior to installation,
+            // refresh it here. state is auto-refreshing, so no need to refresh it manually.
+            refreshConfig();
         } catch (e) {
             setError((e as Error).message);
         }
