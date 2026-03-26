@@ -1,3 +1,4 @@
+import asyncio
 import decky
 import os
 import subprocess
@@ -143,9 +144,15 @@ class Plugin:
         except subprocess.CalledProcessError as exc:
             decky.logger.error(f"Error getting breezy manifest checksum {exc.output}")
             return None
-
+        
     async def install_breezy(self):
+        self.loop.create_task(self._install_breezy())
+
+        return True
+
+    async def _install_breezy(self):
         decky.logger.info(f"Installing breezy for plugin version {decky.DECKY_PLUGIN_VERSION}")
+        self.mark_breezy_install_started()
 
         # Set the USER environment variable for this command
         env_copy = os.environ.copy()
@@ -157,9 +164,13 @@ class Plugin:
 
         if not os.path.isfile(setup_script_path):
             decky.logger.error(f"Breezy setup script not found at {setup_script_path}")
+            self.clear_breezy_install_started()
             return False
-        
-        self.mark_breezy_install_started()
+
+        await self.write_control_flags({
+            "request_features": ["sbs", "smooth_follow"]
+        })
+
         attempt = 0
         while attempt < 3:
             try:
@@ -175,6 +186,9 @@ class Plugin:
                     settings.setSetting(INSTALLED_VERSION_SETTING_KEY, decky.DECKY_PLUGIN_VERSION)
                     settings.setSetting(MANIFEST_CHECKSUM_KEY, await self.get_breezy_manifest_checksum())
                     self.clear_breezy_install_started()
+
+                    decky.logger.info(f"Breezy install succeeded on attempt {attempt}")
+                    
                     return True
             except FileNotFoundError as exc:
                 # don't return, we still want to retry in case a file was still being downloaded
@@ -193,22 +207,10 @@ class Plugin:
 
     async def verify_token(self, token):
         return ipc.verify_token(token)
-
+    
     # Asyncio-compatible long-running code, executed in a task when the plugin is loaded
     async def _main(self):
-        await self.write_control_flags({
-            "request_features": ["sbs", "smooth_follow"]
-        })
-
-        if await self.is_breezy_install_pending():
-            return
-        
-        self.mark_breezy_install_started()
-        if await self.check_breezy_installed():
-            self.clear_breezy_install_started()
-            return
-        
-        await self.install_breezy()
+        self.loop = asyncio.get_event_loop()
 
     # Function called first during the unload process, utilize this to handle your plugin being removed
     async def _unload(self):

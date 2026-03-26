@@ -315,17 +315,17 @@ const Content: VFC = () => {
 
     async function waitForPendingBreezyInstall() {
         while (await call<[], boolean>("is_breezy_install_pending")) {
-            await new Promise((resolve) => setTimeout(resolve, 1000))
+            await new Promise((resolve) => setTimeout(resolve, 1000));
         }
+
+        return await call<[], boolean>("is_breezy_installed_and_running");
     }
 
     async function checkInstallation() {
         setInstallationStatus("inProgress");
         try {
-            await waitForPendingBreezyInstall();
-
-            if (!await call<[], boolean>("is_breezy_installed_and_running")) {
-                if (!await call<[], boolean>("install_breezy")) {
+            if (!await waitForPendingBreezyInstall()) {
+                if (!await call<[], boolean>("install_breezy") || !await waitForPendingBreezyInstall()) {
                     throw Error("There was an error during setup. Try restarting your Steam Deck. If " +
                                 "the error persists, please file an issue in the decky-XRGaming GitHub " + 
                                 "repository.");
