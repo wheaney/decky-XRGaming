@@ -84,9 +84,14 @@ function VirtualDisplayTutorial() {
 
 function getSBSTutorialComponent(vulkanOnlyMode: boolean) {
     return function SBSTutorial(props: TutorialComponentProps) {
-        const sbsInstruction = t(`tutorial.sbs.instructions.${props.deviceBrand}`, {
-            defaultValue: t('tutorial.sbs.defaultInstructions')
-        });
+        const sbsInstructionKeys: Record<string, string> = {
+            'XREAL':  t('tutorial.sbs.instructions.XREAL'),
+            'VITURE': t('tutorial.sbs.instructions.VITURE'),
+            'TCL':    t('tutorial.sbs.instructions.TCL'),
+            'RayNeo': t('tutorial.sbs.instructions.RayNeo'),
+            'Rokid':  t('tutorial.sbs.instructions.Rokid'),
+        };
+        const sbsInstruction = sbsInstructionKeys[props.deviceBrand] ?? t('tutorial.sbs.defaultInstructions');
         return <Fragment>
             <PanelSection title={t('tutorial.sbs.usageTitle')}>
                 <Focusable focusWithinClassName="gpfocuswithin" onActivate={() => {}} noFocusRing={true}>

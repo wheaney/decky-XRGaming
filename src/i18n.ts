@@ -14,6 +14,22 @@ import pl from './locales/pl/translation.json';
 import tr from './locales/tr/translation.json';
 import zhTW from './locales/zh-TW/translation.json';
 
+// Normalize the browser locale to one of our supported language codes.
+// i18next already strips region for simple cases (e.g. 'de-DE' → 'de'), but
+// region is meaningful for Chinese (zh-CN vs zh-TW) and Portuguese (pt-BR),
+// so we handle those explicitly.
+function normalizeLocale(locale: string): string {
+    if (locale.startsWith('zh')) {
+        // Traditional Chinese variants: zh-TW, zh-HK, zh-MO, zh-Hant*
+        if (/^zh-(TW|HK|MO|Hant)/i.test(locale)) return 'zh-TW';
+        // Everything else defaults to Simplified Chinese
+        return 'zh-CN';
+    }
+    if (locale.startsWith('pt')) return 'pt-BR';
+    // Return the base language tag (strip region); i18next handles the rest
+    return locale.split('-')[0];
+}
+
 i18n.init({
     resources: {
         en:    { translation: en },
@@ -30,7 +46,7 @@ i18n.init({
         tr:    { translation: tr },
         'zh-TW': { translation: zhTW },
     },
-    lng: navigator.language,
+    lng: normalizeLocale(navigator.language),
     fallbackLng: 'en',
     interpolation: {
         escapeValue: false,
