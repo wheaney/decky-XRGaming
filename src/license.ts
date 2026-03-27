@@ -1,4 +1,4 @@
-
+import i18n from './i18n';
 
 export enum FeatureStatus {
     Off = "off",
@@ -103,13 +103,13 @@ export function timeRemainingText(seconds?: number): string | undefined {
     if (!seconds) return;
 
     if (seconds < SecondsPerHour) {
-        return `less than an hour`
+        return i18n.t('license.lessThanHour');
     } else if (seconds / SecondsPerHour < EndDateWarnHours) {
         const timeRemaining = Math.floor(seconds / SecondsPerHour);
-        return timeRemaining === 1 ? '1 hour' : `${timeRemaining} hours`
+        return timeRemaining === 1 ? i18n.t('license.hour') : i18n.t('license.hours', { count: timeRemaining });
     } else if (seconds / SecondsPerDay < EndDateWarnDays) {
         const timeRemaining = Math.floor(seconds / SecondsPerDay);
-        return timeRemaining === 1 ? '1 day' : `${timeRemaining} days`
+        return timeRemaining === 1 ? i18n.t('license.day') : i18n.t('license.days', { count: timeRemaining });
     } else {
         return;
     }
@@ -118,15 +118,15 @@ export function timeRemainingText(seconds?: number): string | undefined {
 export function featureSubtext(license: License | undefined, featureName: string): string | undefined {
     const now = toSec(Date.now());
     const feature = license?.features?.[featureName];
-    if ((feature?.status ?? FeatureStatus.Off) === FeatureStatus.Off) return "Supporter Tier feature";
+    if ((feature?.status ?? FeatureStatus.Off) === FeatureStatus.Off) return i18n.t('license.supporterFeature');
 
     const secondsRemaining = (feature?.endDate ?? Infinity) - now;
     if (secondsRemaining < 0) {
         switch (feature?.status) {
             case FeatureStatus.On:
-                return "Supporter Tier expired";
+                return i18n.t('license.supporterExpired');
             case FeatureStatus.Trial:
-                return "Trial period expired";
+                return i18n.t('license.trialExpired');
         }
         return;
     }
@@ -135,17 +135,17 @@ export function featureSubtext(license: License | undefined, featureName: string
     if (timeRemaining) {
         switch (feature?.status) {
             case FeatureStatus.On:
-                return `Supporter Tier: ${timeRemaining} left`;
+                return i18n.t('license.supporterTimeLeft', { time: timeRemaining });
             case FeatureStatus.Trial:
-                return `Trial feature: ${timeRemaining} left`;
+                return i18n.t('license.trialTimeLeft', { time: timeRemaining });
         }
     }
 
     switch (feature?.status) {
         case FeatureStatus.On:
-            return "Supporter Tier feature";
+            return i18n.t('license.supporterFeature');
         case FeatureStatus.Trial:
-            return "Supporter Tier trial feature";
+            return i18n.t('license.supporterTrial');
     }
     return;
 }
