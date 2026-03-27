@@ -11,6 +11,7 @@ import {
 } from '@decky/ui';
 import {FC, MutableRefObject, useEffect, useState} from "react";
 import {QRCodeSVG} from "qrcode.react";
+import { t } from "./i18n";
 
 enum SupporterTierView {
     NoLicense,
@@ -26,26 +27,26 @@ function SupporterTierFeaturesList() {
     return <div style={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between', gap: '40px'}}>
         <div style={{flex: 0.8}}>
             <div style={{textAlign: 'center', fontWeight: 'bold', paddingBottom: '3px', borderBottom: '2px outset white'}}>
-                Side-by-side
+                {t('supporterTierModal.sbsFeature')}
             </div>
             <div style={{padding: '0 7px'}} className={gamepadDialogClasses.FieldDescription}>
-                Change the display distance. View 3D content.
+                {t('supporterTierModal.sbsFeatureDesc')}
             </div>
         </div>
         <div style={{flex: 1}}>
             <div style={{textAlign: 'center', fontWeight: 'bold', paddingBottom: '3px', borderBottom: '2px outset white'}}>
-                Smooth Follow
+                {t('supporterTierModal.smoothFollowFeature')}
             </div>
             <div style={{padding: '0 7px'}} className={gamepadDialogClasses.FieldDescription}>
-                Display follows you. Tracks movements with smooth accelerations.
+                {t('supporterTierModal.smoothFollowFeatureDesc')}
             </div>
         </div>
         <div style={{flex: 1.2}}>
             <div style={{textAlign: 'center', fontWeight: 'bold', paddingBottom: '3px', borderBottom: '2px outset white'}}>
-                Auto re-centering
+                {t('supporterTierModal.autoRecenterFeature')}
             </div>
             <div style={{padding: '0 7px'}} className={gamepadDialogClasses.FieldDescription}>
-                Virtual display automatically re-centers itself based on look-away distance or duration.
+                {t('supporterTierModal.autoRecenterFeatureDesc')}
             </div>
         </div>
     </div>;
@@ -81,19 +82,23 @@ interface SupporterTierAboutBlurbProps {
 }
 
 function SupporterTierAboutRenewBlurb(props: SupporterTierAboutBlurbProps) {
-    return <p style={{textAlign: 'center'}}>
-        Your <b>Supporter Tier</b> access ends in {props.timeRemainingText}. Donate ${props.fundsNeeded} USD more to
-        renew for another year.
-    </p>;
+    return <p style={{textAlign: 'center'}}
+        dangerouslySetInnerHTML={{__html: t('supporterTierModal.renewBlurb', {
+            time: props.timeRemainingText,
+            fundsNeeded: props.fundsNeeded
+        })}}
+    />;
 }
 
 function SupporterTierAboutEnrollBlurb(props: SupporterTierAboutBlurbProps) {
     return <p style={{textAlign: 'center'}}>
-        {props.timeRemainingText && <span>
-                Your <b>Supporter Tier</b> trial ends in {props.timeRemainingText}.
-            </span>} 
-            Donate ${props.fundsNeeded} USD to get Supporter Tier access for 12 months, 
-            or ${props.lifetimeFundsNeeded} USD for lifetime access.
+        {props.timeRemainingText && <span
+            dangerouslySetInnerHTML={{__html: t('supporterTierModal.enrollBlurbTrial', { time: props.timeRemainingText })}}
+        />}{' '}
+        {t('supporterTierModal.enrollBlurb', {
+            fundsNeeded: props.fundsNeeded,
+            lifetimeFundsNeeded: props.lifetimeFundsNeeded
+        })}
     </p>
 }
 
@@ -123,9 +128,9 @@ function SupporterTierNoLicense(props: SupporterTierStepProps) {
         })().catch(() => setFetchingLicense(false));
     }
 
-    return <PanelSection title={'Supporter Tier - Device offline'}>
+    return <PanelSection title={t('supporterTierModal.offlineTitle')}>
         <p style={{textAlign: 'center'}}>
-            Your device needs to be connected to the internet to retrieve your Supporter Tier status.
+            {t('supporterTierModal.offlineDesc')}
         </p>
         <Focusable
             style={{
@@ -140,9 +145,9 @@ function SupporterTierNoLicense(props: SupporterTierStepProps) {
             <DialogButtonPrimary  onClick={fetchLicense} disabled={isFetchingLicense}>
                 {isFetchingLicense && <span>
                     <Spinner style={{height: '16px', marginRight: 10}}/>
-                    Retrieving license
+                    {t('supporterTierModal.retrievingLicense')}
                 </span> ||
-                "I'm online now"}
+                t('supporterTierModal.onlineNow')}
             </DialogButtonPrimary>
         </Focusable>
     </PanelSection>
@@ -194,29 +199,29 @@ function SupporterTierAbout(props: SupporterTierAboutProps) {
         >
             <DialogButtonPrimary onClick={() => props.changeViewFn(SupporterTierView.Donate)} disabled={isFetchingLicense}>{props.primaryButtonLabel}</DialogButtonPrimary>
             {showTryNewToken && <DialogButtonSecondary onClick={() => props.changeViewFn(SupporterTierView.VerifyToken)} disabled={isFetchingLicense}>
-                Try a new token
+                {t('supporterTierModal.tryNewToken')}
             </DialogButtonSecondary> ||
             <DialogButtonSecondary onClick={alreadyDonatedOnClick} disabled={isFetchingLicense}>
                 {isFetchingLicense && <span>
                     <Spinner style={{height: '16px', marginRight: 10}}/>
-                    Refreshing license
+                    {t('supporterTierModal.refreshingLicense')}
                 </span> ||
-                "I've already donated"}
+                t('supporterTierModal.alreadyDonated')}
             </DialogButtonSecondary>}
         </Focusable>
     </PanelSection>
 }
 
 function SupporterTierEnroll(props: SupporterTierStepProps) {
-    return <SupporterTierAbout title={'Supporter Tier'}
-                               primaryButtonLabel={'Donate now'}
+    return <SupporterTierAbout title={t('supporterTierModal.enrollTitle')}
+                               primaryButtonLabel={t('supporterTierModal.donateNow')}
                                blurb={SupporterTierAboutEnrollBlurb}
                                {...props} />
 }
 
 function SupporterTierRenew(props: SupporterTierStepProps) {
-    return <SupporterTierAbout title={'Supporter Tier - Renewal'}
-                               primaryButtonLabel={'Renew now'}
+    return <SupporterTierAbout title={t('supporterTierModal.renewTitle')}
+                               primaryButtonLabel={t('supporterTier.renewNow')}
                                blurb={SupporterTierAboutRenewBlurb}
                                {...props} />
 }
@@ -243,10 +248,12 @@ function SupporterTierDonate(props: SupporterTierStepProps) {
     }
 
     const donatedOnClick = props.confirmedToken ? fetchLicense : () => props.changeViewFn(SupporterTierView.VerifyToken);
-    return <PanelSection title={'Supporter Tier - Donate'}>
+    return <PanelSection title={t('supporterTierModal.donateTitle')}>
         <div style={{textAlign: 'center', marginBlockEnd: "1em"}}>
-            Donate ${fundsNeeded} USD to get Supporter Tier access for 12 months, 
-            or ${lifetimeFundsNeeded} USD for lifetime access.
+            {t('supporterTierModal.enrollBlurb', {
+                fundsNeeded,
+                lifetimeFundsNeeded
+            })}
         </div>
         <div style={{
             display: 'flex',
@@ -261,7 +268,7 @@ function SupporterTierDonate(props: SupporterTierStepProps) {
                 size={125}
             />
             <div className={gamepadDialogClasses.FieldDescription} style={{marginBottom: "1em"}}>
-                To scan the code, you can view this dialog with your glasses unplugged.
+                {t('supporterTierModal.donateQrNote')}
             </div>
             <a style={{textAlign: 'center', wordBreak: 'break-word'}} onClick={() => {
                 props.supporterTierModalCloseRef.current?.();
@@ -283,9 +290,9 @@ function SupporterTierDonate(props: SupporterTierStepProps) {
                 <DialogButtonPrimary onClick={donatedOnClick} disabled={isFetchingLicense}>
                     {isFetchingLicense && <span>
                         <Spinner style={{height: '16px', marginRight: 10}}/>
-                        Refreshing license
+                        {t('supporterTierModal.refreshingLicense')}
                     </span> ||
-                    "Okay, I've donated"}
+                    t('supporterTierModal.okayDonated')}
                 </DialogButtonPrimary>
             </div>
             <div style={{flex: 0.5}}></div>
@@ -311,39 +318,36 @@ function SupporterTierVerifyToken(props: SupporterTierStepProps) {
                         await props.refreshLicenseFn();
                         setTimeout(() => props.supporterTierModalCloseRef.current?.(), 3000);
                     } else {
-                        setFieldError('Token "' + token + '" is invalid, was requested from another device, ' + 
-                            'or the server couldn\'t be reached. Please make sure your device is online, or request a new token.');
+                        setFieldError(t('supporterTierModal.tokenInvalid', { token }));
                         setToken('');
                     }
                 } catch (e) {
                     setCheckingToken(false);
-                    setFieldError('An error occurred. Please report this issue if it persists.');
+                    setFieldError(t('supporterTierModal.tokenError'));
                 }
             } else if (token) {
                 setFieldError(undefined);
             }
         })().catch(() => {
             setCheckingToken(false);
-            setFieldError('An error occurred. Please report this issue if it persists.');
+            setFieldError(t('supporterTierModal.tokenError'));
         });
     }, [token]);
 
-    return <PanelSection title={'Supporter Tier - Verify Token'}>
+    return <PanelSection title={t('supporterTierModal.verifyTitle')}>
         <p style={{textAlign: 'center'}}>
-            Enter the token that was emailed to you at the email address you use as your Ko-fi login.
-            If you don't receive it, double-check that you're using the correct email address, check your spam folder,
-            or request a new one.
+            {t('supporterTierModal.verifyDesc')}
         </p>
         <div style={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between'}}>
             <div style={{flex: 1.25}}></div>
             <div style={{flex: 1}}>
                 <TextField disabled={checkingToken}
-                           label={'Token'}
+                           label={t('supporterTierModal.tokenLabel')}
                            value={token}
                            onChange={newToken => setToken(newToken.currentTarget.value.toUpperCase())}
                            description={
                                 fieldError && <span style={{color: 'red'}}>{fieldError}</span> ||
-                                isSuccess && <span style={{color: 'green'}}>&#x2714;&nbsp;Success!</span>
+                                isSuccess && <span style={{color: 'green'}}>&#x2714;&nbsp;{t('supporterTierModal.tokenSuccess')}</span>
                             }
                 />
             </div>
@@ -365,9 +369,9 @@ function SupporterTierVerifyToken(props: SupporterTierStepProps) {
                                      disabled={checkingToken || isSuccess}>
                     {checkingToken && <span>
                         <Spinner style={{height: '16px', marginRight: 10}}/>
-                        Checking token
+                        {t('supporterTierModal.checkingToken')}
                     </span> ||
-                        "I need a new token"}
+                        t('supporterTierModal.needNewToken')}
                 </DialogButtonPrimary>
             </div>
             <div style={{flex: 0.5}}></div>
@@ -391,26 +395,26 @@ function SupporterTierRequestToken(props: SupporterTierStepProps) {
                     props.changeViewFn(SupporterTierView.VerifyToken);
                 } catch (e) {
                     setRequestingToken(false);
-                    setFieldError('An error occurred. Please report this issue if it persists.');
+                    setFieldError(t('supporterTierModal.tokenError'));
                 }
             } else {
                 setRequestingToken(false);
                 setFieldError(undefined);
             }
-        })().catch(() => setFieldError('An error occurred. Please report this issue if it persists.'));
+        })().catch(() => setFieldError(t('supporterTierModal.tokenError')));
     }
 
     function isValidEmail(email: string) {
         return /^\w+([\.\-\+]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,})+$/.test(email)
     }
 
-    return <PanelSection title={'Supporter Tier - Request Token'}>
+    return <PanelSection title={t('supporterTierModal.requestTitle')}>
         <p style={{textAlign: 'center'}}>
-            Enter the same email address you use as your Ko-fi login.
+            {t('supporterTierModal.requestDesc')}
         </p>
         <div style={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between', gap: '50px'}}>
             <div style={{flex: 1.5}}>
-                <TextField label={'Email'}
+                <TextField label={t('supporterTierModal.emailLabel')}
                            value={email}
                            mustBeEmail={true}
                            onChange={emailField => {
@@ -434,7 +438,7 @@ function SupporterTierRequestToken(props: SupporterTierStepProps) {
             <div style={{flex: 0.5}}></div>
             <div style={{flex: 1}}>
                 <DialogButtonPrimary onClick={sendVerificationEmail} disabled={requestingToken || isEmailError}>
-                    {requestingToken && <Spinner style={{height: '16px', marginRight: 10}}/>}Send verification
+                    {requestingToken && <Spinner style={{height: '16px', marginRight: 10}}/>}{t('supporterTierModal.sendVerification')}
                 </DialogButtonPrimary>
             </div>
             <div style={{flex: 0.5}}></div>

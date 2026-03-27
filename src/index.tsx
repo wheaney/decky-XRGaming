@@ -32,6 +32,7 @@ import {featureDetails, License, secondsRemaining, timeRemainingText} from "./li
 import {RefreshLicenseResponse} from "./SupporterTierModal";
 import { useShowSupporterTierDetails, supporterTierDetails, SupporterTierStatus } from "./SupporterTierStatus";
 import { SupporterTierFeatureLabel } from "./SupporterTierFeatureLabel";
+import { t } from "./i18n";
 
 interface Config {
     disabled: boolean;
@@ -106,91 +107,52 @@ const ManagedExternalModes: ExternalMode[] = ['virtual_display', 'sideview', 'no
 const SideviewPositions: SideviewPosition[] = ["center", "top_left", "top_right", "bottom_left", "bottom_right"];
 const DirtyControlFlagsExpireMilliseconds = 3000;
 
-const HeadsetModeDescriptions: {[key in HeadsetModeOption]: string} = {
-    "virtual_display": "Virtual display is only available in-game.",
-    "vr_lite": "Use Head movements to look around in-game.",
-    "sideview": "Display follow, sizing, and positioning.",
-    "disabled": "Static display with no head-tracking."
-};
-const HeadsetModeOptions: HeadsetModeOption[] =  Object.keys(HeadsetModeDescriptions) as HeadsetModeOption[];
+const getHeadsetModeDescriptions = (): {[key in HeadsetModeOption]: string} => ({
+    "virtual_display": t('headsetMode.virtualDisplay.description'),
+    "vr_lite":         t('headsetMode.vrLite.description'),
+    "sideview":        t('headsetMode.sideview.description'),
+    "disabled":        t('headsetMode.disabled.description'),
+});
+const HeadsetModeOptions: HeadsetModeOption[] = ["virtual_display", "vr_lite", "sideview", "disabled"];
 
-const SideviewPositionDescriptions: {[key in SideviewPosition]: string} = {
-    "center": "Center",
-    "top_left": "Top\u00a0left",
-    "top_right": "Top\u00a0right",
-    "bottom_left": "Bottom\u00a0left",
-    "bottom_right": "Bottom\u00a0right"
-};
+const getSideviewPositionDescriptions = (): {[key in SideviewPosition]: string} => ({
+    "center":       t('sideviewPosition.center'),
+    "top_left":     t('sideviewPosition.topLeft'),
+    "top_right":    t('sideviewPosition.topRight'),
+    "bottom_left":  t('sideviewPosition.bottomLeft'),
+    "bottom_right": t('sideviewPosition.bottomRight'),
+});
 
 const HeadsetModeConfirmationTimeoutMs = 1000
 
-const ModeNotchLabels: NotchLabel[] = [
-    {
-        label: "Virtual display",
-        notchIndex: 0
-    },
-    {
-        label: "VR\u2011Lite",
-        notchIndex: 1
-    },
-    {
-        label: "Follow",
-        notchIndex: 2
-    },
-    {
-        label: "Disabled",
-        notchIndex: 3
-    },
+const getModeNotchLabels = (): NotchLabel[] => [
+    { label: t('notch.virtualDisplay'), notchIndex: 0 },
+    { label: t('notch.vrLite'),         notchIndex: 1 },
+    { label: t('notch.follow'),         notchIndex: 2 },
+    { label: t('notch.disabled'),       notchIndex: 3 },
 ];
 
-const DisplaySizeNotchLabels: NotchLabel[] = [
-    {
-        label: "Smallest",
-        notchIndex: 0
-    },
-    {
-        label: "Default",
-        notchIndex: 3
-    },
-    {
-        label: "Biggest",
-        notchIndex: 8
-    }
+const getDisplaySizeNotchLabels = (): NotchLabel[] => [
+    { label: t('notch.smallest'), notchIndex: 0 },
+    { label: t('notch.default'),  notchIndex: 3 },
+    { label: t('notch.biggest'),  notchIndex: 8 },
 ];
 
-const SimpleDisplaySizeNotchLabels: NotchLabel[] = [
-    {label: "Smallest", notchIndex: 0},
-    {label: "Biggest", notchIndex: 1}
+const getSimpleDisplaySizeNotchLabels = (): NotchLabel[] => [
+    { label: t('notch.smallest'), notchIndex: 0 },
+    { label: t('notch.biggest'),  notchIndex: 1 },
 ];
 
-const DisplayDisanceNotchLabels: NotchLabel[] = [
-    {
-        label: "Closest",
-        notchIndex: 0
-    },
-    {
-        label: "Default",
-        notchIndex: 3
-    },
-    {
-        label: "Farthest",
-        notchIndex: 8
-    }
+const getDisplayDistanceNotchLabels = (): NotchLabel[] => [
+    { label: t('notch.closest'),  notchIndex: 0 },
+    { label: t('notch.default'),  notchIndex: 3 },
+    { label: t('notch.farthest'), notchIndex: 8 },
 ];
 
-const LookAheadNotchLabels: NotchLabel[] = [
-    {
-        label: "Default",
-        notchIndex: 0
-    },
-    {
-        label: "Lower",
-        notchIndex: 2
-    },
-    {
-        label: "Higher",
-        notchIndex: 9
-    }
+const getLookAheadNotchLabels = (): NotchLabel[] => [
+    { label: t('notch.default'), notchIndex: 0 },
+    { label: t('notch.lower'),   notchIndex: 2 },
+    { label: t('notch.higher'),  notchIndex: 9 },
 ];
 
 const FollowThresholdUpperNotchLabels: NotchLabel[] = [
@@ -218,9 +180,9 @@ const WidescreenFollowThresholdUpperNotchLabels: NotchLabel[] = [
 const CentimetersPerInch = 2.54;
 const NormalizedSliderMin = 0.1;
 const NormalizedSliderMax = 2.5;
-const MeasurementUnitOptions: {label: string; data: MeasurementUnits}[] = [
-    {label: "Centimeters (cm)", data: "cm"},
-    {label: "Inches (in)", data: "in"}
+const getMeasurementUnitOptions = (): {label: string; data: MeasurementUnits}[] => [
+    {label: t('measurementUnit.centimeters'), data: "cm"},
+    {label: t('measurementUnit.inches'),      data: "in"}
 ];
 
 const clampValue = (value: number, min: number, max: number): number => Math.min(Math.max(value, min), max);
@@ -326,9 +288,7 @@ const Content: VFC = () => {
         try {
             if (!await waitForPendingBreezyInstall()) {
                 if (!await call<[], boolean>("install_breezy") || !await waitForPendingBreezyInstall()) {
-                    throw Error("There was an error during setup. Try restarting your Steam Deck. If " +
-                                "the error persists, please file an issue in the decky-XRGaming GitHub " + 
-                                "repository.");
+                    throw Error(t('error.setup'));
                 }
             }
             setInstallationStatus("installed");
@@ -428,7 +388,7 @@ const Content: VFC = () => {
         try {
             const ok = await call<[], boolean>("force_reset_driver");
             if (!ok) {
-                throw Error("Failed to restart xr-driver. Check plugin logs for details.");
+                throw Error(t('error.resetDriver'));
             }
         } catch (e) {
             setError((e as Error).message);
@@ -441,7 +401,7 @@ const Content: VFC = () => {
 
     const asyncDataLoaded = !!config && !!driverState;
     const deviceConnected = !!driverState?.connected_device_brand && !!driverState?.connected_device_model
-    const deviceName = deviceConnected ? `${driverState?.connected_device_brand} ${driverState?.connected_device_model}` : "No device connected"
+    const deviceName = deviceConnected ? `${driverState?.connected_device_brand} ${driverState?.connected_device_model}` : t('device.noDevice')
     const headsetModeConfig = config?.ui_view.headset_mode ?? "disabled"
     const headsetMode: HeadsetModeOption = dirtyHeadsetMode ?? headsetModeConfig
     const isDisabled = !deviceConnected || headsetMode === "disabled"
@@ -481,7 +441,7 @@ const Content: VFC = () => {
 
     const measurementUnits: MeasurementUnits = config?.measurement_units ?? "cm";
     const measurementUnitsLabel = measurementUnits === "cm" ? "cm" : "in";
-    const measurementUnitsMenuLabel = measurementUnits === "cm" ? "Centimeters" : "Inches";
+    const measurementUnitsMenuLabel = measurementUnits === "cm" ? t('measurementUnit.centimetersShort') : t('measurementUnit.inchesShort');
     const measurementSliderStep = measurementUnits === "cm" ? 1.0 : 0.5;
     const measurementDecimalPlaces = measurementUnits === "cm" ? 0 : 1;
     const fullDistanceCm = driverState?.connected_device_full_distance_cm;
@@ -514,9 +474,9 @@ const Content: VFC = () => {
     const distanceMeasurementLabels = poseHasPosition ?
         buildMeasurementNotchLabels(fullDistanceCm, measurementUnits, 0.1, 2.5, 9, [0, 3, 8]) :
         undefined;
-    const displayDistanceNotchLabels = distanceMeasurementLabels ?? DisplayDisanceNotchLabels;
-    const displayDistanceLabel = poseHasPosition ? `Display distance (${measurementUnitsLabel})` : "Display distance";
-    const displaySizeLabel = "Display size";
+    const displayDistanceNotchLabels = distanceMeasurementLabels ?? getDisplayDistanceNotchLabels();
+    const displayDistanceLabel = poseHasPosition ? t('display.distanceLabelWithUnits', { units: measurementUnitsLabel }) : t('display.distanceLabel');
+    const displaySizeLabel = t('display.sizeLabel');
     const normalizedDisplayDistance = Math.max(displayDistance, NormalizedSliderMin);
     const storedDisplaySize = config?.display_size ?? 1.0;
     const sizeMultiplier = isSizeAdjustedByDistance ? normalizedDisplayDistance : 1.0;
@@ -598,13 +558,13 @@ const Content: VFC = () => {
     const sbsFirmwareUpdateNeeded = !driverState?.sbs_mode_supported && driverState?.firmware_update_recommended;
     let sbsDescription = "";
     if (sbsFirmwareUpdateNeeded) {
-        sbsDescription = "Update your glasses' firmware to enable side-by-side mode.";
+        sbsDescription = t('sbs.firmwareUpdateNeeded');
     } else if (!driverState?.sbs_mode_supported) {
-        sbsDescription = "Your glasses do not currently support side-by-side mode.";
+        sbsDescription = t('sbs.notSupported');
     } else if (!driverState?.sbs_mode_enabled) {
-        sbsDescription = "Adjust display distance. View 3D content.";
+        sbsDescription = t('sbs.description');
     }
-    const sbsLabel = "Enable side-by-side mode";
+    const sbsLabel = t('sbs.label');
     const enableSbsButton = driverState && <PanelSectionRow>
         <ToggleField
             checked={sbsModeEnabled}
@@ -641,8 +601,8 @@ const Content: VFC = () => {
                     notchLabels={displayDistanceNotchLabels}
                     label={displayDistanceLabel}
                     description={
-                        driverState?.sbs_mode_enabled && "Adjust perceived display depth for eye comfort." ||
-                        poseHasPosition && "Display distances are approximate."
+                        driverState?.sbs_mode_enabled && t('display.distanceDepthDesc') ||
+                        poseHasPosition && t('display.distanceApproxDesc')
                     }
                     step={measurementEnabledForDistance ? measurementSliderStep : 0.01}
                     editableValue={true}
@@ -662,8 +622,8 @@ const Content: VFC = () => {
     const joystickModeButton = <PanelSectionRow>
         <ToggleField
             checked={isJoystickMode}
-            label={"Joystick mode"}
-            description={"Try as a last resort if your game doesn't support mouse-look."}
+            label={t('vrLite.joystickMode')}
+            description={t('vrLite.joystickModeDesc')}
             onChange={(joystickMode) => {
                 if (config) {
                     updateConfig({
@@ -681,10 +641,10 @@ const Content: VFC = () => {
     const advancedSettings = [
         poseHasPosition && <PanelSectionRow>
             <DropdownItem
-                label={"Distance units"}
+                label={t('advanced.distanceUnits')}
                 menuLabel={measurementUnitsMenuLabel}
                 selectedOption={measurementUnits}
-                rgOptions={MeasurementUnitOptions}
+                rgOptions={getMeasurementUnitOptions()}
                 onChange={(selection) => {
                     if (config) {
                         const measurement_units = selection.data as MeasurementUnits;
@@ -698,8 +658,8 @@ const Content: VFC = () => {
             <PanelSectionRow>
                 <ToggleField
                     checked={config?.smooth_follow_track_yaw ?? true}
-                    label={"Horizontal follow"}
-                    description={"Smooth follow will track horizontal movements."}
+                    label={t('advanced.horizontalFollow')}
+                    description={t('advanced.horizontalFollowDesc')}
                     onChange={(smooth_follow_track_yaw) => {
                         if (config) {
                             updateConfig({
@@ -713,8 +673,8 @@ const Content: VFC = () => {
             <PanelSectionRow>
                 <ToggleField
                     checked={config?.smooth_follow_track_pitch ?? true}
-                    label={"Vertical follow"}
-                    description={"Smooth follow will track vertical movements."}
+                    label={t('advanced.verticalFollow')}
+                    description={t('advanced.verticalFollowDesc')}
                     onChange={(smooth_follow_track_pitch) => {
                         if (config) {
                             updateConfig({
@@ -728,8 +688,8 @@ const Content: VFC = () => {
             <PanelSectionRow>
                 <ToggleField
                     checked={config?.smooth_follow_track_roll ?? false}
-                    label={"Tilt/roll follow"}
-                    description={"Smooth follow will track roll/tilt movements."}
+                    label={t('advanced.tiltRollFollow')}
+                    description={t('advanced.tiltRollFollowDesc')}
                     onChange={(smooth_follow_track_roll) => {
                         if (config) {
                             updateConfig({
@@ -745,10 +705,10 @@ const Content: VFC = () => {
         isVirtualDisplayMode && <PanelSectionRow>
             <SliderField value={config?.look_ahead ?? 0}
                          min={0} max={45} notchTicksVisible={true}
-                         notchCount={10} notchLabels={LookAheadNotchLabels}
+                         notchCount={10} notchLabels={getLookAheadNotchLabels()}
                          step={3}
-                         label={"Movement look-ahead"}
-                         description={(config?.look_ahead ?? 0) > 0 ? "Use Default unless screen is noticeably ahead or behind your movements. May introduce jitter at higher values." : undefined}
+                         label={t('advanced.lookAhead')}
+                         description={(config?.look_ahead ?? 0) > 0 ? t('advanced.lookAheadDesc') : undefined}
                          onChange={(look_ahead) => {
                              if (config) {
                                  updateConfig({
@@ -762,8 +722,8 @@ const Content: VFC = () => {
         <PanelSectionRow>
             <SliderField value={config?.neck_saver_horizontal_multiplier ?? 1.0}
                          min={1.0} max={2.5} step={0.1}
-                         label={"Neck-saver horizontal"}
-                         description={"Increase to amplify left/right neck movements."}
+                         label={t('advanced.neckSaverH')}
+                         description={t('advanced.neckSaverHDesc')}
                          onChange={(neck_saver_horizontal_multiplier) => {
                              if (config) {
                                  updateConfig({
@@ -777,8 +737,8 @@ const Content: VFC = () => {
         <PanelSectionRow>
             <SliderField value={config?.neck_saver_vertical_multiplier ?? 1.0}
                          min={1.0} max={2.5} step={0.1}
-                         label={"Neck-saver vertical"}
-                         description={"Increase to amplify up/down neck movements."}
+                         label={t('advanced.neckSaverV')}
+                         description={t('advanced.neckSaverVDesc')}
                          onChange={(neck_saver_vertical_multiplier) => {
                              if (config) {
                                  updateConfig({
@@ -794,15 +754,15 @@ const Content: VFC = () => {
                         min={0.0} max={5.0} step={0.1}
                         notchTicksVisible={true}
                         notchCount={6} notchLabels={[
-                            {label: "Disabled", notchIndex: 0},
+                            {label: t('notch.disabled'), notchIndex: 0},
                             {label: "1.0", notchIndex: 1},
                             {label: "2.0", notchIndex: 2},
                             {label: "3.0", notchIndex: 3},
                             {label: "4.0", notchIndex: 4},
                             {label: "5.0", notchIndex: 5}
                         ]}
-                        label={"Dead-zone threshold (degrees)"}
-                        description={"Stabilize movements below this angle."}
+                        label={t('advanced.deadZone')}
+                        description={t('advanced.deadZoneDesc')}
                         editableValue={true}
                         onChange={(dead_zone_threshold_deg) => {
                             if (config) {
@@ -817,8 +777,8 @@ const Content: VFC = () => {
         <PanelSectionRow>
             <ToggleField
                 checked={config?.multi_tap_enabled ?? false}
-                label={"Multi-tap enabled"}
-                description={"Enable double-tap to recenter and triple-tap to recalibrate."}
+                label={t('advanced.multiTap')}
+                description={t('advanced.multiTapDesc')}
                 onChange={(multi_tap_enabled) => {
                     if (config) {
                         updateConfig({
@@ -832,8 +792,8 @@ const Content: VFC = () => {
         <PanelSectionRow>
             <ToggleField
                 checked={config?.opentrack_listener_enabled ?? false}
-                label={"OpenTrack listener"}
-                description={"Listen for OpenTrack UDP data."}
+                label={t('advanced.openTrack')}
+                description={t('advanced.openTrackDesc')}
                 onChange={(opentrack_listener_enabled) => {
                     if (config) {
                         updateConfig({
@@ -846,20 +806,20 @@ const Content: VFC = () => {
         </PanelSectionRow>,
         <PanelSectionRow>
             <ButtonItem disabled={calibrating}
-                        description={config?.multi_tap_enabled ? "Or triple-tap your headset." : undefined}
+                        description={config?.multi_tap_enabled ? t('button.recalibrateHeadsetDesc') : undefined}
                         layout="below"
                         onClick={() => writeControlFlags({recalibrate: true})} >
                 {calibrating ?
-                    <span><Spinner style={{height: '16px', marginRight: 10}} />Calibrating headset</span> :
-                    "Recalibrate headset"
+                    <span><Spinner style={{height: '16px', marginRight: 10}} />{t('button.calibratingHeadset')}</span> :
+                    t('button.recalibrateHeadset')
                 }
             </ButtonItem>
         </PanelSectionRow>,
         <PanelSectionRow>
             <ToggleField
                 checked={config?.gamescope_reshade_wayland_disabled ?? false}
-                label={"Disable gamescope integration"}
-                description={"XR effects will only apply to Vulkan games"}
+                label={t('advanced.disableGamescope')}
+                description={t('advanced.disableGamescopeDesc')}
                 onChange={(disabled) => {
                     if (config) {
                         updateConfig({
@@ -871,8 +831,8 @@ const Content: VFC = () => {
             />
         </PanelSectionRow>,
         isShaderMode && dontShowAgainKeys.length && <PanelSectionRow>
-            <ButtonItem description={"Clear your \"Don't show again\" settings."} layout="below" onClick={() => resetDontShowAgain()}>
-                Show all guides
+            <ButtonItem description={t('advanced.showAllGuidesDesc')} layout="below" onClick={() => resetDontShowAgain()}>
+                {t('advanced.showAllGuides')}
             </ButtonItem>
         </PanelSectionRow>
     ].filter(Boolean);
@@ -903,7 +863,7 @@ const Content: VFC = () => {
                                         {deviceName}
                                     </span>
                                     {deviceConnected && <span style={{marginLeft: 5, color: 'green'}}>
-                                        connected
+                                        {t('device.connected')}
                                     </span>}
                                     <span style={{marginLeft: 7, color: deviceConnected ? 'green' : 'red', position: 'relative', top: '3px'}}>
                                         {deviceConnected ? <PiPlugsConnected /> : <TbPlugConnectedX />}
@@ -912,11 +872,11 @@ const Content: VFC = () => {
                             </Field>
                         </PanelSectionRow>
                         {deviceConnected && <PanelSectionRow>
-                            <SliderField description={HeadsetModeDescriptions[headsetMode]}
+                            <SliderField description={getHeadsetModeDescriptions()[headsetMode]}
                                          value={HeadsetModeOptions.indexOf(headsetMode)}
                                          notchTicksVisible={true}
                                          min={0} max={HeadsetModeOptions.length-1}
-                                         notchLabels={ModeNotchLabels}
+                                         notchLabels={getModeNotchLabels()}
                                          notchCount={HeadsetModeOptions.length}
                                          onChange={(newMode) => setDirtyHeadsetMode(HeadsetModeOptions[newMode])}
                             />
@@ -925,42 +885,42 @@ const Content: VFC = () => {
                             <Field padding={'none'} childrenContainerWidth={'max'}>
                                 <div style={{textAlign: 'center'}}>
                                     <span style={{color: "#946d00", fontWeight: "bold"}}>
-                                        Vulkan-only mode
+                                        {t('mode.vulkanOnly')}
                                     </span><br/>
-                                    XR effects will only apply in-game
+                                    {t('mode.vulkanOnlyDesc')}
                                 </div>
                             </Field>
                         </PanelSectionRow>}
                         {isOtherMode && <Fragment>
                             <PanelSectionRow>
                                 <Field padding={'none'} childrenContainerWidth={'max'}>
-                                    An external application may be using your headset data: <b>{otherExternalModes.join(", ")}</b>.
+                                    {t('externalMode.using')} <b>{otherExternalModes.join(", ")}</b>.
                                 </Field>
                             </PanelSectionRow>
                             <PanelSectionRow>
-                                <ButtonItem description={"Disables external access to headset data"}
+                                <ButtonItem description={t('externalMode.disableDesc')}
                                             layout="below"
                                             onClick={() => writeConfig({ 
                                                 ...config, 
                                                 disabled: true
                                             })} >
-                                    Disable data broadcast
+                                    {t('externalMode.disable')}
                                 </ButtonItem>
                             </PanelSectionRow>
                         </Fragment> || isOtherModeDisabled && <Fragment>
                             <PanelSectionRow>
                                 <Field padding={'none'} childrenContainerWidth={'max'}>
-                                    An external application may be trying to use your headset data: <b>{otherExternalModes.join(", ")}</b>.
+                                    {t('externalMode.trying')} <b>{otherExternalModes.join(", ")}</b>.
                                 </Field>
                             </PanelSectionRow>
                             <PanelSectionRow>
-                                <ButtonItem description={"Allows for external access to headset data"}
+                                <ButtonItem description={t('externalMode.enableDesc')}
                                             layout="below"
                                             onClick={() => writeConfig({ 
                                                 ...config, 
                                                 disabled: false
                                             })} >
-                                    Enable data broadcast
+                                    {t('externalMode.enable')}
                                 </ButtonItem>
                             </PanelSectionRow>
                         </Fragment>}
@@ -968,7 +928,7 @@ const Content: VFC = () => {
                         {!isDisabled && isVrLiteMode && !isJoystickMode && <PanelSectionRow>
                             <SliderField value={config.mouse_sensitivity}
                                          min={5} max={100} showValue={true} notchTicksVisible={true}
-                                         label={"Mouse sensitivity"}
+                                         label={t('vrLite.mouseSensitivity')}
                                          onChange={(mouse_sensitivity) => {
                                              if (config) {
                                                  updateConfig({
@@ -982,8 +942,8 @@ const Content: VFC = () => {
                         {!isDisabled && isVrLiteMode && <PanelSectionRow>
                             <ToggleField
                                 checked={config?.vr_lite_invert_x ?? false}
-                                label={"Invert X-axis"}
-                                description={"Inverts X-axis movements in VR-Lite mode."}
+                                label={t('vrLite.invertX')}
+                                description={t('vrLite.invertXDesc')}
                                 onChange={(vr_lite_invert_x) => {
                                     if (config) {
                                         updateConfig({
@@ -997,8 +957,8 @@ const Content: VFC = () => {
                         {!isDisabled && isVrLiteMode && <PanelSectionRow>
                             <ToggleField
                                 checked={config?.vr_lite_invert_y ?? false}
-                                label={"Invert Y-axis"}
-                                description={"Inverts Y-axis movements in VR-Lite mode."}
+                                label={t('vrLite.invertY')}
+                                description={t('vrLite.invertYDesc')}
                                 onChange={(vr_lite_invert_y) => {
                                     if (config) {
                                         updateConfig({
@@ -1011,9 +971,9 @@ const Content: VFC = () => {
                         </PanelSectionRow>}
                         {isSideviewMode && <Fragment>
                             <PanelSectionRow>
-                                <DropdownItem label={"Display position"}
+                                <DropdownItem label={t('display.position')}
                                               rgOptions={SideviewPositions.map((position) => ({
-                                                  label: SideviewPositionDescriptions[position],
+                                                  label: getSideviewPositionDescriptions()[position],
                                                   data: position
                                               }))}
                                               onChange={(selection) => {
@@ -1029,15 +989,15 @@ const Content: VFC = () => {
                                                       }).catch(e => setError(e))
                                                   }
                                               }}
-                                              menuLabel={SideviewPositionDescriptions[config?.sideview_position]}
+                                              menuLabel={getSideviewPositionDescriptions()[config?.sideview_position]}
                                               selectedOption={config?.sideview_position} />
                             </PanelSectionRow>
                             <PanelSectionRow>
                                 <ToggleField
                                     checked={smoothFollowEnabled}
-                                    label={<SupporterTierFeatureLabel label="Smooth follow" 
+                                    label={<SupporterTierFeatureLabel label={t('smoothFollow.sideviewLabel')} 
                                                                       feature={smoothFollowFeature} />}
-                                    description={"Display movements are more elastic"}
+                                    description={t('smoothFollow.sideviewDesc')}
                                     onChange={(sideview_smooth_follow_enabled) => {
                                         if (!smoothFollowFeature.enabled) {
                                             showSupporterTierDetailsFn(supporterTier, requestToken, verifyToken, refreshLicense);
@@ -1056,8 +1016,8 @@ const Content: VFC = () => {
                                                 WidescreenFollowThresholdUpperNotchLabels.length : 
                                                 FollowThresholdUpperNotchLabels.length}
                                              notchTicksVisible={false}
-                                             label={"Smooth follow threshold"}
-                                             description={"How closely the display follows you"}
+                                             label={t('smoothFollow.threshold')}
+                                             description={t('smoothFollow.thresholdDesc')}
                                              notchLabels={isWidescreen ? 
                                                 WidescreenFollowThresholdUpperNotchLabels : 
                                                 FollowThresholdUpperNotchLabels}
@@ -1082,8 +1042,8 @@ const Content: VFC = () => {
                                              editableValue={smoothFollowEnabled}
                                              label={displaySizeLabel}
                                              notchLabels={smoothFollowEnabled ?
-                                                DisplaySizeNotchLabels :
-                                                SimpleDisplaySizeNotchLabels
+                                                getDisplaySizeNotchLabels() :
+                                                getSimpleDisplaySizeNotchLabels()
                                              }
                                              step={0.01}
                                              onChange={(rawValue) => {
@@ -1104,9 +1064,9 @@ const Content: VFC = () => {
                             <PanelSectionRow>
                                 <ToggleField
                                     checked={config.virtual_display_smooth_follow_enabled && smoothFollowFeature.enabled}
-                                    label={<SupporterTierFeatureLabel label="Automatic recentering" 
+                                    label={<SupporterTierFeatureLabel label={t('smoothFollow.autoRecenterLabel')} 
                                                                       feature={smoothFollowFeature} />}
-                                    description={"Recenter under certain conditions"}
+                                    description={t('smoothFollow.autoRecenterDesc')}
                                     onChange={(virtual_display_smooth_follow_enabled) => {
                                         if (!smoothFollowFeature.enabled) {
                                             showSupporterTierDetailsFn(supporterTier, requestToken, verifyToken, refreshLicense);
@@ -1123,9 +1083,9 @@ const Content: VFC = () => {
                                              min={NormalizedSliderMin}
                                              max={NormalizedSliderMax}
                                              notchCount={9}
-                                             notchLabels={DisplaySizeNotchLabels}
+                                             notchLabels={getDisplaySizeNotchLabels()}
                                              label={displaySizeLabel}
-                                             description={sbsModeEnabled && "Display distance setting also affects perceived display size."}
+                                             description={sbsModeEnabled && t('display.sizeDistanceDesc')}
                                              step={0.01}
                                              editableValue={true}
                                              onChange={(rawValue) => {
@@ -1144,20 +1104,20 @@ const Content: VFC = () => {
                         </Fragment>}
                         {is3DoFMode && <PanelSectionRow>
                             <ButtonItem disabled={calibrating || dirtyControlFlags.recenter_screen}
-                                        description={!dirtyControlFlags.recenter_screen && config?.multi_tap_enabled ? "Or double-tap your headset." : undefined}
+                                        description={!dirtyControlFlags.recenter_screen && config?.multi_tap_enabled ? t('button.recenterDoubleDesc') : undefined}
                                         layout="below"
                                         onClick={() => writeControlFlags({recenter_screen: true})} >
                                 {calibrating ?
-                                    <span><Spinner style={{height: '16px', marginRight: 10}} />Calibrating headset</span> :
-                                    "Recenter display"
+                                    <span><Spinner style={{height: '16px', marginRight: 10}} />{t('button.calibratingHeadset')}</span> :
+                                    t('button.recenterDisplay')
                                 }
                             </ButtonItem>
                         </PanelSectionRow>}
                         {is3DoFMode && <PanelSectionRow>
                             <ToggleField
                                 checked={config?.curved_display ?? false}
-                                label={"Curved display"}
-                                description={"Wrap the display around your field of view."}
+                                label={t('display.curved')}
+                                description={t('display.curvedDesc')}
                                 onChange={(curved_display) => {
                                     if (config) {
                                         updateConfig({
@@ -1176,8 +1136,8 @@ const Content: VFC = () => {
                             {isVulkanOnlyMode && <PanelSectionRow>
                                 <ToggleField
                                     checked={config.sbs_mode_stretched}
-                                    label={"Content is stretched"}
-                                    description={"Enable if your content goes from the left edge to the right edge of the screen"}
+                                    label={t('sbs.stretched')}
+                                    description={t('sbs.stretchedDesc')}
                                     onChange={(sbs_mode_stretched) => {
                                         if (config) {
                                             updateConfig({
@@ -1190,8 +1150,8 @@ const Content: VFC = () => {
                             <PanelSectionRow>
                                 <ToggleField
                                     checked={config.sbs_content}
-                                    label={"Content is 3D"}
-                                    description={"For when the source content is 3D SBS"}
+                                    label={t('sbs.is3d')}
+                                    description={t('sbs.is3dDesc')}
                                     onChange={(sbs_content) => {
                                         if (config) {
                                             updateConfig({
@@ -1208,13 +1168,13 @@ const Content: VFC = () => {
                         {!isDisabled && <Fragment>
                             {!showAdvanced && advancedButtonVisible && <PanelSectionRow>
                                 <ButtonItem layout="below" onClick={() => setShowAdvanced(true)} >
-                                    Show advanced settings
+                                    {t('button.showAdvanced')}
                                 </ButtonItem>
                             </PanelSectionRow>}
                             {showAdvanced && advancedSettings}
                             {showAdvanced && advancedButtonVisible && <PanelSectionRow>
                                 <ButtonItem layout="below" onClick={() => setShowAdvanced(false)} >
-                                    Hide advanced settings
+                                    {t('button.hideAdvanced')}
                                 </ButtonItem>
                             </PanelSectionRow>}
                         </Fragment>}
@@ -1232,19 +1192,19 @@ const Content: VFC = () => {
                                     background: 'linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet)',
                                     WebkitBackgroundClip: 'text',
                                     color: 'transparent'
-                                }}>Virtual display</span> help</span>
+                                }}>{t('button.virtualDisplayHelp')}</span>{t('button.virtualDisplayHelpSuffix')}</span>
                             </QrButton> ||
                             <QrButton icon={<LuHelpCircle />}
                                       url={"https://github.com/wheaney/decky-XRGaming#xr-gaming-plugin"}
                                       followLink={true}
                             >
-                                Need help?
+                                {t('button.needHelp')}
                             </QrButton>
                         }
                         <QrButton icon={<SiDiscord color={"#7289da"}/>} url={"https://discord.gg/GRQcfR5h9c"}>
                             <span style={{fontSize: 'small'}}>
-                                News. Discussions. Help.<br/>
-                                <span style={{color: 'white', fontWeight: 'bold'}}>Join the chat!</span>
+                                {t('button.discordNews')}<br/>
+                                <span style={{color: 'white', fontWeight: 'bold'}}>{t('button.discordJoin')}</span>
                             </span>
                         </QrButton>
                         <PanelSectionRow>
@@ -1253,8 +1213,8 @@ const Content: VFC = () => {
                                 layout="below"
                                 onClick={() => forceResetDriver()}>
                                 {forceResettingDriver ?
-                                    <span><Spinner style={{height: '16px', marginRight: 10}} />Restarting driver</span> :
-                                    "Force reset driver"
+                                    <span><Spinner style={{height: '16px', marginRight: 10}} />{t('button.restartingDriver')}</span> :
+                                    t('button.forceResetDriver')
                                 }
                             </ButtonItem>
                         </PanelSectionRow>
@@ -1263,7 +1223,7 @@ const Content: VFC = () => {
                         <PanelSectionRow>
                             <Spinner style={{height: '48px'}} />
                             {installationStatus == "inProgress" &&
-                                <span>Installing...</span>
+                                <span>{t('button.installing')}</span>
                             }
                         </PanelSectionRow>
                     </PanelSection>

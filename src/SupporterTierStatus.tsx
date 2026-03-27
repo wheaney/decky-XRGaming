@@ -5,6 +5,7 @@ import { RefreshLicenseResponse, SupporterTierModal } from "./SupporterTierModal
 import { Fragment, useRef } from "react";
 import { BsFillSuitHeartFill } from "react-icons/bs";
 import { BiSolidLock } from "react-icons/bi";
+import { t } from "./i18n";
 
 export interface SupporterTierDetails {
     licensePresent: boolean;
@@ -87,16 +88,16 @@ export function SupporterTierStatus({details, requestTokenFn, verifyTokenFn, ref
                         flexGrow: 1 
                     }}>
                         Supporter Tier: <span style={{fontWeight: 'bold', color: 'white'}}>
-                            <LuTimer style={{position: 'relative', top: '1px', marginRight: '2px'}} />In trial
+                            <LuTimer style={{position: 'relative', top: '1px', marginRight: '2px'}} />{t('supporterTier.inTrial')}
                         </span><br/>
                         {details.trialTimeRemainingText && <span className={gamepadDialogClasses.FieldDescription}>
-                            Trial ends in {details.trialTimeRemainingText}<br/>
-                            (only tagged <i>Supporter Tier</i> features will be locked)
+                            {t('supporterTier.trialEndsIn', { time: details.trialTimeRemainingText })}<br/>
+                            {t('supporterTier.trialLockedNote')}
                         </span>}
                     </div>
                     <ButtonItem layout="below" onClick={showSupporterTierDetails}
                                 bottomSeparator={'none'} highlightOnFocus={false}>
-                        Become a supporter
+                        {t('supporterTier.becomeSupporter')}
                     </ButtonItem>
                 </Field> ||
                 details.active && <Field
@@ -114,18 +115,18 @@ export function SupporterTierStatus({details, requestTokenFn, verifyTokenFn, ref
                         flexGrow: 1 
                     }}>
                         Supporter Tier: <span style={{fontWeight: 'bold', color: 'white'}}>{
-                            details.lifetimeAccess ? "Lifetime" : "Unlocked"
+                            details.lifetimeAccess ? t('supporterTier.lifetime') : t('supporterTier.unlocked')
                         }</span><br/>
                         <span className={gamepadDialogClasses.FieldDescription}>
-                            {details.timeRemainingText ? `Access ends in ${details.timeRemainingText}` :
-                                <Fragment><BsFillSuitHeartFill color={'red'}/> You rock! Thanks!</Fragment>}
+                            {details.timeRemainingText ? t('supporterTier.accessEndsIn', { time: details.timeRemainingText }) :
+                                <Fragment><BsFillSuitHeartFill color={'red'}/> {t('supporterTier.thankYou')}</Fragment>}
                         </span>
                     </div>
                     {details.timeRemainingText && <ButtonItem layout="below"
                                                                 onClick={showSupporterTierDetails}
                                                                 bottomSeparator={'none'}
                                                                 highlightOnFocus={false}>
-                        Renew now
+                        {t('supporterTier.renewNow')}
                     </ButtonItem>}
                 </Field> ||
                 <Field
@@ -144,12 +145,12 @@ export function SupporterTierStatus({details, requestTokenFn, verifyTokenFn, ref
                     }}>
                         Supporter Tier:
                         <span style={{fontWeight: 'bold', color: 'white'}}>
-                            <BiSolidLock style={{position: 'relative', top: '1px', margin: '0 2px'}} />Locked
+                            <BiSolidLock style={{position: 'relative', top: '1px', margin: '0 2px'}} />{t('supporterTier.locked')}
                         </span>
                     </div>
                     <ButtonItem layout="below" onClick={showSupporterTierDetails}
                                 bottomSeparator={'none'} highlightOnFocus={false}>
-                        Unlock now
+                        {t('supporterTier.unlockNow')}
                     </ButtonItem>
                 </Field>
             }

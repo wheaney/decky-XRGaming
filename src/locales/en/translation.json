@@ -1,0 +1,262 @@
+{
+  "device": {
+    "noDevice": "No device connected",
+    "connected": "connected"
+  },
+  "headsetMode": {
+    "virtualDisplay": {
+      "description": "Virtual display is only available in-game."
+    },
+    "vrLite": {
+      "description": "Use Head movements to look around in-game."
+    },
+    "sideview": {
+      "description": "Display follow, sizing, and positioning."
+    },
+    "disabled": {
+      "description": "Static display with no head-tracking."
+    }
+  },
+  "notch": {
+    "virtualDisplay": "Virtual display",
+    "vrLite": "VR\u2011Lite",
+    "follow": "Follow",
+    "disabled": "Disabled",
+    "smallest": "Smallest",
+    "default": "Default",
+    "biggest": "Biggest",
+    "closest": "Closest",
+    "farthest": "Farthest",
+    "lower": "Lower",
+    "higher": "Higher"
+  },
+  "measurementUnit": {
+    "centimeters": "Centimeters (cm)",
+    "centimetersShort": "Centimeters",
+    "inches": "Inches (in)",
+    "inchesShort": "Inches"
+  },
+  "mode": {
+    "vulkanOnly": "Vulkan-only mode",
+    "vulkanOnlyDesc": "XR effects will only apply in-game"
+  },
+  "externalMode": {
+    "using": "An external application may be using your headset data:",
+    "disableDesc": "Disables external access to headset data",
+    "disable": "Disable data broadcast",
+    "trying": "An external application may be trying to use your headset data:",
+    "enableDesc": "Allows for external access to headset data",
+    "enable": "Enable data broadcast"
+  },
+  "sideviewPosition": {
+    "center": "Center",
+    "topLeft": "Top\u00a0left",
+    "topRight": "Top\u00a0right",
+    "bottomLeft": "Bottom\u00a0left",
+    "bottomRight": "Bottom\u00a0right"
+  },
+  "vrLite": {
+    "mouseSensitivity": "Mouse sensitivity",
+    "invertX": "Invert X-axis",
+    "invertXDesc": "Inverts X-axis movements in VR-Lite mode.",
+    "invertY": "Invert Y-axis",
+    "invertYDesc": "Inverts Y-axis movements in VR-Lite mode.",
+    "joystickMode": "Joystick mode",
+    "joystickModeDesc": "Try as a last resort if your game doesn't support mouse-look."
+  },
+  "sbs": {
+    "firmwareUpdateNeeded": "Update your glasses' firmware to enable side-by-side mode.",
+    "notSupported": "Your glasses do not currently support side-by-side mode.",
+    "description": "Adjust display distance. View 3D content.",
+    "label": "Enable side-by-side mode",
+    "stretched": "Content is stretched",
+    "stretchedDesc": "Enable if your content goes from the left edge to the right edge of the screen",
+    "is3d": "Content is 3D",
+    "is3dDesc": "For when the source content is 3D SBS"
+  },
+  "display": {
+    "sizeLabel": "Display size",
+    "sizeDistanceDesc": "Display distance setting also affects perceived display size.",
+    "distanceLabel": "Display distance",
+    "distanceLabelWithUnits": "Display distance ({{units}})",
+    "distanceDepthDesc": "Adjust perceived display depth for eye comfort.",
+    "distanceApproxDesc": "Display distances are approximate.",
+    "position": "Display position",
+    "curved": "Curved display",
+    "curvedDesc": "Wrap the display around your field of view."
+  },
+  "smoothFollow": {
+    "sideviewLabel": "Smooth follow",
+    "sideviewDesc": "Display movements are more elastic",
+    "threshold": "Smooth follow threshold",
+    "thresholdDesc": "How closely the display follows you",
+    "autoRecenterLabel": "Automatic recentering",
+    "autoRecenterDesc": "Recenter under certain conditions"
+  },
+  "button": {
+    "recenterDisplay": "Recenter display",
+    "calibratingHeadset": "Calibrating headset",
+    "recalibrateHeadset": "Recalibrate headset",
+    "recalibrateHeadsetDesc": "Or triple-tap your headset.",
+    "recenterDoubleDesc": "Or double-tap your headset.",
+    "showAdvanced": "Show advanced settings",
+    "hideAdvanced": "Hide advanced settings",
+    "forceResetDriver": "Force reset driver",
+    "restartingDriver": "Restarting driver",
+    "installing": "Installing...",
+    "needHelp": "Need help?",
+    "virtualDisplayHelp": "Virtual display",
+    "virtualDisplayHelpSuffix": " help",
+    "discordNews": "News. Discussions. Help.",
+    "discordJoin": "Join the chat!"
+  },
+  "advanced": {
+    "distanceUnits": "Distance units",
+    "horizontalFollow": "Horizontal follow",
+    "horizontalFollowDesc": "Smooth follow will track horizontal movements.",
+    "verticalFollow": "Vertical follow",
+    "verticalFollowDesc": "Smooth follow will track vertical movements.",
+    "tiltRollFollow": "Tilt/roll follow",
+    "tiltRollFollowDesc": "Smooth follow will track roll/tilt movements.",
+    "lookAhead": "Movement look-ahead",
+    "lookAheadDesc": "Use Default unless screen is noticeably ahead or behind your movements. May introduce jitter at higher values.",
+    "neckSaverH": "Neck-saver horizontal",
+    "neckSaverHDesc": "Increase to amplify left/right neck movements.",
+    "neckSaverV": "Neck-saver vertical",
+    "neckSaverVDesc": "Increase to amplify up/down neck movements.",
+    "deadZone": "Dead-zone threshold (degrees)",
+    "deadZoneDesc": "Stabilize movements below this angle.",
+    "multiTap": "Multi-tap enabled",
+    "multiTapDesc": "Enable double-tap to recenter and triple-tap to recalibrate.",
+    "openTrack": "OpenTrack listener",
+    "openTrackDesc": "Listen for OpenTrack UDP data.",
+    "disableGamescope": "Disable gamescope integration",
+    "disableGamescopeDesc": "XR effects will only apply to Vulkan games",
+    "showAllGuides": "Show all guides",
+    "showAllGuidesDesc": "Clear your \"Don't show again\" settings."
+  },
+  "error": {
+    "setup": "There was an error during setup. Try restarting your Steam Deck. If the error persists, please file an issue in the decky-XRGaming GitHub repository.",
+    "resetDriver": "Failed to restart xr-driver. Check plugin logs for details."
+  },
+  "supporterTier": {
+    "label": "Supporter Tier:",
+    "inTrial": "In trial",
+    "trialEndsIn": "Trial ends in {{time}}",
+    "trialLockedNote": "(only tagged Supporter Tier features will be locked)",
+    "becomeSupporter": "Become a supporter",
+    "lifetime": "Lifetime",
+    "unlocked": "Unlocked",
+    "accessEndsIn": "Access ends in {{time}}",
+    "thankYou": "You rock! Thanks!",
+    "renewNow": "Renew now",
+    "locked": "Locked",
+    "unlockNow": "Unlock now"
+  },
+  "supporterTierModal": {
+    "sbsFeature": "Side-by-side",
+    "sbsFeatureDesc": "Change the display distance. View 3D content.",
+    "smoothFollowFeature": "Smooth Follow",
+    "smoothFollowFeatureDesc": "Display follows you. Tracks movements with smooth accelerations.",
+    "autoRecenterFeature": "Auto re-centering",
+    "autoRecenterFeatureDesc": "Virtual display automatically re-centers itself based on look-away distance or duration.",
+    "renewBlurb": "Your <b>Supporter Tier</b> access ends in {{time}}. Donate ${{fundsNeeded}} USD more to renew for another year.",
+    "enrollBlurbTrial": "Your <b>Supporter Tier</b> trial ends in {{time}}.",
+    "enrollBlurb": "Donate ${{fundsNeeded}} USD to get Supporter Tier access for 12 months, or ${{lifetimeFundsNeeded}} USD for lifetime access.",
+    "offlineTitle": "Supporter Tier - Device offline",
+    "offlineDesc": "Your device needs to be connected to the internet to retrieve your Supporter Tier status.",
+    "retrievingLicense": "Retrieving license",
+    "onlineNow": "I'm online now",
+    "tryNewToken": "Try a new token",
+    "refreshingLicense": "Refreshing license",
+    "alreadyDonated": "I've already donated",
+    "enrollTitle": "Supporter Tier",
+    "donateNow": "Donate now",
+    "renewTitle": "Supporter Tier - Renewal",
+    "donateTitle": "Supporter Tier - Donate",
+    "donateQrNote": "To scan the code, you can view this dialog with your glasses unplugged.",
+    "okayDonated": "Okay, I've donated",
+    "verifyTitle": "Supporter Tier - Verify Token",
+    "verifyDesc": "Enter the token that was emailed to you at the email address you use as your Ko-fi login. If you don't receive it, double-check that you're using the correct email address, check your spam folder, or request a new one.",
+    "tokenLabel": "Token",
+    "tokenInvalid": "Token \"{{token}}\" is invalid, was requested from another device, or the server couldn't be reached. Please make sure your device is online, or request a new token.",
+    "tokenError": "An error occurred. Please report this issue if it persists.",
+    "checkingToken": "Checking token",
+    "needNewToken": "I need a new token",
+    "requestTitle": "Supporter Tier - Request Token",
+    "requestDesc": "Enter the same email address you use as your Ko-fi login.",
+    "emailLabel": "Email",
+    "sendVerification": "Send verification",
+    "tokenSuccess": "Success!"
+  },
+  "license": {
+    "lessThanHour": "less than an hour",
+    "hour": "1 hour",
+    "hours": "{{count}} hours",
+    "day": "1 day",
+    "days": "{{count}} days",
+    "supporterFeature": "Supporter Tier feature",
+    "supporterExpired": "Supporter Tier expired",
+    "trialExpired": "Trial period expired",
+    "supporterTimeLeft": "Supporter Tier: {{time}} left",
+    "trialTimeLeft": "Trial feature: {{time}} left",
+    "supporterTrial": "Supporter Tier trial feature"
+  },
+  "tutorial": {
+    "ok": "OK",
+    "dontShowAgain": "Don't show again",
+    "cancel": "Cancel",
+    "virtualDisplay": {
+      "title": "Virtual Display"
+    },
+    "sbsMode": {
+      "title": "Side-by-side mode"
+    },
+    "vd": {
+      "limitationsTitle": "Limitations",
+      "vulkanOnlyIntro": "In Vulkan-only mode, the virtual display will only work under certain conditions:",
+      "limitation1": "ONLY on <b>in-game</b> content. Not on Steam itself.",
+      "limitation2": "ONLY when playing a <b>Vulkan game</b>.",
+      "limitation3": "ONLY when the game is running <b>on this device</b>. Streaming apps won't work for now.",
+      "limitation4": "Vulkan games installed through other apps or launchers may not work, such as the Heroic Flatpak app.",
+      "blackScreen": "If you're encountering a black screen, try using the Recenter button.",
+      "optimizingTitle": "Optimizing Performance",
+      "optimizingIntro": "Virtual display works best with low input lag and higher game frame rates. Here are some recommended settings:",
+      "performanceSettingsInstruction": "In <i>the Deck's ... Performance menu</i>, flip on <b>Disable Frame Limit</b> and enable <b>Allow Tearing</b>.",
+      "performanceSettingsAlt": "Modifying performance settings",
+      "graphicsSettings": "After launching a game, go into the <i>graphics/video settings</i>, set the resolution to <b>any 16:9 aspect ratio</b> (lower is better for performance, but keep the glasses' aspect ratio), <b>disable VSync</b>, and tune your settings for higher performance/lower quality."
+    },
+    "common": {
+      "gamePropertiesInstruction": "In the <i>Game details view</i>, click the <i>Settings</i> icon, and set the resolution to <b>Native</b>.",
+      "gamePropertiesAlt": "Setting the Game Resolution",
+      "displayResolutionEnableInstruction": "In <i>Settings\u2192Display</i>, enable the <b>Automatically Set Resolution</b> toggle.",
+      "displayResolutionAlt": "Setting the Display Resolution",
+      "displayResolutionSbsInstruction": "In <i>Settings\u2192Display</i>, disable the <b>Automatically Set Resolution</b> toggle, and set the resolution to the highest value, typically a 32:9 aspect ratio like <b>3840x1080</b>."
+    },
+    "sbs": {
+      "usageTitle": "Usage",
+      "usageNote": "NOTE: This mode DOES NOT add stereoscopic depth to games that don't already support it natively.",
+      "toggleDescVulkan": "Enabling this toggle will switch your glasses to side-by-side mode, which will make it difficult to navigate non-game content -- such as Steam. For the best experience, wait until after you've launched a game to enable SBS mode, and disable it before exiting the game.",
+      "toggleDescGamescope": "Enabling this toggle will switch your glasses to side-by-side mode, which will make it difficult to navigate non-game content -- such as Steam -- in some scenarios.",
+      "depthDesc": "This mode enables depth-based effects like moving how close or far the virtual display appears, which may relieve eye strain for users that experience that with default settings. It can also render stereoscopic 3D content in the virtual display for games that support it natively, or you can try using a tool like ReShade to add 3D to games that don't support it natively.",
+      "recommendedTitle": "Recommended Settings",
+      "recommendedIntro": "The following settings are recommended for a consistent experience across games:",
+      "scalingModeInstruction": "In <i>the Deck's ... Performance menu</i>, move the <i>Scaling Mode</i> slider to <b>Stretch</b>.",
+      "scalingModeAlt": "Setting Scaling Mode to Stretch",
+      "controlsTitle": "Controls",
+      "controlsEnable": "You can enable or disable SBS mode directly from the glasses by {{instructions}}. Or you can return to the plugin sidebar menu and disable it through the toggle.",
+      "defaultInstructions": "consulting the owner's manual",
+      "newControls": "You'll see some new controls in the plugin sidebar menu when SBS is enabled:",
+      "displayDistanceDesc": "<b>Display distance</b> uses stereoscopic depth perception to make the screen appear farther or closer. Since items that are closer also appear larger, you'll probably want to use the <b>Display size</b> setting in conjunction with this. If you experience eye strain using your glasses typically, you may find it more comfortable to move the screen closer, for example. If you're already comfortable with the default screen distance, using this may introduce eye strain.",
+      "stretchedControlDesc": "<b>Content is stretched</b> indicates that your game is being rendered using the full width of the screen. You should enable this if you followed the recommendation to set Scaling Mode to Stretch. If the screen content appears to be getting cut off or isn't lining up in each eye, you may find that toggling this fixes it.",
+      "is3dControlDesc": "<b>Content is 3D</b> indicates that the game is rendering as stereoscopic, side-by-side 3D, either natively or using a tool that adds stereoscopic depth.",
+      "instructions": {
+        "XREAL": "long-pressing the brightness/volume-up button for about 3 seconds",
+        "VITURE": "long-pressing the mode (short) button for about 2 seconds",
+        "TCL": "long-pressing the brightness-up button on the right arm",
+        "RayNeo": "pressing the buttons on the left and right arms of the glasses simultaneously",
+        "Rokid": "long-pressing the brightness (short) button for about 2 seconds"
+      }
+    }
+  }
+}
