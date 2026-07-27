@@ -89,6 +89,12 @@ interface ControlFlags {
     refresh_device_license: boolean
 }
 
+interface RecenterButtonBind {
+    device_name: string;
+    code: number;
+    label: string;
+}
+
 type DirtyControlFlags = {
     last_updated?: number;
 } & Partial<ControlFlags>
@@ -276,6 +282,8 @@ const Content: VFC = () => {
     const [forceResettingDriver, setForceResettingDriver] = useState<boolean>(false);
     const [error, setError] = useState<string>();
     const [dontShowAgainKeys, setDontShowAgainKeys] = useState<string[]>([]);
+    const [recenterButtonBind, setRecenterButtonBind] = useState<RecenterButtonBind | null>(null);
+    const [capturingRecenterButtonBind, setCapturingRecenterButtonBind] = useState<boolean>(false);
     const [dirtyHeadsetMode, stableHeadsetMode, setDirtyHeadsetMode] = useStableState<HeadsetModeOption | undefined>(undefined, HeadsetModeConfirmationTimeoutMs);
 
     async function refreshConfig() {
@@ -372,6 +380,43 @@ const Content: VFC = () => {
         try {
             await call<[], boolean>("reset_dont_show_again");
             setDontShowAgainKeys([]);
+        } catch (e) {
+            setError((e as Error).message);
+        }
+    }
+
+    async function refreshRecenterButtonBind() {
+        try {
+            setRecenterButtonBind(await call<[], RecenterButtonBind | null>("retrieve_recenter_button_bind"));
+        } catch (e) {
+            setError((e as Error).message);
+        }
+    }
+
+    async function startRecenterButtonBindCapture() {
+        setCapturingRecenterButtonBind(true);
+        try {
+            const bind = await call<[], RecenterButtonBind | null>("start_recenter_button_bind_capture");
+            setRecenterButtonBind(bind);
+        } catch (e) {
+            setError((e as Error).message);
+        } finally {
+            setCapturingRecenterButtonBind(false);
+        }
+    }
+
+    async function cancelRecenterButtonBindCapture() {
+        try {
+            await call<[], boolean>("cancel_recenter_button_bind_capture");
+        } catch (e) {
+            setError((e as Error).message);
+        }
+    }
+
+    async function clearRecenterButtonBind() {
+        try {
+            await call<[], boolean>("clear_recenter_button_bind");
+            setRecenterButtonBind(null);
         } catch (e) {
             setError((e as Error).message);
         }
@@ -538,6 +583,7 @@ const Content: VFC = () => {
         checkInstallation().catch((err) => setError(err));
         refreshDriverState().catch((err) => setError(err));
         refreshDontShowAgainKeys().catch((err) => setError(err));
+        refreshRecenterButtonBind().catch((err) => setError(err));
     }, []);
 
     useEffect(() => {
@@ -828,6 +874,25 @@ const Content: VFC = () => {
                     }
                 }}
             />
+        </PanelSectionRow>,
+        <PanelSectionRow>
+            <ButtonItem description={recenterButtonBind ?
+                            `Bound to "${recenterButtonBind.label}" on ${recenterButtonBind.device_name}.` :
+                            "Bind a controller button to recenter the display."}
+                        layout="below"
+                        onClick={() => capturingRecenterButtonBind ?
+                            cancelRecenterButtonBindCapture() :
+                            startRecenterButtonBindCapture()} >
+                {capturingRecenterButtonBind ?
+                    <span><Spinner style={{height: '16px', marginRight: 10}} />Press a controller button&hellip; (tap to cancel)</span> :
+                    recenterButtonBind ? "Rebind recenter button" : "Bind recenter button"
+                }
+            </ButtonItem>
+        </PanelSectionRow>,
+        recenterButtonBind && !capturingRecenterButtonBind && <PanelSectionRow>
+            <ButtonItem layout="below" onClick={() => clearRecenterButtonBind()}>
+                Clear recenter button binding
+            </ButtonItem>
         </PanelSectionRow>,
         <PanelSectionRow>
             <ToggleField
