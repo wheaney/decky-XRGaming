@@ -1,6 +1,5 @@
 import asyncio
 import decky
-import json
 import os
 import subprocess
 import sys
@@ -10,7 +9,7 @@ from settings import SettingsManager
 
 sys.path.insert(1, decky.DECKY_PLUGIN_DIR)
 from PyXRLinuxDriverIPC.xrdriveripc import XRDriverIPC
-from controller_input import list_gamepad_devices, read_next_button_press, button_label
+from controller_input import wait_for_recenter_hotkey
 
 INSTALLED_VERSION_SETTING_KEY = "installed_from_plugin_version"
 DONT_SHOW_AGAIN_SETTING_KEY = "dont_show_again"
@@ -18,9 +17,8 @@ MANIFEST_CHECKSUM_KEY = "manifest_checksum"
 MEASUREMENT_UNITS_SETTING_KEY = "measurement_units"
 BREEZY_INSTALL_STARTED_AT_SETTING_KEY = "breezy_install_started_at"
 BREEZY_INSTALL_TIMEOUT_SECONDS = 60
-RECENTER_BUTTON_BIND_SETTING_KEY = "recenter_button_bind"
-RECENTER_BUTTON_BIND_CAPTURE_TIMEOUT_SECONDS = 15
-RECENTER_BUTTON_TRIGGER_COOLDOWN_SECONDS = 1
+RECENTER_HOTKEY_ENABLED_SETTING_KEY = "recenter_hotkey_enabled"
+RECENTER_HOTKEY_TRIGGER_COOLDOWN_SECONDS = 1
 
 settings = SettingsManager(name="settings", settings_directory=decky.DECKY_PLUGIN_SETTINGS_DIR)
 settings.read()
@@ -32,7 +30,6 @@ ipc = XRDriverIPC(logger = decky.logger,
 class Plugin:
     def __init__(self):
         self.breezy_installed = False
-        self._recenter_bind_capture_stop = None
         self._recenter_listener_stop = None
         self._recenter_listener_thread = None
         self._recenter_listener_last_triggered = 0
@@ -91,49 +88,25 @@ class Plugin:
     async def retrieve_driver_state(self):
         return ipc.retrieve_driver_state()
 
-    def _get_recenter_button_bind(self):
-        raw = settings.getSetting(RECENTER_BUTTON_BIND_SETTING_KEY)
-        if not raw:
-            return None
+    def _is_recenter_hotkey_enabled(self):
+        value = settings.getSetting(RECENTER_HOTKEY_ENABLED_SETTING_KEY, False)
+        if isinstance(value, bool):
+            return value
 
-        try:
-            bind = json.loads(raw)
-            bind['label'] = button_label(bind['code'])
-            return bind
-        except (TypeError, ValueError, KeyError):
-            return None
+        return str(value).lower() == 'true'
 
-    async def retrieve_recenter_button_bind(self):
-        return self._get_recenter_button_bind()
+    async def retrieve_recenter_hotkey_enabled(self):
+        return self._is_recenter_hotkey_enabled()
 
-    async def clear_recenter_button_bind(self):
-        settings.setSetting(RECENTER_BUTTON_BIND_SETTING_KEY, None)
-        self._stop_recenter_listener()
-        return True
+    async def set_recenter_hotkey_enabled(self, enabled):
+        settings.setSetting(RECENTER_HOTKEY_ENABLED_SETTING_KEY, bool(enabled))
 
-    # Blocks (off the event loop) until the user presses a controller button, binds
-    # the first one detected, and starts listening for it going forward.
-    async def start_recenter_button_bind_capture(self):
-        stop_event = threading.Event()
-        self._recenter_bind_capture_stop = stop_event
-
-        devices = list_gamepad_devices()
-        result = await asyncio.get_event_loop().run_in_executor(
-            None, read_next_button_press, devices, RECENTER_BUTTON_BIND_CAPTURE_TIMEOUT_SECONDS, stop_event, None
-        )
-
-        if result:
-            settings.setSetting(RECENTER_BUTTON_BIND_SETTING_KEY, json.dumps(result))
+        if enabled:
             self._restart_recenter_listener()
-            result['label'] = button_label(result['code'])
+        else:
+            self._stop_recenter_listener()
 
-        return result
-
-    async def cancel_recenter_button_bind_capture(self):
-        if self._recenter_bind_capture_stop:
-            self._recenter_bind_capture_stop.set()
-
-        return True
+        return enabled
 
     def _restart_recenter_listener(self):
         self._stop_recenter_listener()
@@ -149,23 +122,17 @@ class Plugin:
             self._recenter_listener_thread.join(timeout=3)
             self._recenter_listener_thread = None
 
-    # Runs on a background thread since it relies on blocking file reads/selects; re-resolves the
-    # bound device by name each pass so reconnects (e.g. bluetooth) are picked back up automatically.
+    # Runs on a background thread since it relies on blocking file reads/selects. Watches for the
+    # Ctrl+Alt+R chord, which the user maps a controller button to via Steam's own controller
+    # layout UI (Steam Input then emits that chord through a virtual keyboard device).
     def _recenter_listener_loop(self, stop_event):
         while not stop_event.is_set():
-            bind = self._get_recenter_button_bind()
-            if not bind:
+            if not self._is_recenter_hotkey_enabled():
                 return
 
-            devices = [d for d in list_gamepad_devices() if d['name'] == bind['device_name']]
-            if not devices:
-                stop_event.wait(2)
-                continue
-
-            result = read_next_button_press(devices, stop_event=stop_event, match_code=bind['code'])
-            if result:
+            if wait_for_recenter_hotkey(stop_event):
                 now = time.time()
-                if now - self._recenter_listener_last_triggered > RECENTER_BUTTON_TRIGGER_COOLDOWN_SECONDS:
+                if now - self._recenter_listener_last_triggered > RECENTER_HOTKEY_TRIGGER_COOLDOWN_SECONDS:
                     self._recenter_listener_last_triggered = now
                     ipc.write_control_flags({'recenter_screen': True})
 
@@ -300,14 +267,12 @@ class Plugin:
     async def _main(self):
         self.loop = asyncio.get_event_loop()
 
-        if self._get_recenter_button_bind():
+        if self._is_recenter_hotkey_enabled():
             self._restart_recenter_listener()
 
     # Function called first during the unload process, utilize this to handle your plugin being removed
     async def _unload(self):
         self._stop_recenter_listener()
-        if self._recenter_bind_capture_stop:
-            self._recenter_bind_capture_stop.set()
 
     # Migrations that should be performed before entering `_main()`.
     async def _migration(self):

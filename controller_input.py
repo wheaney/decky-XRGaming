@@ -2,7 +2,6 @@ import os
 import re
 import select
 import struct
-import time
 
 # struct input_event on 64-bit Linux: { long sec; long usec; u16 type; u16 code; s32 value }
 EVENT_FORMAT = 'llHHi'
@@ -10,23 +9,19 @@ EVENT_SIZE = struct.calcsize(EVENT_FORMAT)
 
 EV_KEY = 0x01
 
-BUTTON_LABELS = {
-    0x130: "A", 0x131: "B", 0x132: "C", 0x133: "X", 0x134: "Y", 0x135: "Z",
-    0x136: "L1", 0x137: "R1", 0x138: "L2", 0x139: "R2",
-    0x13a: "Select", 0x13b: "Start", 0x13c: "Mode",
-    0x13d: "Left Stick", 0x13e: "Right Stick",
-    0x220: "D-Pad Up", 0x221: "D-Pad Down", 0x222: "D-Pad Left", 0x223: "D-Pad Right",
-}
-for _i in range(1, 41):
-    BUTTON_LABELS[0x2c0 + _i - 1] = f"Extra Button {_i}"
+KEY_LEFTCTRL = 29
+KEY_RIGHTCTRL = 97
+KEY_LEFTALT = 56
+KEY_RIGHTALT = 100
+KEY_R = 19
 
 
-def button_label(code):
-    return BUTTON_LABELS.get(code, f"Button {code}")
+def list_keyboard_devices():
+    """Parse /proc/bus/input/devices for evdev nodes that expose a keyboard handler.
 
-
-def list_gamepad_devices():
-    """Parse /proc/bus/input/devices for evdev nodes that expose a joystick handler."""
+    This also picks up virtual keyboards, such as the one Steam Input emits when a
+    controller button has been mapped to a keyboard shortcut.
+    """
     devices = []
     try:
         with open('/proc/bus/input/devices', 'r') as f:
@@ -44,7 +39,7 @@ def list_gamepad_devices():
             continue
 
         handlers = handlers_match.group(1).split()
-        if not any(h.startswith('js') for h in handlers):
+        if not any(h.startswith('kbd') for h in handlers):
             continue
 
         event_handler = next((h for h in handlers if h.startswith('event')), None)
@@ -59,15 +54,17 @@ def list_gamepad_devices():
     return devices
 
 
-def read_next_button_press(devices, timeout_seconds=None, stop_event=None, match_code=None):
+def wait_for_recenter_hotkey(stop_event, poll_seconds=0.5):
     """
-    Opens the given devices (as returned by list_gamepad_devices) read-only and waits for
-    a button-down event. If match_code is given, only that button code will resolve the wait;
-    otherwise the first button pressed on any of the devices resolves it.
+    Blocks (via select, on non-blocking reads) watching all keyboard-capable evdev devices
+    for the Ctrl+Alt+R chord. Re-discovers devices on each call so reconnects are picked up.
 
-    Returns {'device_name', 'code'} or None if the timeout elapses or stop_event is set.
+    Returns True once the chord is detected, or False if stop_event is set or no keyboard
+    devices are currently available (caller should retry).
     """
+    devices = list_keyboard_devices()
     fds = {}
+    held = set()
     try:
         for device in devices:
             try:
@@ -77,19 +74,11 @@ def read_next_button_press(devices, timeout_seconds=None, stop_event=None, match
                 continue
 
         if not fds:
-            if stop_event is not None:
-                stop_event.wait(min(timeout_seconds, 2) if timeout_seconds else 2)
-            return None
+            stop_event.wait(2)
+            return False
 
-        deadline = time.time() + timeout_seconds if timeout_seconds else None
-        while True:
-            if stop_event is not None and stop_event.is_set():
-                return None
-            if deadline is not None and time.time() >= deadline:
-                return None
-
-            wait_time = 0.5 if deadline is None else max(0, min(0.5, deadline - time.time()))
-            readable, _, _ = select.select(list(fds.keys()), [], [], wait_time)
+        while not stop_event.is_set():
+            readable, _, _ = select.select(list(fds.keys()), [], [], poll_seconds)
             for fd in readable:
                 try:
                     data = os.read(fd, EVENT_SIZE)
@@ -100,8 +89,19 @@ def read_next_button_press(devices, timeout_seconds=None, stop_event=None, match
                     continue
 
                 _, _, ev_type, code, value = struct.unpack(EVENT_FORMAT, data)
-                if ev_type == EV_KEY and value == 1 and (match_code is None or code == match_code):
-                    return {'device_name': fds[fd]['name'], 'code': code}
+                if ev_type != EV_KEY:
+                    continue
+
+                if value == 0:
+                    held.discard(code)
+                elif value == 1:
+                    held.add(code)
+                    ctrl_down = KEY_LEFTCTRL in held or KEY_RIGHTCTRL in held
+                    alt_down = KEY_LEFTALT in held or KEY_RIGHTALT in held
+                    if code == KEY_R and ctrl_down and alt_down:
+                        return True
+
+        return False
     finally:
         for fd in fds:
             try:
