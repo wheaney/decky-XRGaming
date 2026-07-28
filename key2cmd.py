@@ -75,6 +75,7 @@ KEY_CODES = {
     'z': 44, 'x': 45, 'c': 46, 'v': 47, 'b': 48, 'n': 49, 'm': 50,
     'f1': 59, 'f2': 60, 'f3': 61, 'f4': 62, 'f5': 63, 'f6': 64, 'f7': 65, 'f8': 66,
     'f9': 67, 'f10': 68, 'f11': 87, 'f12': 88,
+    'mute': 113, 'volumedown': 114, 'volumeup': 115,
 }
 
 
@@ -140,10 +141,13 @@ def watch(modifiers, trigger_code, command, cooldown, rescan_seconds, verbose):
     held = set()
     last_triggered = 0
     last_scanned = 0
+    warned_no_devices = False
 
     def log(message):
         if verbose:
             print(message, flush=True)
+
+    log(f"watching all keyboard-capable evdev devices (rescanning every {rescan_seconds}s)")
 
     try:
         while True:
@@ -170,8 +174,12 @@ def watch(modifiers, trigger_code, command, cooldown, rescan_seconds, verbose):
                     open_paths[path] = fd
 
             if not fds:
+                if not warned_no_devices:
+                    log("no keyboard-capable devices found (or none could be opened); waiting")
+                    warned_no_devices = True
                 time.sleep(2)
                 continue
+            warned_no_devices = False
 
             readable, _, _ = select.select(list(fds), [], [], min(rescan_seconds, 1))
             for fd in readable:
