@@ -3,13 +3,11 @@ import decky
 import os
 import subprocess
 import sys
-import threading
 import time
 from settings import SettingsManager
 
 sys.path.insert(1, decky.DECKY_PLUGIN_DIR)
 from PyXRLinuxDriverIPC.xrdriveripc import XRDriverIPC
-from controller_input import wait_for_recenter_hotkey
 
 INSTALLED_VERSION_SETTING_KEY = "installed_from_plugin_version"
 DONT_SHOW_AGAIN_SETTING_KEY = "dont_show_again"
@@ -17,8 +15,9 @@ MANIFEST_CHECKSUM_KEY = "manifest_checksum"
 MEASUREMENT_UNITS_SETTING_KEY = "measurement_units"
 BREEZY_INSTALL_STARTED_AT_SETTING_KEY = "breezy_install_started_at"
 BREEZY_INSTALL_TIMEOUT_SECONDS = 60
-RECENTER_HOTKEY_ENABLED_SETTING_KEY = "recenter_hotkey_enabled"
-RECENTER_HOTKEY_TRIGGER_COOLDOWN_SECONDS = 1
+RECENTER_COMBO_ENABLED_SETTING_KEY = "recenter_combo_enabled"
+RECENTER_SCRIPT_TRIGGER_COOLDOWN_SECONDS = 1
+RECENTER_SCRIPT_PATH = os.path.join(os.path.dirname(__file__), "recenter.sh")
 
 settings = SettingsManager(name="settings", settings_directory=decky.DECKY_PLUGIN_SETTINGS_DIR)
 settings.read()
@@ -30,9 +29,7 @@ ipc = XRDriverIPC(logger = decky.logger,
 class Plugin:
     def __init__(self):
         self.breezy_installed = False
-        self._recenter_listener_stop = None
-        self._recenter_listener_thread = None
-        self._recenter_listener_last_triggered = 0
+        self._recenter_script_last_triggered = 0
 
     async def is_breezy_install_pending(self):
         started_at = settings.getSetting(BREEZY_INSTALL_STARTED_AT_SETTING_KEY)
@@ -88,53 +85,31 @@ class Plugin:
     async def retrieve_driver_state(self):
         return ipc.retrieve_driver_state()
 
-    def _is_recenter_hotkey_enabled(self):
-        value = settings.getSetting(RECENTER_HOTKEY_ENABLED_SETTING_KEY, False)
+    def _is_recenter_combo_enabled(self):
+        value = settings.getSetting(RECENTER_COMBO_ENABLED_SETTING_KEY, False)
         if isinstance(value, bool):
             return value
 
         return str(value).lower() == 'true'
 
-    async def retrieve_recenter_hotkey_enabled(self):
-        return self._is_recenter_hotkey_enabled()
+    async def retrieve_recenter_combo_enabled(self):
+        return self._is_recenter_combo_enabled()
 
-    async def set_recenter_hotkey_enabled(self, enabled):
-        settings.setSetting(RECENTER_HOTKEY_ENABLED_SETTING_KEY, bool(enabled))
-
-        if enabled:
-            self._restart_recenter_listener()
-        else:
-            self._stop_recenter_listener()
-
+    async def set_recenter_combo_enabled(self, enabled):
+        settings.setSetting(RECENTER_COMBO_ENABLED_SETTING_KEY, bool(enabled))
         return enabled
 
-    def _restart_recenter_listener(self):
-        self._stop_recenter_listener()
-        self._recenter_listener_stop = threading.Event()
-        self._recenter_listener_thread = threading.Thread(
-            target=self._recenter_listener_loop, args=(self._recenter_listener_stop,), daemon=True
-        )
-        self._recenter_listener_thread.start()
+    # Called from the frontend when it detects the recenter controller combo via
+    # SteamClient.Input (see src/controllerInput.ts). Runs the bundled recenter.sh rather than
+    # writing the control flag in-process, so the same button-to-bash-command wiring can be
+    # reused/documented for other key or button bindings outside the plugin too.
+    async def trigger_recenter_script(self):
+        now = time.time()
+        if now - self._recenter_script_last_triggered < RECENTER_SCRIPT_TRIGGER_COOLDOWN_SECONDS:
+            return
 
-    def _stop_recenter_listener(self):
-        if self._recenter_listener_thread:
-            self._recenter_listener_stop.set()
-            self._recenter_listener_thread.join(timeout=3)
-            self._recenter_listener_thread = None
-
-    # Runs on a background thread since it relies on blocking file reads/selects. Watches for the
-    # Ctrl+Alt+R chord, which the user maps a controller button to via Steam's own controller
-    # layout UI (Steam Input then emits that chord through a virtual keyboard device).
-    def _recenter_listener_loop(self, stop_event):
-        while not stop_event.is_set():
-            if not self._is_recenter_hotkey_enabled():
-                return
-
-            if wait_for_recenter_hotkey(stop_event):
-                now = time.time()
-                if now - self._recenter_listener_last_triggered > RECENTER_HOTKEY_TRIGGER_COOLDOWN_SECONDS:
-                    self._recenter_listener_last_triggered = now
-                    ipc.write_control_flags({'recenter_screen': True})
+        self._recenter_script_last_triggered = now
+        subprocess.Popen(['bash', RECENTER_SCRIPT_PATH], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     async def retrieve_dont_show_again_keys(self):
         return [key for key in settings.getSetting(DONT_SHOW_AGAIN_SETTING_KEY, "").split(",") if key]
@@ -267,12 +242,9 @@ class Plugin:
     async def _main(self):
         self.loop = asyncio.get_event_loop()
 
-        if self._is_recenter_hotkey_enabled():
-            self._restart_recenter_listener()
-
     # Function called first during the unload process, utilize this to handle your plugin being removed
     async def _unload(self):
-        self._stop_recenter_listener()
+        pass
 
     # Migrations that should be performed before entering `_main()`.
     async def _migration(self):
