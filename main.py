@@ -15,9 +15,6 @@ MANIFEST_CHECKSUM_KEY = "manifest_checksum"
 MEASUREMENT_UNITS_SETTING_KEY = "measurement_units"
 BREEZY_INSTALL_STARTED_AT_SETTING_KEY = "breezy_install_started_at"
 BREEZY_INSTALL_TIMEOUT_SECONDS = 60
-RECENTER_COMBO_ENABLED_SETTING_KEY = "recenter_combo_enabled"
-RECENTER_SCRIPT_TRIGGER_COOLDOWN_SECONDS = 1
-RECENTER_SCRIPT_PATH = os.path.join(os.path.dirname(__file__), "recenter.sh")
 
 settings = SettingsManager(name="settings", settings_directory=decky.DECKY_PLUGIN_SETTINGS_DIR)
 settings.read()
@@ -29,7 +26,6 @@ ipc = XRDriverIPC(logger = decky.logger,
 class Plugin:
     def __init__(self):
         self.breezy_installed = False
-        self._recenter_script_last_triggered = 0
 
     async def is_breezy_install_pending(self):
         started_at = settings.getSetting(BREEZY_INSTALL_STARTED_AT_SETTING_KEY)
@@ -84,32 +80,6 @@ class Plugin:
 
     async def retrieve_driver_state(self):
         return ipc.retrieve_driver_state()
-
-    def _is_recenter_combo_enabled(self):
-        value = settings.getSetting(RECENTER_COMBO_ENABLED_SETTING_KEY, False)
-        if isinstance(value, bool):
-            return value
-
-        return str(value).lower() == 'true'
-
-    async def retrieve_recenter_combo_enabled(self):
-        return self._is_recenter_combo_enabled()
-
-    async def set_recenter_combo_enabled(self, enabled):
-        settings.setSetting(RECENTER_COMBO_ENABLED_SETTING_KEY, bool(enabled))
-        return enabled
-
-    # Called from the frontend when it detects the recenter controller combo via
-    # SteamClient.Input (see src/controllerInput.ts). Runs the bundled recenter.sh rather than
-    # writing the control flag in-process, so the same button-to-bash-command wiring can be
-    # reused/documented for other key or button bindings outside the plugin too.
-    async def trigger_recenter_script(self):
-        now = time.time()
-        if now - self._recenter_script_last_triggered < RECENTER_SCRIPT_TRIGGER_COOLDOWN_SECONDS:
-            return
-
-        self._recenter_script_last_triggered = now
-        subprocess.Popen(['bash', RECENTER_SCRIPT_PATH], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     async def retrieve_dont_show_again_keys(self):
         return [key for key in settings.getSetting(DONT_SHOW_AGAIN_SETTING_KEY, "").split(",") if key]

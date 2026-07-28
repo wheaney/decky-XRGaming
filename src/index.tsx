@@ -26,7 +26,6 @@ import { TbPlugConnectedX } from "react-icons/tb";
 import {SiDiscord} from 'react-icons/si';
 import {LuHelpCircle} from 'react-icons/lu';
 import QrButton from "./QrButton";
-import {isControllerInputSupported, registerRecenterComboListener} from "./controllerInput";
 import {onChangeTutorial} from "./tutorials";
 import {useStableState} from "./stableState";
 import {featureDetails, License, secondsRemaining, timeRemainingText} from "./license";
@@ -277,7 +276,6 @@ const Content: VFC = () => {
     const [forceResettingDriver, setForceResettingDriver] = useState<boolean>(false);
     const [error, setError] = useState<string>();
     const [dontShowAgainKeys, setDontShowAgainKeys] = useState<string[]>([]);
-    const [recenterComboEnabled, setRecenterComboEnabledState] = useState<boolean>(false);
     const [dirtyHeadsetMode, stableHeadsetMode, setDirtyHeadsetMode] = useStableState<HeadsetModeOption | undefined>(undefined, HeadsetModeConfirmationTimeoutMs);
 
     async function refreshConfig() {
@@ -374,22 +372,6 @@ const Content: VFC = () => {
         try {
             await call<[], boolean>("reset_dont_show_again");
             setDontShowAgainKeys([]);
-        } catch (e) {
-            setError((e as Error).message);
-        }
-    }
-
-    async function refreshRecenterComboEnabled() {
-        try {
-            setRecenterComboEnabledState(await call<[], boolean>("retrieve_recenter_combo_enabled"));
-        } catch (e) {
-            setError((e as Error).message);
-        }
-    }
-
-    async function setRecenterComboEnabled(enabled: boolean) {
-        try {
-            setRecenterComboEnabledState(await call<[ enabled: boolean ], boolean>("set_recenter_combo_enabled", enabled));
         } catch (e) {
             setError((e as Error).message);
         }
@@ -556,27 +538,7 @@ const Content: VFC = () => {
         checkInstallation().catch((err) => setError(err));
         refreshDriverState().catch((err) => setError(err));
         refreshDontShowAgainKeys().catch((err) => setError(err));
-        refreshRecenterComboEnabled().catch((err) => setError(err));
     }, []);
-
-    // Registers/unregisters the SteamClient.Input combo listener whenever the toggle changes,
-    // rather than polling anything on the backend.
-    useEffect(() => {
-        if (!recenterComboEnabled) {
-            return;
-        }
-
-        const unregister = registerRecenterComboListener(() => {
-            call<[], void>("trigger_recenter_script").catch((e) => setError((e as Error).message));
-        });
-
-        if (!unregister) {
-            setError("Controller input isn't available on this Steam client version; recenter combo won't trigger.");
-            return;
-        }
-
-        return unregister;
-    }, [recenterComboEnabled]);
 
     useEffect(() => {
         if (asyncDataLoaded) {
@@ -865,17 +827,6 @@ const Content: VFC = () => {
                         }).catch(e => setError(e))
                     }
                 }}
-            />
-        </PanelSectionRow>,
-        <PanelSectionRow>
-            <ToggleField
-                checked={recenterComboEnabled}
-                label={"Recenter controller combo"}
-                description={isControllerInputSupported() ?
-                    "Hold L4 + R4 (back grip buttons) together to recenter the display mid-game, no need to open the Quick Access Menu." :
-                    "Not supported on this Steam client version."}
-                disabled={!isControllerInputSupported()}
-                onChange={(enabled) => setRecenterComboEnabled(enabled)}
             />
         </PanelSectionRow>,
         <PanelSectionRow>
