@@ -1,18 +1,118 @@
 #!/usr/bin/env bash
 #
-# Pure shell version of the Steam Deck raw HID reader.
+# Pure shell version of the Steam Deck raw HID reader, generalized into a
+# button-combo-to-shell-command runner.
 # Byte offsets / bit masks map 1:1 to bitsteam/deck.py's _parse_input()
 #
-# Usage: ./steamdeck_read.sh [/dev/hidrawN]
+# Reads directly from the controller's hidraw device, so (unlike Steam
+# Input/keyboard-shortcut based approaches) it keeps working even when
+# Steam Input has exclusively grabbed the controller mid-game.
+#
+# Usage:
+#   ./button_listener.sh [/dev/hidrawN]
+#       Debug/listen mode (default): prints currently-pressed buttons and
+#       stick/trigger values, doesn't run anything.
+#
+#   ./button_listener.sh --device /dev/hidrawN --combo l1+r1 --command 'CMD'
+#       Runs CMD (via `bash -c`) once whenever all buttons in --combo are
+#       pressed simultaneously (edge-triggered, so holding won't repeat-fire
+#       faster than --cooldown seconds).
+#
+# Example - recenter the XR driver's display by holding L1+R1:
+#   ./button_listener.sh --combo l1+r1 --command '$HOME/.local/bin/xr_driver_cli --recenter'
+#
+# Valid --combo button names (joined with '+'):
+#   a b x y l1 r1 l2 r2 dup ddown dleft dright select start steam quick
+#   llower rlower lupper rupper lstick rstick lstouch rstouch
+#   lpadtouch lpadpress rpadtouch rpadpress
 #
 # Dependencies: dd, od (part of coreutils), bash 4+
 # Permissions: requires a udev rule allowing non-root read access to the
 #              hidraw device, otherwise run with sudo
+#
+# To run persistently, install a systemd unit, e.g. /etc/systemd/system/xr-recenter.service:
+#
+#   [Unit]
+#   Description=Recenter XR display by holding L1+R1
+#
+#   [Service]
+#   ExecStart=/path/to/button_listener.sh --combo l1+r1 --command '/home/deck/.local/bin/xr_driver_cli --recenter'
+#   Restart=on-failure
+#
+#   [Install]
+#   WantedBy=multi-user.target
+#
+# then: sudo systemctl enable --now xr-recenter
 
 set -euo pipefail
 
-DEV="${1:-/dev/hidraw2}"
+DEV="/dev/hidraw2"
 SIZE=64
+COMBO=""
+COMMAND=""
+COOLDOWN=1
+VERBOSE=0
+
+declare -A BUTTON_VARS=(
+    [a]=a_btn [b]=b_btn [x]=x_btn [y]=y_btn
+    [l1]=l1_btn [r1]=r1_btn [l2]=l2_click [r2]=r2_click
+    [dup]=dpad_up [ddown]=dpad_down [dleft]=dpad_left [dright]=dpad_right
+    [select]=select_btn [start]=start_btn [steam]=steam_btn [quick]=quick_access
+    [llower]=l_lower_grip [rlower]=r_lower_grip
+    [lupper]=l_upper_grip [rupper]=r_upper_grip
+    [lstick]=l_stick_press [rstick]=r_stick_press
+    [lstouch]=l_stick_touch [rstouch]=r_stick_touch
+    [lpadtouch]=l_trackpad_touch [lpadpress]=l_trackpad_press
+    [rpadtouch]=r_trackpad_touch [rpadpress]=r_trackpad_press
+)
+
+print_usage() {
+    echo "Usage: $0 [/dev/hidrawN] [--device /dev/hidrawN] [--combo btn1+btn2+...] [--command 'shell command'] [--cooldown seconds] [--verbose]"
+    echo
+    echo "Valid --combo button names: ${!BUTTON_VARS[*]}"
+}
+
+# Accept the historical positional device arg alongside the new flags.
+if [[ $# -gt 0 && "$1" != --* && "$1" != "-h" ]]; then
+    DEV="$1"
+    shift
+fi
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --device)
+            DEV="$2"; shift 2 ;;
+        --combo)
+            COMBO="$2"; shift 2 ;;
+        --command)
+            COMMAND="$2"; shift 2 ;;
+        --cooldown)
+            COOLDOWN="$2"; shift 2 ;;
+        --verbose)
+            VERBOSE=1; shift ;;
+        -h|--help)
+            print_usage; exit 0 ;;
+        *)
+            echo "Unknown argument: $1" >&2
+            print_usage
+            exit 1 ;;
+    esac
+done
+
+COMBO_BUTTONS=()
+if [[ -n "$COMBO" ]]; then
+    IFS='+' read -ra COMBO_BUTTONS <<< "$COMBO"
+    for name in "${COMBO_BUTTONS[@]}"; do
+        if [[ -z "${BUTTON_VARS[$name]:-}" ]]; then
+            echo "Unknown button name '$name' in --combo. Valid names: ${!BUTTON_VARS[*]}" >&2
+            exit 1
+        fi
+    done
+    if [[ -z "$COMMAND" ]]; then
+        echo "--combo requires --command" >&2
+        exit 1
+    fi
+fi
 
 if [[ ! -r "$DEV" ]]; then
     echo "Cannot read $DEV, check the device path or permissions (udev rule / sudo)" >&2
@@ -41,11 +141,22 @@ get_u16() {
     echo $(( (16#$hi << 8) | 16#$lo ))
 }
 
-echo "Reading from $DEV (Ctrl+C to quit)..."
+if [[ -n "$COMBO" ]]; then
+    echo "Watching $DEV for combo '$COMBO' -> running: $COMMAND"
+else
+    echo "Reading from $DEV (Ctrl+C to quit)..."
+fi
+
+last_triggered=-9999
+prev_combo_pressed=0
 
 while true; do
-    # Blocking read of one full 64-byte report, converted to a 128-char hex string
-    hex=$(dd if="$DEV" bs=$SIZE count=1 status=none | od -An -tx1 | tr -d ' \n')
+    # Blocking read of one full 64-byte report, converted to a 128-char hex string.
+    # -v disables od's default elision of repeated identical lines with '*', which
+    # would otherwise shorten $hex (and cause the length check below to falsely
+    # drop the frame) whenever 2+ consecutive 16-byte chunks are all zero, e.g.
+    # centered sticks/triggers.
+    hex=$(dd if="$DEV" bs=$SIZE count=1 status=none | od -An -tx1 -v | tr -d ' \n')
 
     # Skip this frame if fewer than 64 bytes were read (e.g. device just opened)
     (( ${#hex} < SIZE*2 )) && continue
@@ -107,6 +218,26 @@ while true; do
     right_track_y=$(get_i16 "$hex" 22)
     left_track_pressure=$(get_u16 "$hex" 56)
     right_track_pressure=$(get_u16 "$hex" 58)
+
+    if [[ -n "$COMBO" ]]; then
+        combo_pressed=1
+        for name in "${COMBO_BUTTONS[@]}"; do
+            varname="${BUTTON_VARS[$name]}"
+            if (( ! ${!varname} )); then
+                combo_pressed=0
+                break
+            fi
+        done
+
+        if (( combo_pressed )) && (( ! prev_combo_pressed )) && (( SECONDS - last_triggered >= COOLDOWN )); then
+            last_triggered=$SECONDS
+            (( VERBOSE )) && echo "combo '$COMBO' detected, running: $COMMAND"
+            bash -c "$COMMAND" &
+        fi
+        prev_combo_pressed=$combo_pressed
+
+        (( ! VERBOSE )) && continue
+    fi
 
     # --- Output (only print buttons that are currently pressed, to reduce spam) ---
     pressed=""

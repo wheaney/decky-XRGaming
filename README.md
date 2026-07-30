@@ -99,6 +99,8 @@ To re-center your screen, either use the **Recenter display** button in the plug
 
 To re-calibrate your screen,  either use the **Recalibrate headset** button in the **Advanced settings** of the plugin sidebar, or perform a triple-tap on your glasses. This will briefly display a static screen while it resets the device calibration
 
+If you'd rather trigger a recenter from a controller button instead of the sidebar or multi-tap, see [`contrib/button_listener.sh`](contrib/button_listener.sh) — a generic button-combo-to-shell-command script you can use to run `xr_driver_cli --recenter` when a chosen combo of controller buttons is held.
+
 ### The screen flickers a lot when I move.
 Framerate is really important here, because individual frames are static, so moving your head quickly may produce a noticeable flicker as it moves the screen. Higher framerates will produce an overall better experience (less flicker and smoother follow), so consider optimizing your game settings for better performance when using this mode. See "[How can I optimize my setup for the best experience?](#how-can-i-optimize-my-setup-for-the-best-experience)" for other performance-related recommendations.
 
