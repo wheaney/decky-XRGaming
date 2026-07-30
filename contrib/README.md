@@ -19,8 +19,8 @@ your controller and confirming button names. See the script's own
 `--help` and header comment for the full option list, permissions setup,
 and a systemd unit example.
 
-Example — recenter the XR display by holding L1+R1:
+Example — recenter the XR display by holding L4+R4:
 
 ```
-./button_listener.sh --combo l1+r1 --command '$HOME/.local/bin/xr_driver_cli --recenter'
+./button_listener.sh --combo l4+r4 --command '$HOME/.local/bin/xr_driver_cli --recenter'
 ```

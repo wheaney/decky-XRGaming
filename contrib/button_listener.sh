@@ -18,12 +18,12 @@
 #       pressed simultaneously (edge-triggered, so holding won't repeat-fire
 #       faster than --cooldown seconds).
 #
-# Example - recenter the XR driver's display by holding L1+R1:
-#   ./button_listener.sh --combo l1+r1 --command '$HOME/.local/bin/xr_driver_cli --recenter'
+# Example - recenter the XR driver's display by holding L4+R4:
+#   ./button_listener.sh --combo l4+r4 --command '$HOME/.local/bin/xr_driver_cli --recenter'
 #
 # Valid --combo button names (joined with '+'):
-#   a b x y l1 r1 l2 r2 dup ddown dleft dright select start steam quick
-#   llower rlower lupper rupper lstick rstick lstouch rstouch
+#   a b x y l1 r1 l2 r2 l3 r3 l4 r4 dup ddown dleft dright select start steam quick
+#   lstick rstick lstouch rstouch
 #   lpadtouch lpadpress rpadtouch rpadpress
 #
 # Dependencies: dd, od (part of coreutils), bash 4+
@@ -33,10 +33,10 @@
 # To run persistently, install a systemd unit, e.g. /etc/systemd/system/xr-recenter.service:
 #
 #   [Unit]
-#   Description=Recenter XR display by holding L1+R1
+#   Description=Recenter XR display by holding L4+R4
 #
 #   [Service]
-#   ExecStart=/path/to/button_listener.sh --combo l1+r1 --command '/home/deck/.local/bin/xr_driver_cli --recenter'
+#   ExecStart=/path/to/button_listener.sh --combo l4+r4 --command '/home/deck/.local/bin/xr_driver_cli --recenter'
 #   Restart=on-failure
 #
 #   [Install]
@@ -55,11 +55,10 @@ VERBOSE=0
 
 declare -A BUTTON_VARS=(
     [a]=a_btn [b]=b_btn [x]=x_btn [y]=y_btn
-    [l1]=l1_btn [r1]=r1_btn [l2]=l2_click [r2]=r2_click
+    [l1]=l1 [r1]=r1 [l2]=l2 [r2]=r2
+    [l3]=l3 [r3]=r3 [l4]=l4 [r4]=r4
     [dup]=dpad_up [ddown]=dpad_down [dleft]=dpad_left [dright]=dpad_right
     [select]=select_btn [start]=start_btn [steam]=steam_btn [quick]=quick_access
-    [llower]=l_lower_grip [rlower]=r_lower_grip
-    [lupper]=l_upper_grip [rupper]=r_upper_grip
     [lstick]=l_stick_press [rstick]=r_stick_press
     [lstouch]=l_stick_touch [rstouch]=r_stick_touch
     [lpadtouch]=l_trackpad_touch [lpadpress]=l_trackpad_press
@@ -173,10 +172,10 @@ while true; do
     b_btn=$((  (byte8  & 0x20) != 0 ))
     x_btn=$((  (byte8  & 0x40) != 0 ))
     y_btn=$((  (byte8  & 0x10) != 0 ))
-    l1_btn=$(( (byte8  & 0x08) != 0 ))
-    r1_btn=$(( (byte8  & 0x04) != 0 ))
-    l2_click=$(( (byte8 & 0x02) != 0 ))
-    r2_click=$(( (byte8 & 0x01) != 0 ))
+    l1=$(( (byte8  & 0x08) != 0 ))
+    r1=$(( (byte8  & 0x04) != 0 ))
+    l2=$(( (byte8 & 0x02) != 0 ))
+    r2=$(( (byte8 & 0x01) != 0 ))
 
     dpad_up=$((    (byte9 & 0x01) != 0 ))
     dpad_right=$(( (byte9 & 0x02) != 0 ))
@@ -185,9 +184,9 @@ while true; do
     select_btn=$(( (byte9 & 0x10) != 0 ))
     steam_btn=$((   (byte9 & 0x20) != 0 ))
     start_btn=$((   (byte9 & 0x40) != 0 ))
-    l_lower_grip=$(( (byte9 & 0x80) != 0 ))
+    l4=$(( (byte9 & 0x80) != 0 ))
 
-    r_lower_grip=$((    (byte10 & 0x01) != 0 ))
+    r4=$((    (byte10 & 0x01) != 0 ))
     l_trackpad_touch=$(( (byte10 & 0x08) != 0 ))
     r_trackpad_touch=$(( (byte10 & 0x10) != 0 ))
     l_stick_press=$((    (byte10 & 0x40) != 0 ))
@@ -196,8 +195,8 @@ while true; do
 
     r_stick_press=$(( (byte11 & 0x04) != 0 ))
 
-    l_upper_grip=$((  (byte13 & 0x02) != 0 ))
-    r_upper_grip=$((  (byte13 & 0x04) != 0 ))
+    l3=$((  (byte13 & 0x02) != 0 ))
+    r3=$((  (byte13 & 0x04) != 0 ))
     l_stick_touch=$(( (byte13 & 0x40) != 0 ))
     r_stick_touch=$(( (byte13 & 0x80) != 0 ))
 
@@ -245,10 +244,10 @@ while true; do
     (( b_btn ))            && pressed+="B "
     (( x_btn ))            && pressed+="X "
     (( y_btn ))            && pressed+="Y "
-    (( l1_btn ))           && pressed+="L1 "
-    (( r1_btn ))           && pressed+="R1 "
-    (( l2_click ))         && pressed+="L2click "
-    (( r2_click ))         && pressed+="R2click "
+    (( l1 ))               && pressed+="L1 "
+    (( r1 ))               && pressed+="R1 "
+    (( l2 ))               && pressed+="L2 "
+    (( r2 ))               && pressed+="R2 "
     (( dpad_up ))          && pressed+="DUp "
     (( dpad_down ))        && pressed+="DDown "
     (( dpad_left ))        && pressed+="DLeft "
@@ -257,10 +256,10 @@ while true; do
     (( start_btn ))        && pressed+="Start "
     (( steam_btn ))        && pressed+="Steam "
     (( quick_access ))     && pressed+="QuickAccess "
-    (( l_lower_grip ))     && pressed+="L_LowerGrip "
-    (( r_lower_grip ))     && pressed+="R_LowerGrip "
-    (( l_upper_grip ))     && pressed+="L_UpperGrip "
-    (( r_upper_grip ))     && pressed+="R_UpperGrip "
+    (( l3 ))               && pressed+="L3 "
+    (( r3 ))               && pressed+="R3 "
+    (( l4 ))               && pressed+="L4 "
+    (( r4 ))               && pressed+="R4 "
     (( l_stick_press ))    && pressed+="LStickPress "
     (( r_stick_press ))    && pressed+="RStickPress "
     (( l_stick_touch ))    && pressed+="LStickTouch "
