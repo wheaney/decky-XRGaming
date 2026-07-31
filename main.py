@@ -19,8 +19,6 @@ BREEZY_INSTALL_TIMEOUT_SECONDS = 60
 RECENTER_BUTTON_ENABLED_KEY = "recenter_button_enabled"
 RECENTER_BUTTON_COMBO_KEY = "recenter_button_combo"
 DEFAULT_RECENTER_BUTTON_COMBO = "l4+r4"
-VALVE_HID_VENDOR_ID = "28DE"
-FALLBACK_HIDRAW_DEVICE = "/dev/hidraw2"
 
 # valid --combo button names, mirrored from contrib/button_listener.sh's BUTTON_VARS
 BUTTON_NAMES = {
@@ -156,46 +154,6 @@ class Plugin:
     def _is_valid_combo(self, combo):
         return bool(combo) and all(button in BUTTON_NAMES for button in combo.split("+"))
 
-    def _detect_controller_hidraw_device(self):
-        try:
-            hidraw_base = "/sys/class/hidraw"
-            entries = sorted(os.listdir(hidraw_base),
-                              key=lambda name: int(name.replace("hidraw", "") or 0))
-
-            valve_devices = []
-            for entry in entries:
-                uevent_path = os.path.join(hidraw_base, entry, "device", "uevent")
-                try:
-                    with open(uevent_path, "r") as f:
-                        uevent = f.read()
-                except OSError:
-                    continue
-
-                for line in uevent.splitlines():
-                    if line.startswith("HID_ID="):
-                        # format is HID_ID=<bus>:<vendor>:<product>, each zero-padded hex
-                        parts = line.split("=", 1)[1].split(":")
-                        if len(parts) == 3:
-                            try:
-                                if int(parts[1], 16) == int(VALVE_HID_VENDOR_ID, 16):
-                                    valve_devices.append(f"/dev/{entry}")
-                            except ValueError:
-                                pass
-                        break
-
-            decky.logger.info(f"Valve hidraw devices found: {valve_devices}")
-
-            # the known-good default is empirically the right interface for raw
-            # controller reports; prefer it if it's among the Valve-vendor devices
-            if FALLBACK_HIDRAW_DEVICE in valve_devices:
-                return FALLBACK_HIDRAW_DEVICE
-            if valve_devices:
-                return valve_devices[0]
-        except OSError as e:
-            decky.logger.error(f"Error detecting controller hidraw device: {e}")
-
-        return FALLBACK_HIDRAW_DEVICE
-
     def _recenter_command(self):
         return "su -l -c '{}/.local/bin/xr_driver_cli --recenter' {}".format(
             decky.DECKY_USER_HOME, decky.DECKY_USER)
@@ -211,16 +169,14 @@ class Plugin:
             return
 
         os.chmod(script_path, 0o755)
-        device = self._detect_controller_hidraw_device()
         command = self._recenter_command()
-        decky.logger.info(f"Starting button_listener.sh: device={device} combo={combo} command={command}")
+        decky.logger.info(f"Starting button_listener.sh: combo={combo} command={command}")
 
         try:
             log_path = os.path.join(decky.DECKY_PLUGIN_LOG_DIR, "button_listener.log")
             log_file = open(log_path, "a")
             self._button_listener_proc = subprocess.Popen(
-                [script_path, "--device", device, "--combo", combo, "--command", command,
-                 "--cooldown", "1", "--verbose"],
+                [script_path, "--combo", combo, "--command", command, "--cooldown", "1", "--verbose"],
                 stdout=log_file, stderr=subprocess.STDOUT, start_new_session=True)
             log_file.close()
             decky.logger.info(f"button_listener.sh started, pid={self._button_listener_proc.pid}")
