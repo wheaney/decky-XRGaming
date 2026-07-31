@@ -159,7 +159,11 @@ class Plugin:
     def _detect_controller_hidraw_device(self):
         try:
             hidraw_base = "/sys/class/hidraw"
-            for entry in sorted(os.listdir(hidraw_base)):
+            entries = sorted(os.listdir(hidraw_base),
+                              key=lambda name: int(name.replace("hidraw", "") or 0))
+
+            valve_devices = []
+            for entry in entries:
                 uevent_path = os.path.join(hidraw_base, entry, "device", "uevent")
                 try:
                     with open(uevent_path, "r") as f:
@@ -169,8 +173,24 @@ class Plugin:
 
                 for line in uevent.splitlines():
                     if line.startswith("HID_ID="):
-                        if f":{VALVE_HID_VENDOR_ID}:" in line.upper():
-                            return f"/dev/{entry}"
+                        # format is HID_ID=<bus>:<vendor>:<product>, each zero-padded hex
+                        parts = line.split("=", 1)[1].split(":")
+                        if len(parts) == 3:
+                            try:
+                                if int(parts[1], 16) == int(VALVE_HID_VENDOR_ID, 16):
+                                    valve_devices.append(f"/dev/{entry}")
+                            except ValueError:
+                                pass
+                        break
+
+            decky.logger.info(f"Valve hidraw devices found: {valve_devices}")
+
+            # the known-good default is empirically the right interface for raw
+            # controller reports; prefer it if it's among the Valve-vendor devices
+            if FALLBACK_HIDRAW_DEVICE in valve_devices:
+                return FALLBACK_HIDRAW_DEVICE
+            if valve_devices:
+                return valve_devices[0]
         except OSError as e:
             decky.logger.error(f"Error detecting controller hidraw device: {e}")
 
@@ -192,12 +212,18 @@ class Plugin:
 
         os.chmod(script_path, 0o755)
         device = self._detect_controller_hidraw_device()
+        command = self._recenter_command()
+        decky.logger.info(f"Starting button_listener.sh: device={device} combo={combo} command={command}")
 
         try:
+            log_path = os.path.join(decky.DECKY_PLUGIN_LOG_DIR, "button_listener.log")
+            log_file = open(log_path, "a")
             self._button_listener_proc = subprocess.Popen(
-                [script_path, "--device", device, "--combo", combo, "--command", self._recenter_command(),
-                 "--cooldown", "1"],
-                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+                [script_path, "--device", device, "--combo", combo, "--command", command,
+                 "--cooldown", "1", "--verbose"],
+                stdout=log_file, stderr=subprocess.STDOUT, start_new_session=True)
+            log_file.close()
+            decky.logger.info(f"button_listener.sh started, pid={self._button_listener_proc.pid}")
         except OSError as e:
             decky.logger.error(f"Error starting button_listener.sh: {e}")
 
