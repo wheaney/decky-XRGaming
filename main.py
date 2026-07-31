@@ -172,12 +172,18 @@ class Plugin:
         command = self._recenter_command()
         decky.logger.info(f"Starting button_listener.sh: combo={combo} command={command}")
 
+        # strip LD_LIBRARY_PATH, which points at this plugin's bundled libs and
+        # shadows the system libreadline, breaking any bash invocation (including
+        # this script's own shebang and its internal `bash -c` command runner)
+        env_copy = os.environ.copy()
+        env_copy.pop("LD_LIBRARY_PATH", None)
+
         try:
             log_path = os.path.join(decky.DECKY_PLUGIN_LOG_DIR, "button_listener.log")
             log_file = open(log_path, "a")
             self._button_listener_proc = subprocess.Popen(
                 [script_path, "--combo", combo, "--command", command, "--cooldown", "1", "--verbose"],
-                stdout=log_file, stderr=subprocess.STDOUT, start_new_session=True)
+                stdout=log_file, stderr=subprocess.STDOUT, start_new_session=True, env=env_copy)
             log_file.close()
             decky.logger.info(f"button_listener.sh started, pid={self._button_listener_proc.pid}")
         except OSError as e:
