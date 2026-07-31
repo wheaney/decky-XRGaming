@@ -95,7 +95,7 @@ Unfortunately, without an official SDK from XREAL, screen drift will probably re
 
 This section will suggest you either use buttons in the plugin sidebar or use the multi-tap functionality built into this driver. For multi-tap, use one finger to tap down on the top of your glasses by your temple. Each tap should firm and sharp, with a split-second wait before the next, as it needs to detect a slight pause in between. The cadence should be more like knocking on a door than double-clicking a mouse. If multi-tap isn't working or you would prefer not to use it, use the suggested buttons instead. **Note: The device manufacturers did NOT build multi-tap support and have NOT condoned this practice; tap on your glasses at your own risk.**
 
-To re-center your screen, either use the **Recenter display** button in the plugin sidebar, or perform a double-tap on your glasses.
+To re-center your screen, use the **Recenter display** button in the plugin sidebar, perform a double-tap on your glasses, or enable **Recenter with a controller combo** in the sidebar to trigger it by holding a controller button combo (works even mid-game, when Steam Input has grabbed the controller). That combo binding is powered by [`contrib/button_listener.sh`](contrib/button_listener.sh), which you can also run standalone if you'd rather manage it yourself or bind a combo to something other than recenter.
 
 To re-calibrate your screen,  either use the **Recalibrate headset** button in the **Advanced settings** of the plugin sidebar, or perform a triple-tap on your glasses. This will briefly display a static screen while it resets the device calibration
 
