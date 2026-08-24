@@ -40,9 +40,14 @@ interface Config {
     external_mode: ExternalMode[];
     vr_lite_invert_x: boolean;
     vr_lite_invert_y: boolean;
+    invert_x: boolean;
+    invert_y: boolean;
+    invert_z: boolean;
     opentrack_listener_enabled: boolean;
     mouse_sensitivity: number;
     look_ahead: number;
+    use_pitch_adjustment_override: boolean;
+    pitch_adjustment_degrees: number;
     display_size: number;
     display_distance: number;
     sbs_content: boolean;
@@ -73,6 +78,7 @@ interface DriverState {
     connected_device_full_distance_cm: number;
     connected_device_full_size_cm: number;
     connected_device_pose_has_position: boolean;
+    connected_device_possible_imu_misalignment: boolean;
     calibration_setup: CalibrationSetup;
     calibration_state: CalibrationState;
     sbs_mode_enabled: boolean;
@@ -100,10 +106,10 @@ type HeadsetModeOption = "virtual_display" | "vr_lite" | "sideview" | "disabled"
 type CalibrationSetup = "AUTOMATIC" | "INTERACTIVE";
 type CalibrationState = "NOT_CALIBRATED" | "CALIBRATING" | "CALIBRATED" | "WAITING_ON_USER";
 type SbsModeControl = "unset" | "enable" | "disable";
-type SideviewPosition = "center" | "top_left" | "top_right" | "bottom_left" | "bottom_right";
+type SideviewPosition = "middle_center" | "top_left" | "top_right" | "bottom_left" | "bottom_right" | "middle_left" | "top_center" | "middle_right" | "bottom_center";
 type MeasurementUnits = "cm" | "in";
 const ManagedExternalModes: ExternalMode[] = ['virtual_display', 'sideview', 'none'];
-const SideviewPositions: SideviewPosition[] = ["center", "top_left", "top_right", "bottom_left", "bottom_right"];
+const SideviewPositions: SideviewPosition[] = ["middle_center", "top_left", "top_right", "bottom_left", "bottom_right", "middle_left", "top_center", "middle_right", "bottom_center"];
 const DirtyControlFlagsExpireMilliseconds = 3000;
 
 const HeadsetModeDescriptions: {[key in HeadsetModeOption]: string} = {
@@ -115,11 +121,15 @@ const HeadsetModeDescriptions: {[key in HeadsetModeOption]: string} = {
 const HeadsetModeOptions: HeadsetModeOption[] =  Object.keys(HeadsetModeDescriptions) as HeadsetModeOption[];
 
 const SideviewPositionDescriptions: {[key in SideviewPosition]: string} = {
-    "center": "Center",
+    "middle_center": "Middle\u00a0center",
     "top_left": "Top\u00a0left",
     "top_right": "Top\u00a0right",
     "bottom_left": "Bottom\u00a0left",
-    "bottom_right": "Bottom\u00a0right"
+    "bottom_right": "Bottom\u00a0right",
+    "middle_left": "Middle\u00a0left",
+    "top_center": "Top\u00a0center",
+    "middle_right": "Middle\u00a0right",
+    "bottom_center": "Bottom\u00a0center"
 };
 
 const HeadsetModeConfirmationTimeoutMs = 1000
@@ -465,6 +475,7 @@ const Content: VFC = () => {
     const is3DoFMode = isVirtualDisplayMode || isSideviewMode && smoothFollowEnabled;
     const sbsFeature = featureDetails(driverState?.device_license, "sbs");
     const poseHasPosition = driverState?.connected_device_pose_has_position ?? false;
+    const possibleImuMisalignment = driverState?.connected_device_possible_imu_misalignment ?? false;
 
     // we show the display distance slider as soon as the user selects the headset mode, even if it's still dirty
     const showDisplayDistanceSlider = is3DoFMode && (poseHasPosition || !!driverState?.sbs_mode_enabled);
@@ -870,6 +881,94 @@ const Content: VFC = () => {
                 }}
             />
         </PanelSectionRow>,
+        !isDisabled && (config?.invert_x || possibleImuMisalignment) && <PanelSectionRow>
+            <ToggleField
+                checked={config?.invert_x ?? false}
+                label={"Invert IMU X-axis"}
+                description={"Use ONLY if display movement is incorrect"}
+                onChange={(invert_x) => {
+                    if (config) {
+                        updateConfig({
+                            ...config,
+                            invert_x
+                        }).catch(e => setError(e))
+                    }
+                }}
+            />
+        </PanelSectionRow>,
+        !isDisabled && (config?.invert_y || possibleImuMisalignment) && <PanelSectionRow>
+            <ToggleField
+                checked={config?.invert_y ?? false}
+                label={"Invert IMU Y-axis"}
+                description={"Use ONLY if display movement is incorrect"}
+                onChange={(invert_y) => {
+                    if (config) {
+                        updateConfig({
+                            ...config,
+                            invert_y
+                        }).catch(e => setError(e))
+                    }
+                }}
+            />
+        </PanelSectionRow>,
+        !isDisabled && (config?.invert_z || possibleImuMisalignment) && <PanelSectionRow>
+            <ToggleField
+                checked={config?.invert_z ?? false}
+                label={"Invert IMU Z-axis"}
+                description={"Use ONLY if display movement is incorrect"}
+                onChange={(invert_z) => {
+                    if (config) {
+                        updateConfig({
+                            ...config,
+                            invert_z
+                        }).catch(e => setError(e))
+                    }
+                }}
+            />
+        </PanelSectionRow>,
+        !isDisabled && (config?.use_pitch_adjustment_override || possibleImuMisalignment) && <PanelSectionRow>
+            <ToggleField
+                checked={config?.use_pitch_adjustment_override ?? false}
+                label={"Manual IMU pitch adjustment"}
+                description={"Use ONLY to correct unexpected display roll"}
+                onChange={(use_pitch_adjustment_override) => {
+                    if (config) {
+                        updateConfig({
+                            ...config,
+                            use_pitch_adjustment_override
+                        }).catch(e => setError(e))
+                    }
+                }}
+            />
+        </PanelSectionRow>,
+        !isDisabled && (config?.use_pitch_adjustment_override || possibleImuMisalignment) && <PanelSectionRow>
+            <SliderField
+                value={config?.pitch_adjustment_degrees ?? 0}
+                label={"IMU pitch adjustment (degrees)"}
+                description={"Adjust the IMU pitch to correct unexpected roll."}
+                min={-20} max={20} step={0.5}
+                notchLabels={[
+                    {label: "-20", notchIndex: 0},
+                    {label: "-15", notchIndex: 1},
+                    {label: "-10", notchIndex: 2},
+                    {label: "-5", notchIndex: 3},
+                    {label: "0", notchIndex: 4},
+                    {label: "5", notchIndex: 5},
+                    {label: "10", notchIndex: 6},
+                    {label: "15", notchIndex: 7},
+                    {label: "20", notchIndex: 8}
+                ]}
+                notchCount={9} showValue={true} editableValue={true} notchTicksVisible={true}
+                onChange={(pitch_adjustment_degrees) => {
+                    if (config) {
+                        updateConfig({
+                            ...config,
+                            pitch_adjustment_degrees
+                        }).catch(e => setError(e))
+                    }
+                }}
+            />
+        </PanelSectionRow>,
         isShaderMode && dontShowAgainKeys.length && <PanelSectionRow>
             <ButtonItem description={"Clear your \"Don't show again\" settings."} layout="below" onClick={() => resetDontShowAgain()}>
                 Show all guides
@@ -897,7 +996,7 @@ const Content: VFC = () => {
                 {installationStatus == "installed" && driverState && config &&
                     <PanelSection>
                         <PanelSectionRow>
-                            <Field padding={'none'} childrenContainerWidth={'max'}>
+                            <Field padding={'standard'} childrenContainerWidth={'max'}>
                                 <div  style={{fontSize: 'medium', textAlign: 'center'}}>
                                     <span style={{color: deviceConnected ? 'white' : 'gray'}}>
                                         {deviceName}
@@ -922,7 +1021,7 @@ const Content: VFC = () => {
                             />
                         </PanelSectionRow>}
                         {isShaderMode && isVulkanOnlyMode && <PanelSectionRow>
-                            <Field padding={'none'} childrenContainerWidth={'max'}>
+                            <Field padding={'standard'} childrenContainerWidth={'max'}>
                                 <div style={{textAlign: 'center'}}>
                                     <span style={{color: "#946d00", fontWeight: "bold"}}>
                                         Vulkan-only mode
@@ -933,7 +1032,7 @@ const Content: VFC = () => {
                         </PanelSectionRow>}
                         {isOtherMode && <Fragment>
                             <PanelSectionRow>
-                                <Field padding={'none'} childrenContainerWidth={'max'}>
+                                <Field padding={'standard'} childrenContainerWidth={'max'}>
                                     An external application may be using your headset data: <b>{otherExternalModes.join(", ")}</b>.
                                 </Field>
                             </PanelSectionRow>
@@ -949,7 +1048,7 @@ const Content: VFC = () => {
                             </PanelSectionRow>
                         </Fragment> || isOtherModeDisabled && <Fragment>
                             <PanelSectionRow>
-                                <Field padding={'none'} childrenContainerWidth={'max'}>
+                                <Field padding={'standard'} childrenContainerWidth={'max'}>
                                     An external application may be trying to use your headset data: <b>{otherExternalModes.join(", ")}</b>.
                                 </Field>
                             </PanelSectionRow>
@@ -964,8 +1063,8 @@ const Content: VFC = () => {
                                 </ButtonItem>
                             </PanelSectionRow>
                         </Fragment>}
-                        {!isDisabled && isVrLiteMode && isJoystickMode && joystickModeButton}
-                        {!isDisabled && isVrLiteMode && !isJoystickMode && <PanelSectionRow>
+                        {isVrLiteMode && isJoystickMode && joystickModeButton}
+                        {isVrLiteMode && !isJoystickMode && <PanelSectionRow>
                             <SliderField value={config.mouse_sensitivity}
                                          min={5} max={100} showValue={true} notchTicksVisible={true}
                                          label={"Mouse sensitivity"}
@@ -979,11 +1078,11 @@ const Content: VFC = () => {
                                          }}
                             />
                         </PanelSectionRow>}
-                        {!isDisabled && isVrLiteMode && <PanelSectionRow>
+                        {isVrLiteMode && <PanelSectionRow>
                             <ToggleField
                                 checked={config?.vr_lite_invert_x ?? false}
-                                label={"Invert X-axis"}
-                                description={"Inverts X-axis movements in VR-Lite mode."}
+                                label={"Invert horizontal look"}
+                                description={"Inverts horizontal movements in VR-Lite mode."}
                                 onChange={(vr_lite_invert_x) => {
                                     if (config) {
                                         updateConfig({
@@ -994,11 +1093,11 @@ const Content: VFC = () => {
                                 }}
                             />
                         </PanelSectionRow>}
-                        {!isDisabled && isVrLiteMode && <PanelSectionRow>
+                        {isVrLiteMode && <PanelSectionRow>
                             <ToggleField
                                 checked={config?.vr_lite_invert_y ?? false}
-                                label={"Invert Y-axis"}
-                                description={"Inverts Y-axis movements in VR-Lite mode."}
+                                label={"Invert vertical look"}
+                                description={"Inverts vertical movements in VR-Lite mode."}
                                 onChange={(vr_lite_invert_y) => {
                                     if (config) {
                                         updateConfig({

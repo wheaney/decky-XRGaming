@@ -26,7 +26,7 @@ const QrButton: FC<{
             label={null}
             childrenLayout={undefined}
             inlineWrap="keep-inline"
-            padding="none"
+            padding="standard"
             spacingBetweenLabelAndChild="none"
             childrenContainerWidth="max"
         >

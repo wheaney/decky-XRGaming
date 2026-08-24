@@ -103,7 +103,9 @@ class Plugin:
             return False
 
     async def is_breezy_installed_and_running(self):
-        return self.breezy_installed
+        # self.breezy_installed value of False doesn't mean "definitely not installed,"
+        # may mean "hasn't been checked yet"
+        return self.breezy_installed or await self.check_breezy_installed()
 
     async def is_driver_running(self):
         return ipc.is_driver_running(as_user=decky.DECKY_USER)

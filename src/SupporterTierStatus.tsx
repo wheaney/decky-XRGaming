@@ -77,7 +77,7 @@ export function SupporterTierStatus({details, requestTokenFn, verifyTokenFn, ref
                     label={null}
                     childrenLayout={undefined}
                     inlineWrap="keep-inline"
-                    padding="none"
+                    padding="standard"
                     spacingBetweenLabelAndChild="none"
                     childrenContainerWidth="max">
                     <div style={{ 
@@ -104,7 +104,7 @@ export function SupporterTierStatus({details, requestTokenFn, verifyTokenFn, ref
                     label={null}
                     childrenLayout={undefined}
                     inlineWrap="keep-inline"
-                    padding="none"
+                    padding="standard"
                     spacingBetweenLabelAndChild="none"
                     childrenContainerWidth="max">
                     <div style={{ 
@@ -133,7 +133,7 @@ export function SupporterTierStatus({details, requestTokenFn, verifyTokenFn, ref
                     label={null}
                     childrenLayout={undefined}
                     inlineWrap="keep-inline"
-                    padding="none"
+                    padding="standard"
                     spacingBetweenLabelAndChild="none"
                     childrenContainerWidth="max">
                     <div style={{
