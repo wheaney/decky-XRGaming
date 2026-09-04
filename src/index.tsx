@@ -941,7 +941,7 @@ const Content: VFC = () => {
                 }}
             />
         </PanelSectionRow>,
-        !isDisabled && (config?.use_pitch_adjustment_override || possibleImuMisalignment) && <PanelSectionRow>
+        !isDisabled && config?.use_pitch_adjustment_override && <PanelSectionRow>
             <SliderField
                 value={config?.pitch_adjustment_degrees ?? 0}
                 label={"IMU pitch adjustment (degrees)"}
