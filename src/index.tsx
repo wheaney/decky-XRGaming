@@ -3,6 +3,7 @@ import {
     definePlugin, 
     DropdownItem,
     Field,
+    gamepadDialogClasses,
     NotchLabel,
     PanelSection,
     PanelSectionRow,
@@ -476,6 +477,7 @@ const Content: VFC = () => {
     const sbsFeature = featureDetails(driverState?.device_license, "sbs");
     const poseHasPosition = driverState?.connected_device_pose_has_position ?? false;
     const possibleImuMisalignment = driverState?.connected_device_possible_imu_misalignment ?? false;
+    const isImuMode = is3DoFMode || isVrLiteMode;
 
     // we show the display distance slider as soon as the user selects the headset mode, even if it's still dirty
     const showDisplayDistanceSlider = is3DoFMode && (poseHasPosition || !!driverState?.sbs_mode_enabled);
@@ -885,7 +887,7 @@ const Content: VFC = () => {
             <ToggleField
                 checked={config?.invert_x ?? false}
                 label={"Invert IMU X-axis"}
-                description={"Use ONLY if display movement is incorrect"}
+                description={"Use ONLY if movement is incorrect"}
                 onChange={(invert_x) => {
                     if (config) {
                         updateConfig({
@@ -900,7 +902,7 @@ const Content: VFC = () => {
             <ToggleField
                 checked={config?.invert_y ?? false}
                 label={"Invert IMU Y-axis"}
-                description={"Use ONLY if display movement is incorrect"}
+                description={"Use ONLY if movement is incorrect"}
                 onChange={(invert_y) => {
                     if (config) {
                         updateConfig({
@@ -915,7 +917,7 @@ const Content: VFC = () => {
             <ToggleField
                 checked={config?.invert_z ?? false}
                 label={"Invert IMU Z-axis"}
-                description={"Use ONLY if display movement is incorrect"}
+                description={"Use ONLY if movement is incorrect"}
                 onChange={(invert_z) => {
                     if (config) {
                         updateConfig({
@@ -1029,6 +1031,37 @@ const Content: VFC = () => {
                                     XR effects will only apply in-game
                                 </div>
                             </Field>
+                        </PanelSectionRow>}
+                        {possibleImuMisalignment && isImuMode && <PanelSectionRow>
+                            <div style={{
+                                // copied from computed Panel styles, won't be 100% consistent for all widths
+                                position: "relative",
+                                paddingTop: "10px",
+                                marginInlineEnd: "-16px",
+                                marginInlineStart: "-16px",
+                                paddingInlineEnd: "16px",
+                                paddingInlineStart: "16px",
+                                paddingLeft: "16px",
+                                paddingRight: "16px"
+                            }}>
+                                <span style={{color: "#946d00", fontWeight: "bold"}}>
+                                    Is your {is3DoFMode ? "display" : (isJoystickMode ? "joystick" : "mouse")} moving wrong?
+                                </span><br/>
+                                <span className={gamepadDialogClasses.FieldDescription}>
+                                    The Beast factory calibration can be inconsistent.
+                                    See the <b>advanced settings</b> below for IMU adjustment options.
+                                </span>
+                                <div style={{
+                                    // mimics the Panel's ::after divider line
+                                    bottom: "-0.5px",
+                                    left: 0,
+                                    right: 0,
+                                    marginTop: "10px",
+                                    marginInlineStart: "0px",
+                                    height: "1px",
+                                    background: "hsla(0, 0%, 100%, .1)"
+                                }} />
+                            </div>
                         </PanelSectionRow>}
                         {isOtherMode && <Fragment>
                             <PanelSectionRow>
