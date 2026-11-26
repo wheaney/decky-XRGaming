@@ -303,19 +303,6 @@ const Content: VFC = () => {
         return call<[], DriverState>("retrieve_driver_state");
     }
 
-    // have this function call itself every second to keep the UI up to date
-    async function refreshDriverState() {
-        try {
-            setDriverState(await retrieveDriverState());
-        } catch (e) {
-            setError((e as Error).message);
-        }
-
-        setTimeout(() => {
-            refreshDriverState().catch((err) => setError(err));
-        }, 1000);
-    }
-
     async function refreshDontShowAgainKeys() {
         try {
             setDontShowAgainKeys(await call<[], string[]>("retrieve_dont_show_again_keys"));
@@ -549,8 +536,28 @@ const Content: VFC = () => {
     useEffect(() => {
         refreshConfig().catch((err) => setError(err));
         checkInstallation().catch((err) => setError(err));
-        refreshDriverState().catch((err) => setError(err));
         refreshDontShowAgainKeys().catch((err) => setError(err));
+    }, []);
+
+    useEffect(() => {
+        let active = true;
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        const refreshDriverState = async () => {
+            try {
+                const state = await retrieveDriverState();
+                if (active) setDriverState(state);
+            } catch (e) {
+                if (active) setError((e as Error).message);
+            }
+
+            if (active) timer = setTimeout(refreshDriverState, 1000);
+        };
+        refreshDriverState();
+
+        return () => {
+            active = false;
+            clearTimeout(timer);
+        };
     }, []);
 
     useEffect(() => {
